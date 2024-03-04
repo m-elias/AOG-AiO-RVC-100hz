@@ -299,7 +299,7 @@ void autoSteerUpdate() {
     //Serial.println(analogRead(WORK_PIN));
     uint8_t read = analogRead(WORK_PIN) > ANALOG_TRIG_THRES ? HIGH : LOW;           // read work input
     if (read != workInput) {
-      Serial.printf("WORK input: %s\r\n", (read == 1 ? "OFF" : "ON"));
+      Serial.printf("\r\nWORK input: %s", (read == 1 ? "OFF" : "ON"));
       workInput = read;
     }
 
@@ -364,15 +364,16 @@ void autoSteerUpdate() {
 
 
     // ******************************** WATCHDOG checks & PWM output ********************************
-    if (steerState == 0) {
-      watchdogTimer = WATCHDOG_FORCE_VALUE;  //turn off steering motor
-    }// else {                                 //valid conditions to turn on autosteer
+    //if (steerState == 0) {
+      //watchdogTimer = WATCHDOG_FORCE_VALUE;  //turn off steering motor
+    //}// else {                                 //valid conditions to turn on autosteer
       //watchdogTimer = 0;                     //reset watchdog
     //}
 
     // If connection lost to AgOpenGPS, the watchdog will count up and turn off steering
     if (watchdogTimer++ > 250) watchdogTimer = WATCHDOG_FORCE_VALUE;
 
+    //Serial.print("\r\nAS wd: "); Serial.print(watchdogTimer);
     if (watchdogTimer < WATCHDOG_THRESHOLD) {
       // Enable H Bridge for IBT2, hyd aux, etc for cytron
       if (steerConfig.CytronDriver) {

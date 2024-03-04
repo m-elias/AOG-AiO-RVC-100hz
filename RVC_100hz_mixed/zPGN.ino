@@ -46,13 +46,13 @@ void checkForPGNs()
           steerAngleSetPoint = ((float)(udpData[8] | ((int8_t)udpData[9]) << 8)) * 0.01;  //high low bytes
 
           // moved to 100hz AS loop for quicker reactions
-          /*if ((bitRead(guidanceStatus, 0) == 0) || (steerState == 0)) { // || (gpsSpeed < 0.1)) {
+          if ((bitRead(guidanceStatus, 0) == 0) || (steerState == 0)) { // || (gpsSpeed < 0.1)) {
             watchdogTimer = WATCHDOG_FORCE_VALUE;  //turn off steering motor
-            Serial.print(" OFF");
+            //Serial.print(" OFF");
           } else {                                 //valid conditions to turn on autosteer
             watchdogTimer = 0;                     //reset watchdog
-            Serial.print(" ON");
-          }*/
+            //Serial.print(" ON");
+          }
 
           //Bit 10 Tram
           //tram = udpData[10];
@@ -320,7 +320,7 @@ void checkForPGNs()
             if (machine.parsePGN(udpData, len))    // look for Machine PGNs
             {
               none = false;
-              Serial << "\r\nChecking machine PGNs";
+              //Serial << "\r\nChecking machine PGNs";
               // 0xE5 (229) - 64 Section Data
               // 0xEB (235) - Section Dimensions
               // 0xEC (236) - Machine Pin Config
