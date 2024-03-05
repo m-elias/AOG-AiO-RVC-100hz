@@ -25,7 +25,6 @@ private:
   uint32_t prevMsgTime, startMsgTime;
 
   void addchk(int b) {
-
     this->chka = (this->chka + b) & 0xFF;
     this->chkb = (this->chkb + this->chka) & 0xFF;
   }
@@ -136,11 +135,12 @@ public:
     float ecefX, ecefY, ecefZ, ecefAcc;                      // rover ECEF postion in meters
     float baseRelN, baseRelE, baseRelD, baseRelL, baseRelH;  // moving base relposned in meters
     uint32_t iTOW;                                           // time of week from relposned
-    byte numSat;                                             // number of Sats from PVT
+    byte numSats;                                             // number of Sats from PVT
     float lat, lon, alt;                                     // position from PVT
   };
   UBX_Data ubxData;
 
+  bool relPosNedReady, useDual, pvtRead;
   uint32_t msgPeriod, msgReadTime;
 
   void handle_NAV_POSECEF(unsigned long iTOW, long ecefX, long ecefY, long ecefZ, long pAcc) {
@@ -163,8 +163,12 @@ public:
     ubxData.baseRelL = (float)relPosLength * 0.01;
     ubxData.baseRelH = (float)relPosHeading * 0.00001;
     //Serial.print(millis()); Serial.print(" handle_NAV_RELPOSNED "); Serial.println((micros() - prevMsgTime) / 1000);
+    Serial.print("\r\n"); Serial.print(millis());// Serial.print(" "); Serial.print(iTOW);
+    Serial.print(" handle_NAV_RELPOSNED "); Serial.print((micros() - prevMsgTime) / 1000);
     msgPeriod = (micros() - prevMsgTime) / 1000;
     prevMsgTime = micros();
+    relPosNedReady = true;
+    useDual = true;
   }
 
   void handle_NAV_PVT(unsigned long iTOW,
@@ -190,12 +194,13 @@ public:
                       signed long headMot,
                       signed long headVeh) {
 
-    ubxData.numSat = (byte)numSV;
+    ubxData.numSats = (byte)numSV;
     ubxData.lat = (float)lat * 0.0000001;
     ubxData.lon = (float)lon * 0.0000001;
     ubxData.alt = (float)height * 0.001;
-    //Serial.print(millis()); Serial.print(" handle_NAV_PVT "); Serial.println((micros() - prevMsgTime) / 1000);
+    Serial.print("\r\n"); Serial.print(millis()); Serial.print(" handle_NAV_PVT ");// Serial.print((micros() - prevMsgTime) / 1000);
     //prevMsgTime = micros();
+    pvtRead = true;
   }
 
   void reportUnhandled(char msgid) {

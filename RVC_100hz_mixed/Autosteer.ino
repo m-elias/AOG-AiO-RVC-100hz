@@ -103,7 +103,7 @@ void steerConfigInit() {
     pinMode(KICKOUT_A_PIN, INPUT_PULLUP);
   }
 
-  RVC_BNO.isSwapXY = !steerConfig.IsUseY_Axis;
+  BNO.isSwapXY = !steerConfig.IsUseY_Axis;
 }
 
 void steerSettingsInit() {

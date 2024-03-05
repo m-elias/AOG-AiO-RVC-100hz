@@ -12,35 +12,47 @@ public:
 
   void printStatsReport(char* _name)
   {
-    if (highNumShort > highNumLong) highNumLong = highNumShort;
-    if (lowNumShort < lowNumLong) lowNumLong = lowNumShort;
-    hzCountLong += hzCountShort;
-
-    uint32_t timeShort = millis() - timerShort;
-    uint32_t timeLong = millis() - timerLong;
-
-    Serial.print("\r\n"); Serial.print(_name); 
-    Serial.printf(" hi: %3i(%3i)", highNumShort, highNumLong);
-    Serial.printf(" lo: %3i(%3i)", lowNumShort, lowNumLong);
-    if (hzCountShort > 0)
-      Serial.printf(" Hz: %4.1f(%4.1f)", (float)hzCountShort / ((float)timeShort / 1000.0), (float)hzCountLong / ((float)timeLong / 1000.0));
-
-    Serial.print("   "); Serial.print(timeShort / 1000); Serial.print("s ("); 
-    
-    if (timeLong > 3600000) {
-      Serial.print((float)timeLong / 3600000.0, 1);
-      Serial.print("h");
-    } else if (timeLong > 60000) {
-      Serial.print((float)timeLong / 60000.0, 1);
-      Serial.print("m");
-    } else {
-      Serial.print(timeLong/1000);
-      Serial.print("s");
+    if (!startupReset) {
+      resetLongPeriod();
+      startupReset = true;
+      return;
     }
-    Serial.print(")");
+
+    if (isActive)
+    {
+      if (highNumShort > highNumLong) highNumLong = highNumShort;
+      if (lowNumShort < lowNumLong) lowNumLong = lowNumShort;
+      hzCountLong += hzCountShort;
+
+      uint32_t timeShort = millis() - timerShort;
+      uint32_t timeLong = millis() - timerLong;
+
+      Serial.print("\r\n"); Serial.print(_name); 
+      Serial.printf("\thi: %i(%i)", highNumShort, highNumLong);
+      Serial.printf("\tlo: %i(%i)", lowNumShort, lowNumLong);
+      //if (hzCountShort > 0)
+        Serial.printf("\tHz: %4.1f(%4.1f)", (float)hzCountShort / ((float)timeShort / 1000.0), (float)hzCountLong / ((float)timeLong / 1000.0));
+
+      Serial.print("   "); Serial.print(timeShort / 1000); Serial.print("s ("); 
+      
+      if (timeLong > 3600000) {
+        Serial.print((float)timeLong / 3600000.0, 1);
+        Serial.print("h");
+      } else if (timeLong > 60000) {
+        Serial.print((float)timeLong / 60000.0, 1);
+        Serial.print("m");
+      } else {
+        Serial.print(timeLong/1000);
+        Serial.print("s");
+      }
+      Serial.print(")");
+    }
+    else
+    {
+      resetLongPeriod();
+    }
 
     resetShortPeriod();
-    if (!startupReset) { resetLongPeriod(); startupReset = true; }
   }
 
   void update(uint16_t _num) {
@@ -70,6 +82,7 @@ public:
   }
 
   void incHzCount(uint8_t _inc = 1) {
+    isActive = true;
     hzCountShort += _inc;
   }
 

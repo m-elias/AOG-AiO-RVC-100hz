@@ -206,7 +206,7 @@ void checkForPGNs()
           #endif
               
           // reply as IMU if equipped
-          if (useBNO08xRVC) {
+          if (BNO.isActive) {
             uint8_t helloFromIMU[] = { 128, 129, 121, 121, 5, 0, 0, 0, 0, 0, 71 };
             UDP_Susage.timeIn();
             UDP.SendUdpByte(helloFromIMU, sizeof(helloFromIMU), UDP.broadcastIP, UDP.portAgIO_9999);
@@ -255,7 +255,7 @@ void checkForPGNs()
             UDP.SendUdpByte(scanReplySteer, sizeof(scanReplySteer), ipDest, UDP.portAgIO_9999);
             UDP_Susage.timeOut();
 
-            if (useBNO08xRVC) {
+            if (BNO.isActive) {
               uint8_t scanReplyIMU[] = { 128, 129, 121, 203, 7,
                                       UDP.myIP[0], UDP.myIP[1], UDP.myIP[2], UDP.myIP[3],
                                       rem_ip[0], rem_ip[1], rem_ip[2], 23 };
@@ -296,7 +296,7 @@ void checkForPGNs()
             else if (PWM_Frequency == 1) Serial.println("\r\nAutosteer running, PWM Frequency = 122hz");
             else if (PWM_Frequency == 2) Serial.println("\r\nAutosteer running, PWM Frequency = 3921hz");*/
 
-            if (useBNO08xRVC) Serial.print("\r\nBNO08x available via Serial/RVC Mode");
+            if (BNO.isActive) Serial.print("\r\nBNO08x available via Serial/RVC Mode");
             else Serial.print("\r\n* No IMU available *");
 
             /*if (GGA_Available == false) Serial.println("\r\n!! GPS Data Missing... Check F9P Config");

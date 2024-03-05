@@ -79,7 +79,6 @@ private:
     bool sections[1 + 64];
   }; States states;
 
-  elapsedMillis watchdogTimer;
   const uint8_t LOOP_TIME = 200;                  // 5hz
   const uint16_t watchdogTimeoutPeriod = 4000;    // ms, originally was 20 update cycles (4 secs)
   const uint16_t watchdogAlertPeriod = 1000;      // ms, how long after UDP comms lost to alert
@@ -94,6 +93,7 @@ private:
 public:
 
   bool isInit;
+  elapsedMillis watchdogTimer;
 
   uint8_t debugLevel = 3;
     // 0 - debug prints OFF

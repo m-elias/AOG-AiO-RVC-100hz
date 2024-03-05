@@ -4,232 +4,179 @@ const char* asciiHex = "0123456789ABCDEF";
 // the new PANDA sentence buffer
 char nmea[100];
 
+#define PANDA true
+#define PAOGI false
+
 // GGA
-char fixTime[12];
-char latitude[15];
-char latNS[3];
-char longitude[15];
-char lonEW[3];
-char fixQuality[2];
-char numSats[4];
-char HDOP[5];
-char altitude[12];
-char ageDGPS[10];
+struct GGA_DATA {
+  char fixTime[12];
+  char latitude[15];
+  char latNS[3];
+  char longitude[15];
+  char lonEW[3];
+  char fixQuality[2];
+  char numSats[4];
+  char HDOP[5];
+  char altitude[12];
+  char ageDGPS[10];
+}; GGA_DATA GGA;
 
 // VTG
-char vtgHeading[12] = { };
-char speedKnots[10] = { };
+struct VTG_DATA {
+  char heading[12];
+  char speedKnots[10];
+}; VTG_DATA VTG;
 
 // IMU
-char imuHeading[6];
-char imuRoll[6];
-char imuPitch[6];
-char imuYawRate[6];
+struct IMU_DATA {
+  char heading[6];
+  char roll[6];
+  char pitch[6];
+  char yawRate[6];
+}; IMU_DATA IMU;
 
-uint32_t nmeaPgnSendTime, nmeaPgnMaxPeriod, nmeaPgnAvePeriod, nmeaPgnMinPeriod = 99999;
-uint8_t nmeaCount;
+//uint32_t nmeaPgnSendTime, nmeaPgnMaxPeriod, nmeaPgnAvePeriod, nmeaPgnMinPeriod = 99999;
+//uint8_t nmeaCount;
 
-// If odd characters showed up.
-void errorHandler()
+// If odd characters showed up
+void errorHandler() {
+  if (!startup) Serial.print("\r\n*** Unexpected characters in NMEA parser ***");
+}
+
+void prepImuPandaData()    // run after GGA update + 40ms (timing for PANDA), for next GGA 
 {
-  Serial.print("\r\n*** Odd characters in NMEA parser ***");
-  //nothing at the moment
+  if (BNO.isActive) {
+    double angVel;
+    itoa(BNO.rvcData.yawX10, IMU.heading, 10);    // format IMU data for Panda Sentence - Heading
+
+    if (BNO.isSwapXY) {
+        itoa(BNO.rvcData.pitchX10, IMU.roll, 10);   // the pitch x10
+        itoa(BNO.rvcData.rollX10, IMU.pitch, 10);   // the roll x10
+    } else {
+        itoa(BNO.rvcData.pitchX10, IMU.pitch, 10);  // the pitch x10
+        itoa(BNO.rvcData.rollX10, IMU.roll, 10);    // the roll x10
+    }
+
+    //Serial.print(BNO.angCounter);
+    //Serial.print(", ");
+    //Serial.print(BNO.rvcData.angVel);
+    //Serial.print(", ");
+    
+    // YawRate
+    if (BNO.angCounter > 0) {
+        angVel = ((double)BNO.rvcData.angVel) / (double)BNO.angCounter;
+        angVel *= 10.0;
+        BNO.angCounter = 0;
+        BNO.rvcData.angVel = (int16_t)angVel;
+    } else {
+        BNO.rvcData.angVel = 0;
+    }
+
+    itoa(BNO.rvcData.angVel, IMU.yawRate, 10);
+    BNO.rvcData.angVel = 0;
+  }
+  else    // No BNO in RVC mode or its disconnected, set IMU PANDA components to signal AOG that there's no IMU
+  {
+    itoa(65535, IMU.heading, 10);
+    IMU.roll[0] = 0;
+    IMU.pitch[0] = 0;
+    IMU.yawRate[0] = 0;
+  }
 }
 
 void GGA_Handler() //Rec'd GGA
 {
     NMEA_Pusage.timeIn();
-    // fix time
-    nmeaParser.getArg(0, fixTime);
+    
+    nmeaParser.getArg(0, GGA.fixTime);      // fix time
+    nmeaParser.getArg(1, GGA.latitude);     // latitude
+    nmeaParser.getArg(2, GGA.latNS);
+    nmeaParser.getArg(3, GGA.longitude);    // longitude
+    nmeaParser.getArg(4, GGA.lonEW);
+    nmeaParser.getArg(5, GGA.fixQuality);   // fix quality
+    nmeaParser.getArg(6, GGA.numSats);      // satellite #
+    nmeaParser.getArg(7, GGA.HDOP);         // HDOP
+    nmeaParser.getArg(8, GGA.altitude);     // altitude
+    nmeaParser.getArg(12, GGA.ageDGPS);     // time of last DGPS update
 
-    // latitude
-    nmeaParser.getArg(1, latitude);
-    nmeaParser.getArg(2, latNS);
+    Serial.print((String)"\r\n" + millis() + " GGA update");
+    ggaReady = true;                        // we have new GGA sentence
+    imuPandaSyncTimer = 0;                  // reset imu timer
+    startup = true;
+    gps1Stats.incHzCount();
 
-    // longitude
-    nmeaParser.getArg(3, longitude);
-    nmeaParser.getArg(4, lonEW);
-
-    // fix quality
-    nmeaParser.getArg(5, fixQuality);
-
-    // satellite #
-    nmeaParser.getArg(6, numSats);
-
-    // HDOP
-    nmeaParser.getArg(7, HDOP);
-
-    // altitude
-    nmeaParser.getArg(8, altitude);
-
-    // time of last DGPS update
-    nmeaParser.getArg(12, ageDGPS);
-
-    //we have new GGA sentence
-    isGGA_Updated = true;
-
-    //reset imu timer
-    imuDelayTimer = 0;
-
-    //build the PANDA sentence
-    BuildNmea();
+    if (!ubxParser.useDual) {               // if not using Dual 
+      buildPandaOrPaogi(PANDA);             // build the PANDA sentence right away
+    }                                       // otherwise wait until relposned arrives in main loop()
 
     teensyLedToggle();
     LEDTimer = 0;
-
-    //Used for GGA timeout (LED's ETC) 
-    gpsLostTimer = 0;
+    gpsLostTimer = 0;                       // Used for GGA timeout (LED's ETC) 
 }
 
 void VTG_Handler()
 {
-  // vtg heading
-  nmeaParser.getArg(0, vtgHeading);
-
-  // vtg Speed knots
-  nmeaParser.getArg(4, speedKnots);
+  nmeaParser.getArg(0, VTG.heading);        // vtg heading
+  nmeaParser.getArg(4, VTG.speedKnots);     // vtg Speed knots
 }
 
-void imuHandler()
-{
-    double angVel;
-
-    // Fill rest of Panda Sentence - Heading
-    itoa(bnoData.yawX10, imuHeading, 10);
-
-    if (RVC_BNO.isSwapXY)
-    {
-        // the pitch x100
-        itoa(bnoData.pitchX10, imuRoll, 10);
-
-        // the roll x100
-        itoa(bnoData.rollX10, imuPitch, 10);
-    }
-    else
-    {
-        // the pitch x100
-        itoa(bnoData.pitchX10, imuPitch, 10);
-
-        // the roll x100
-        itoa(bnoData.rollX10, imuRoll, 10);
-    }
-
-    //Serial.print(RVC_BNO.angCounter);
-    //Serial.print(", ");
-    //Serial.print(bnoData.angVel);
-    //Serial.print(", ");
-    
-    // YawRate
-    if (RVC_BNO.angCounter > 0)
-    {
-        angVel = ((double)bnoData.angVel) / (double)RVC_BNO.angCounter;
-        angVel *= 10.0;
-        RVC_BNO.angCounter = 0;
-        bnoData.angVel = (int16_t)angVel;
-    }
-    else
-    {
-        bnoData.angVel = 0;
-    }
-
-    itoa(bnoData.angVel, imuYawRate, 10);
-    bnoData.angVel = 0;
-}
-
-void BuildNmea(void)
+void buildPandaOrPaogi(bool _panda)    // only called by GGA_Handler (above)
 {
     strcpy(nmea, "");
-    
-    strcat(nmea, "$PANDA,");
 
-    strcat(nmea, fixTime);
+    if (_panda) strcat(nmea, "$PANDA,");
+    else strcat(nmea, "$PAOGI,");
+
+    strcat(nmea, GGA.fixTime); strcat(nmea, ",");     // field 1
+    strcat(nmea, GGA.latitude); strcat(nmea, ",");
+    strcat(nmea, GGA.latNS); strcat(nmea, ",");
+    strcat(nmea, GGA.longitude); strcat(nmea, ",");
+    strcat(nmea, GGA.lonEW); strcat(nmea, ",");       // 5
+    strcat(nmea, GGA.fixQuality); strcat(nmea, ",");
+
+    if (ubxParser.pvtRead) {
+      char temp[3];
+      itoa(ubxParser.ubxData.numSats, temp, 10);    // ubx pvt has more accurate # SVs, only send it at about 1hz
+      strcat(nmea, temp);
+    } else {
+      strcat(nmea, GGA.numSats);
+    }
+
     strcat(nmea, ",");
+    strcat(nmea, GGA.HDOP); strcat(nmea, ",");
+    strcat(nmea, GGA.altitude); strcat(nmea, ",");    // 9
+    strcat(nmea, GGA.ageDGPS); strcat(nmea, ",");
+    strcat(nmea, VTG.speedKnots); strcat(nmea, ",");
 
-    strcat(nmea, latitude);
-    strcat(nmea, ",");
-
-    strcat(nmea, latNS);
-    strcat(nmea, ",");
-
-    strcat(nmea, longitude);
-    strcat(nmea, ",");
-
-    strcat(nmea, lonEW);
-    strcat(nmea, ",");
-
-    // 6
-    strcat(nmea, fixQuality);
-    strcat(nmea, ",");
-
-    //strcat(nmea, numSats);
-    strcat(nmea, "31");
-    strcat(nmea, ",");
-
-    strcat(nmea, HDOP);
-    strcat(nmea, ",");
-
-    strcat(nmea, altitude);
-    strcat(nmea, ",");
-
-    //10
-    strcat(nmea, ageDGPS);
-    strcat(nmea, ",");
-
-    //11
-    strcat(nmea, speedKnots);
-    strcat(nmea, ",");
-
-    //12
-    strcat(nmea, imuHeading);
-    strcat(nmea, ",");
-
-    //13
-    strcat(nmea, imuRoll);
-    strcat(nmea, ",");
-
-    //14
-    strcat(nmea, imuPitch);
-    strcat(nmea, ",");
-
-    //15
-    strcat(nmea, imuYawRate);
+    if (_panda) {
+      strcat(nmea, IMU.heading); strcat(nmea, ",");
+      strcat(nmea, IMU.roll); strcat(nmea, ",");      // 13
+      strcat(nmea, IMU.pitch); strcat(nmea, ",");
+      strcat(nmea, IMU.yawRate);
+    } else {
+      // replace these with Dual baseline calcs
+      strcat(nmea, IMU.heading); strcat(nmea, ",");
+      strcat(nmea, IMU.roll); strcat(nmea, ",");      // 13
+      strcat(nmea, IMU.pitch); strcat(nmea, ",");
+      strcat(nmea, IMU.yawRate);
+    }
 
     strcat(nmea, "*");
-
     CalculateChecksum();
-
     strcat(nmea, "\r\n");
-
     NMEA_Pusage.timeOut();
 
-    //If ethernet running send the GPS there
-    if (UDP.isRunning)   
+    Serial.print("\r\n"); Serial.print(millis()); Serial.print(" ");// Serial.print(GGA.fixTime); Serial.print(" ");
+    Serial.write(nmea);
+
+    if (UDP.isRunning)        //If ethernet running send the GPS there
     {
-        //send char stream
-        UDP_Susage.timeIn();
-        UDP.SendUdpChar(nmea, strlen(nmea), UDP.broadcastIP, UDP.portAgIO_9999);
-        UDP_Susage.timeOut();
-        /*nmeaCount++;
-        if (nmeaCount == 10) {
-          nmeaPgnMinPeriod = 999999;
-          nmeaPgnMaxPeriod = 0;
-          nmeaPgnAvePeriod = 0;
-        }
-        //Serial.printf("\nNMEA->%6i", micros() - nmeaPgnSendTime);
-        uint32_t nmeaPgnPeriod = micros() - nmeaPgnSendTime;
-        nmeaPgnSendTime = micros();
-        if (nmeaPgnPeriod < nmeaPgnMinPeriod) nmeaPgnMinPeriod = nmeaPgnPeriod;
-        if (nmeaPgnPeriod > nmeaPgnMaxPeriod) nmeaPgnMaxPeriod = nmeaPgnPeriod;
-        if (nmeaPgnAvePeriod == 0) nmeaPgnAvePeriod = nmeaPgnPeriod;
-        else nmeaPgnAvePeriod = nmeaPgnAvePeriod * 0.99 + nmeaPgnPeriod * 0.01;
-        Serial.printf("\nNMEA->period: %6iuS  %6i %6i %6i", nmeaPgnPeriod, nmeaPgnMinPeriod, nmeaPgnAvePeriod, nmeaPgnMaxPeriod);
-        */
+      //send char stream
+      UDP_Susage.timeIn();
+      UDP.SendUdpChar(nmea, strlen(nmea), UDP.broadcastIP, UDP.portAgIO_9999);
+      UDP_Susage.timeOut();
     }
-    else
-    {
-        //send USB GPS data
-        Serial.write(nmea);  
-    }
+    else Serial.write(nmea);   // if Eth is !connected, send USB GPS data
 }
 
 void CalculateChecksum(void)
@@ -285,7 +232,7 @@ void CalculateChecksum(void)
   (10) 1.2 time in seconds since last DGPS update
   (11) Speed in knots
 
-  FROM IMU:
+  FROM IMU OR DUAL:
   (12) Heading in degrees
   (13) Roll angle in degrees(positive roll = right leaning - right down, left up)
 

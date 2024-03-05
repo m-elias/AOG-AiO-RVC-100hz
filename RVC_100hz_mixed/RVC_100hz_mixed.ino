@@ -50,7 +50,7 @@ void setup()
   setCpuFrequency(600 * 1000000);           // Set CPU speed to 600mhz, 450mhz is also a good choice(?), setup.ino
   serialSetup();                            // setup.ino
   parserSetup();                            // setup.ino
-  useBNO08xRVC = RVC_BNO.begin(SerialIMU);  // BNO_RVC.cpp
+  BNO.begin(SerialIMU);  // BNO_RVC.cpp
 
   #ifdef AIOv50a
     if (outputs.begin()) Serial << "\r\nSection outputs (PCA9555) detected (8 channels, low side switching)";   // clsPCA9555.cpp
@@ -69,8 +69,7 @@ void setup()
   teensyLedOFF();
   delay(1);
 
-  SerialGPS->clear();
-  SerialGPS2->clear();
+  resetClearStartingTimersBuffers();
 }
 
 
@@ -78,7 +77,7 @@ void setup()
 void loop()
 {
   #ifdef JD_DAC_H
-    //jdDac.update();
+    //jdDac.update(); // should be in AS update, but left here for in case it's needed during testing
   #endif
 
   checkForPGNs();                           // check for AgIO Sending PGNs, AgIO sends autosteer data at ~10hz
@@ -91,7 +90,7 @@ void loop()
   #endif
 
 
-  // ** Check/read GPS/NMEA/IMU related inputs
+  // **** Check/read GPS/NMEA/IMU related inputs ****
   udpNMEA();                                // check for NMEA via UDP
   udpNtrip();                               // check for RTCM via UDP (AgIO NTRIP client)
     
@@ -100,8 +99,23 @@ void loop()
     SerialGPS->write(SerialRTK.read());
   RTKusage.timeOut();
 
+  BNOusage.timeIn();
+  if (BNO.read()) {                         // there should be new data every 10ms (100hz)
+    //Serial.print("\r\nBNO");
+  }
+  BNOusage.timeOut();
 
-  // "Right" Dual or Single GPS1 (position)
+  // wait 40 msec (F9P) from prev GGA update, then update imu data for next PANDA sentence
+  if (ggaReady && imuPandaSyncTimer >= 40) {
+    prepImuPandaData();
+    ggaReady = false;                     // wait for next GGA update before resetting imuDelayTimer again
+    //ubxParser.relPosNedReady = false;     // it it hasn't already been reset, do it now so that it doesn't use an old relposned
+    Serial.println();
+  }
+
+
+
+  // **** "Right" Dual or Single GPS1 (position) ****
   GPS1usage.timeIn();
   int16_t gps1Available = SerialGPS->available();
   if (gps1Available)    // "if" is very crucial here, using "while" causes BNO overflow
@@ -118,24 +132,19 @@ void loop()
     nmeaParser << gps1Read;
     NMEA_Pusage.timeOut();
     
+    /*#ifdef AIOv50a
+      RS232usage.timeIn();
+      SerialRS232->write(gpsRead);
+      RS232usage.timeOut();
+    #endif*/
+
     //Serial.write(gps1Read);
     //Serial.print((String)"\nSerialGPS update " + SerialGPS->available() + " " + millis() + " d:" + (char)gps1Read);
   }
   GPS1usage.timeOut();
 
 
-  // wait 40 msec from prev GGA update, then update imu data for next PANDA sentence (for F9P)
-  if (isGGA_Updated && imuDelayTimer >= 40) {
-    IMU_Husage.timeIn();
-    imuHandler();
-    IMU_Husage.timeOut();
-    isGGA_Updated = false; // wait for next GGA update before resetting imuDelayTimer again
-    gps1Stats.incHzCount();
-    //Serial.print((String)"\nGGA update:" + millis());
-  }
-
-
-  // "Left" Dual GPS2 (heading)
+  // **** "Left" Dual GPS2 (heading) ****
   GPS2usage.timeIn();
   int16_t gps2Available = SerialGPS2->available();
   if (gps2Available)
@@ -169,25 +178,22 @@ void loop()
     relTtrStats.update(ubxParser.msgReadTime);
     //Serial.print(millis()); Serial.print(" New relposned update "); Serial.println(ubxParser.ubxData.iTOW - dualTime);
     dualTime = ubxParser.ubxData.iTOW;
-    //useDual = true; // when relposned is received
   }
   
-  if (bufferStatsTimer > 5000)
-  {
+  if (ubxParser.relPosNedReady && ggaReady) {    // if in Dual mode, and both GGA & relposNED are ready
+      buildPandaOrPaogi(false);
+      ubxParser.relPosNedReady = false;
+    }
+
+
+
+  // *******************************
+  // **** other update routines ****
+  // *******************************
+  if (bufferStatsTimer > 5000) {
     printTelem();
   }
 
-
-
-  BNOusage.timeIn();
-  if (RVC_BNO.read(&bnoData)) {                                // there should be new data every 10ms (100hz)
-    useBNO08xRVC = true;
-    //Serial.print("\r\nBNO");
-  }
-  BNOusage.timeOut();
-
-
-  // other update routines
   if (LEDTimer > 1000){
     LEDTimer = 0;
     LEDRoutine();
@@ -205,8 +211,14 @@ void loop()
 } // end of loop()
 
 
-
-
+void resetClearStartingTimersBuffers()
+{
+  machine.watchdogTimer = 0;
+  if (BNO.isActive) while (!BNO.read(true));
+  SerialGPS->clear();
+  SerialGPS2->clear();
+  startup = true;
+}
 
 
 void checkUSBSerial()
@@ -226,12 +238,12 @@ void checkUSBSerial()
 
 void printTelem()
 {
-  if (gps1Stats.isActive) gps1Stats.printStatsReport((char*)"GPS1");
-  if (gps2Stats.isActive) gps2Stats.printStatsReport((char*)"GPS2");
-  if (relJitterStats.isActive) relJitterStats.printStatsReport((char*)"RELj");
-  if (relTtrStats.isActive) relTtrStats.printStatsReport((char*)"RELr");
+  gps1Stats.printStatsReport((char*)"GPS1");
+  gps2Stats.printStatsReport((char*)"GPS2");
+  relJitterStats.printStatsReport((char*)"RELj");
+  relTtrStats.printStatsReport((char*)"RELr");
 
-  uint32_t rs232report = RS232usage.reportAve();
+  /*uint32_t rs232report = RS232usage.reportAve();
   uint32_t baselineProcUsage = LOOPusage.reportAve();
   uint32_t dacReport = DACusage.reportAve();
   Serial.print("\r\n\nLoop   cpu: "); printCpuPercent(baselineProcUsage);
@@ -257,9 +269,11 @@ void printTelem()
     Serial.print("\r\nDAC    cpu: "); printCpuPercent(dacReport);
   #endif
 
+  Serial.println();
+  */
+
   testCounter = 0;
   bufferStatsTimer = 0;
-  Serial.println();
 }
 
 void printCpuPercent(uint32_t _time) {

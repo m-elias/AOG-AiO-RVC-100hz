@@ -65,16 +65,14 @@ const uint8_t ANALOG_TRIG_HYST = 10;
 
 elapsedMillis gpsLostTimer;
 elapsedMillis LEDTimer;
-elapsedMillis imuDelayTimer;
+elapsedMillis imuPandaSyncTimer;
 
-bool isGGA_Updated = false;
+bool ggaReady = false;
 bool SerialGPSactive, SerialGPS2active;
 
 uint32_t dualTime;
 
-BNO_rvc RVC_BNO = BNO_rvc();  //Roomba Vac mode for BNO085
-BNO_rvcData bnoData;
-bool useBNO08xRVC = false;
+BNO_RVC BNO;             //Roomba Vac mode for BNO085
 
 Eth_UDP UDP = Eth_UDP();
 
@@ -82,6 +80,7 @@ extern "C" uint32_t set_arm_clock(uint32_t frequency); // required prototype to 
 
 NMEAParser<2> nmeaParser;         // A parser is declared with 3 handlers at most
 UBX_Parser ubxParser;
+bool startup = true;
 
 constexpr int buffer_size = 256;
 uint8_t GPSrxbuffer[buffer_size];    // Extra GPS1 serial rx buffer
