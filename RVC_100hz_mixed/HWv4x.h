@@ -29,10 +29,8 @@
 #define AIOv4x
 
 // ********* IO Defines *********
-//const uint8_t RESET_BTN = A14;          // A13 on Matt's v4.0 test board, A14 ununsed on v5.0a
 const uint8_t encoderType = 1;             // 1 - single input, 2 - dual input (quadrature encoder)
 
-constexpr auto statLED = LED_BUILTIN;   //Teensy onboard LED, p13
 const uint8_t WAS_SENSOR_PIN = A0;      // WAS input
 const uint8_t SPEEDPULSE_PIN = 36;
 const uint8_t SPEEDPULSE10_PIN = 33;    // dummy pin, no connection on v4.x
@@ -48,16 +46,6 @@ const uint8_t SPEEDPULSE10_PIN = 33;    // dummy pin, no connection on v4.x
 #define KICKOUT_D_PIN    37     // REMOTE input
 #define CURRENT_PIN     A17     // ACS input
 #define KICKOUT_A_PIN   A10     // Pressure input
-
-// Status LED's
-//#define GGAReceivedLED 13         //Teensy onboard LED
-#define PowerRed_LED 5            //Red
-#define EthernetGreen_LED 6       //Green
-#define GPSRED_LED 9              //Red (Flashing = NO IMU or Dual, ON = GPS fix with IMU)
-#define GPSGREEN_LED 10           //Green (Flashing = Dual bad, ON = Dual good)
-#define AUTOSTEER_STANDBY_LED 11  //Red
-#define AUTOSTEER_ACTIVE_LED 12   //Green
-
 
 // ********* Serial Assignments *********
 #define SerialRTK Serial3               // RTK radio

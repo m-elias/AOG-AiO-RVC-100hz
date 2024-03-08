@@ -1,5 +1,6 @@
-#include "core_pins.h"
-#include <stdint.h>
+//#include "core_pins.h"
+//#include <stdint.h>
+
 #ifndef MISC_H
 #define MISC_H
 
@@ -87,7 +88,7 @@ public:
   }
 
 private:
-  int16_t hzCountShort, hzCountLong, lowNumShort = 9999, highNumShort, lowNumLong = 9999, highNumLong;
+  int32_t hzCountShort, hzCountLong, lowNumShort = 9999, highNumShort, lowNumLong = 9999, highNumLong;
   uint32_t timerShort, timerLong;
   bool startupReset;
 
@@ -167,7 +168,7 @@ private:
   Written by Matt Elias 2023
 
   SpeedPulse is used to calc a frequency for tone()
-  according to ??? standard
+  according to ISO 11786 standard
 */
 class SpeedPulse {
 private:

@@ -1,6 +1,5 @@
-#include "elapsedMillis.h"
-#include <stdint.h>
-#include "usb_serial.h"
+//#include <stdint.h>
+//#include "usb_serial.h"
 /*!
  * 	This is a library for use with thethe Adafruit BNO08x breakout:
  * 	https://www.adafruit.com/products/4754
@@ -18,6 +17,7 @@ constexpr auto DEGREE_SCALE = 0.1;        ///< To convert the degree values
 
 #include "Arduino.h"
 #include <Wire.h>
+#include "elapsedMillis.h"
 
 struct BNO_RVC_DATA {
     int16_t yawX10;       // Yaw in Degrees x 10
@@ -33,12 +33,14 @@ class BNO_RVC
 private:
   HardwareSerial *serial_dev;
   int16_t prevYAw;
+  elapsedMillis timeoutTimer;
+  const uint8_t timeoutPeriod = 15;         // (ms) We expect a BNO update every 10ms
+
 
 public:
   uint32_t angCounter;
   bool isSwapXY = false;
   bool isActive;
-  elapsedMillis timeoutTimer;
   BNO_RVC_DATA rvcData;
 
   bool begin(HardwareSerial* theSerial)
@@ -63,7 +65,7 @@ public:
 //read the 16 byte sentence AA AA Index Yaw Pitch Roll LSB MSB
   bool read(bool _clear = 0)
   {
-    if (timeoutTimer > 15 && isActive) {
+    if (timeoutTimer > timeoutPeriod && isActive) {
       isActive = false;
       if (!_clear) Serial.print("\r\n*** BNO missed update ***");
       /*rvcData.pitchX10 = 0;

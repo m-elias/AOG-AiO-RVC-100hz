@@ -4,9 +4,6 @@ const char* asciiHex = "0123456789ABCDEF";
 // the new PANDA sentence buffer
 char nmea[100];
 
-#define PANDA true
-#define PAOGI false
-
 // GGA
 struct GGA_DATA {
   char fixTime[12];
@@ -99,18 +96,20 @@ void GGA_Handler() //Rec'd GGA
     nmeaParser.getArg(8, GGA.altitude);     // altitude
     nmeaParser.getArg(12, GGA.ageDGPS);     // time of last DGPS update
 
-    Serial.print((String)"\r\n" + millis() + " GGA update");
+    Serial.print((String)"\r\n" + millis() + " GGA update ");
+    Serial.print(GGA.fixTime);
     ggaReady = true;                        // we have new GGA sentence
     imuPandaSyncTimer = 0;                  // reset imu timer
+    imuPandaSyncTrigger = true;
     startup = true;
     gps1Stats.incHzCount();
+    LEDS.setGpsLED(atoi(GGA.fixQuality));   
 
     if (!ubxParser.useDual) {               // if not using Dual 
       buildPandaOrPaogi(PANDA);             // build the PANDA sentence right away
     }                                       // otherwise wait until relposned arrives in main loop()
 
-    teensyLedToggle();
-    LEDTimer = 0;
+    //LEDRoutine();
     gpsLostTimer = 0;                       // Used for GGA timeout (LED's ETC) 
 }
 
@@ -122,10 +121,10 @@ void VTG_Handler()
 
 void buildPandaOrPaogi(bool _panda)    // only called by GGA_Handler (above)
 {
-    strcpy(nmea, "");
+    //strcpy(nmea, "");
 
-    if (_panda) strcat(nmea, "$PANDA,");
-    else strcat(nmea, "$PAOGI,");
+    if (_panda) strcpy(nmea, "$PANDA,");
+    else strcpy(nmea, "$PAOGI,");
 
     strcat(nmea, GGA.fixTime); strcat(nmea, ",");     // field 1
     strcat(nmea, GGA.latitude); strcat(nmea, ",");
@@ -148,17 +147,23 @@ void buildPandaOrPaogi(bool _panda)    // only called by GGA_Handler (above)
     strcat(nmea, GGA.ageDGPS); strcat(nmea, ",");
     strcat(nmea, VTG.speedKnots); strcat(nmea, ",");
 
-    if (_panda) {
+    if (_panda) {   // use BNO values
       strcat(nmea, IMU.heading); strcat(nmea, ",");
       strcat(nmea, IMU.roll); strcat(nmea, ",");      // 13
       strcat(nmea, IMU.pitch); strcat(nmea, ",");
       strcat(nmea, IMU.yawRate);
-    } else {
+    }
+    else {          // use Dual values
       // replace these with Dual baseline calcs
-      strcat(nmea, IMU.heading); strcat(nmea, ",");
-      strcat(nmea, IMU.roll); strcat(nmea, ",");      // 13
-      strcat(nmea, IMU.pitch); strcat(nmea, ",");
-      strcat(nmea, IMU.yawRate);
+      char temp[6];
+      itoa(ubxParser.ubxData.baseRelH, temp, 10);
+      strcat(nmea, temp); strcat(nmea, ",");          // 12
+
+      itoa(ubxParser.ubxData.baseRelRoll, temp, 10);
+      strcat(nmea, temp); strcat(nmea, ",");          // 13
+
+      strcat(nmea, ""); strcat(nmea, ",");            // blank pitch
+      strcat(nmea, "");                               // blank yaw rate
     }
 
     strcat(nmea, "*");

@@ -3,21 +3,36 @@ Combined Ace repo code and adapted for AiO v4.x RVC 100hz
 - Started with code from Teensy "Nav" Ace module https://github.com/farmerbriantee/Ace/tree/master/Hardware/Ace
 - Added code bits from old AIO v4 I2C firmware https://github.com/AgHardware/Boards/tree/main/Boards/TeensyModules/AIO%20Micro%20v4/Firmware/Autosteer_gps_teensy_v4
 
+Single
+- Save BNO reading 60ms before next GGA
+	- roll/heading will be ready for PANDA later
+	- if no BNO, prep vars with 0xFFFF heading, 0 roll/yaw/pitch
+- Once GGA arrives (if !useDual)
+	- build PANDA msg and send out
+	- Otherwise if useDual, wait for relposned in main loop()
+Dual
+- if relposned arrives
+	- set useDual for duration of runtime
+- Each time new GGA & rel arrive
+	- if fix/diffsol/posvalid all good
+		- calc roll from dual baseline/relposD
+			- if carrsoln is not RTK lower dual roll *0.9
+	- Send paogi
 
 
 To-do
 - consolidate all EEPROM addrs in one place?
-    - Ethernet, Autosteer
-- add dual GPS code
+    - Ethernet, Autosteer, machine
 - test autosteer watch dog timeout from lost comms
 
 - Testing !!!
   - pressure/current inputs should be scaled the same as old firmware, only bench tested by Matt
-  - 
+  - Single/IMU PANDA calcs should be the same as Ace branch
+  - Dual PAOGI calcs should be the same as old I2C AIO firmware
 
 
 
-See hw.h for hardware definitions (IO & Serial)
+See hw.h for hardware (board specfic) definitions (IO & Serial)
 See defines.h for library & other variable definitions
 See PGN.ino for PGN parsing
 
@@ -27,7 +42,7 @@ See PGN.ino for PGN parsing
 #include "HWv50a.h"
 //#include "HWv4x.h"
 
-#include "defines.h"
+#include "common.h"
 
 #ifdef AIOv50a
 const char inoVersion[] = "RVC 100hz AiO v5.0a pre-alpha - " __DATE__;
@@ -35,41 +50,52 @@ const char inoVersion[] = "RVC 100hz AiO v5.0a pre-alpha - " __DATE__;
 const char inoVersion[] = "RVC 100hz AiO v4.x pre-alpha - " __DATE__;
 #endif
 
+//#include "JD_DAC.h"   // Matt's experimental DAC steering
+//JD_DAC jdDac(Wire1, 0x60);
+
 elapsedMillis bufferStatsTimer = 3000;
 uint32_t testCounter;
 
 void setup()
 {
-  ioSetup();                                // setup.ino
-  teensyLedON();
+  #ifdef AIOv50a
+    pinMode(PIEZO1, OUTPUT);
+    pinMode(PIEZO2, OUTPUT);
+    digitalWrite(PIEZO1, HIGH);
+    digitalWrite(PIEZO2, HIGH);
+  #endif
+
+  LEDS.setPwrEthLED(AIO_LEDS::PWR_ON);
 
   //Serial.begin(115200);                   // Teensy doesn't need it
-  Serial.print("\r\n\r\n\r\n*********************\r\nStarting setup...\r\n");
+  Serial.print("\r\n\n\n*********************\r\nStarting setup...\r\n");
   Serial.print(inoVersion);
 
   setCpuFrequency(600 * 1000000);           // Set CPU speed to 600mhz, 450mhz is also a good choice(?), setup.ino
   serialSetup();                            // setup.ino
   parserSetup();                            // setup.ino
-  BNO.begin(SerialIMU);  // BNO_RVC.cpp
+  BNO.begin(SerialIMU);                     // BNO_RVC.cpp
 
   #ifdef AIOv50a
-    if (outputs.begin()) Serial << "\r\nSection outputs (PCA9555) detected (8 channels, low side switching)";   // clsPCA9555.cpp
-    else Serial << "\r\n*** Section outputs (PCA9555) NOT detected! ***";
-    machine.init(&outputs, pcaOutputPinNumbers, 100);                                                           // mach.h
+    if (outputs.begin()) {
+      Serial << "\r\nSection outputs (PCA9555) detected (8 channels, low side switching)";   // clsPCA9555.cpp
+      machine.init(&outputs, pcaOutputPinNumbers, 100);                                      // mach.h
+    } else Serial << "\r\n*** Section outputs (PCA9555) NOT detected! ***";
   #endif
 
   autosteerSetup();                         // Autosteer.ino
-  UDP.init();                               // Eth_UDP.h
+  if (UDP.init())                           // Eth_UDP.h
+    LEDS.setPwrEthLED(AIO_LEDS::ETH_READY);
 
   #ifdef JD_DAC_H
     jdDac.update();
   #endif
 
   Serial.println("\r\n\nEnd of setup, waiting for GPS...\r\n"); 
-  teensyLedOFF();
+  //teensyLedOFF();
   delay(1);
-
-  resetClearStartingTimersBuffers();
+  resetStartingTimersBuffers();
+  //LEDS.setPwrEthLED(AIO_LEDS::SETUP_FINISHED);
 }
 
 
@@ -79,25 +105,19 @@ void loop()
   #ifdef JD_DAC_H
     //jdDac.update(); // should be in AS update, but left here for in case it's needed during testing
   #endif
-
-  checkForPGNs();                           // check for AgIO Sending PGNs, AgIO sends autosteer data at ~10hz
-  autoSteerUpdate();                        // Autosteer.ino, update AS loop every 10ms (100hz) regardless of whether there is a BNO installed
-  
   #ifdef AIOv50a
     MACHusage.timeIn();
     machine.watchdogCheck();                // machine.h
     MACHusage.timeOut();
   #endif
 
-
-  // **** Check/read GPS/NMEA/IMU related inputs ****
+  checkForPGNs();                           // check for AgIO Sending PGNs, AgIO sends autosteer data at ~10hz
+  autoSteerUpdate();                        // Autosteer.ino, update AS loop every 10ms (100hz) regardless of whether there is a BNO installed
   udpNMEA();                                // check for NMEA via UDP
   udpNtrip();                               // check for RTCM via UDP (AgIO NTRIP client)
     
-  RTKusage.timeIn();
   if (SerialRTK.available())                // Check for RTK Radio RTCM data
-    SerialGPS->write(SerialRTK.read());
-  RTKusage.timeOut();
+  { SerialGPS->write(SerialRTK.read()); }
 
   BNOusage.timeIn();
   if (BNO.read()) {                         // there should be new data every 10ms (100hz)
@@ -106,10 +126,9 @@ void loop()
   BNOusage.timeOut();
 
   // wait 40 msec (F9P) from prev GGA update, then update imu data for next PANDA sentence
-  if (ggaReady && imuPandaSyncTimer >= 40) {
+  if (imuPandaSyncTrigger && imuPandaSyncTimer >= 40) {
     prepImuPandaData();
-    ggaReady = false;                     // wait for next GGA update before resetting imuDelayTimer again
-    //ubxParser.relPosNedReady = false;     // it it hasn't already been reset, do it now so that it doesn't use an old relposned
+    imuPandaSyncTrigger = false;       // wait for next GGA update before resetting imuDelayTimer again
     Serial.println();
   }
 
@@ -124,19 +143,17 @@ void loop()
       SerialGPS->clear();
       Serial.print((String)"\r\n" + millis() + " *** SerialGPS buffer cleared! ***");
       return;
-    }    
+    }
     gps1Stats.update(gps1Available);
 
     uint8_t gps1Read = SerialGPS->read();
-    NMEA_Pusage.timeIn();
     nmeaParser << gps1Read;
-    NMEA_Pusage.timeOut();
     
-    /*#ifdef AIOv50a
+    #ifdef AIOv50a
       RS232usage.timeIn();
-      SerialRS232->write(gpsRead);
+      SerialRS232->write(gps1Read);
       RS232usage.timeOut();
-    #endif*/
+    #endif
 
     //Serial.write(gps1Read);
     //Serial.print((String)"\nSerialGPS update " + SerialGPS->available() + " " + millis() + " d:" + (char)gps1Read);
@@ -157,19 +174,46 @@ void loop()
     gps2Stats.update(gps2Available);
 
     uint8_t gps2Read = SerialGPS2->read();
-    UBX_Pusage.timeIn();
     ubxParser.parse(gps2Read);
-    UBX_Pusage.timeOut();
 
-    #ifdef AIOv50a
+    /*#ifdef AIOv50a
       RS232usage.timeIn();
       SerialRS232->write(gps2Read);
       RS232usage.timeOut();
-    #endif
+    #endif*/
   }
   GPS2usage.timeOut();
 
 
+  // **** For DUAL mode ****
+  if (ubxParser.relPosNedReady && ggaReady) {   // if in Dual mode, and both GGA & relposNED are ready
+      buildPandaOrPaogi(PAOGI);                 // build a PAOGI msg
+      ubxParser.relPosNedReady = false;         // reset for next relposned trigger
+      ggaReady = false;
+    }
+
+  // if either GGA or relposNED are late, don't use the old msgs, print warning only once per cycle
+  if (ubxParser.useDual) {
+    if ((ggaReady ^ ubxParser.relPosNedReady)) {    // true only if they are different from each other (XOR)
+      if (imuPandaSyncTimer > 15 && ubxParser.relPosTimer > 15) {
+
+        Serial.print("\r\n**************************************************"); Serial.print(millis());
+        if (ggaReady) {
+          Serial.print("\r\n*** relposNED was missed, late or low quality! ***");
+          //Serial.print("\r\n****************** carrSoln:  "); Serial.print(ubxParser.ubxData.carrSoln); Serial.print(" ******************");
+        }
+        
+        if (ubxParser.relPosNedReady) Serial.print("\r\n************* GGA was missed or late! ************");
+
+        Serial.print("\r\n**************************************************\r\n");
+        ggaReady = false;
+        ubxParser.relPosNedReady = false;
+      }
+    }
+  }
+
+
+  // this is only for telemetry monitoring
   if (dualTime != ubxParser.ubxData.iTOW)
   {
     //itowVsHandleTime = micros();
@@ -180,43 +224,34 @@ void loop()
     dualTime = ubxParser.ubxData.iTOW;
   }
   
-  if (ubxParser.relPosNedReady && ggaReady) {    // if in Dual mode, and both GGA & relposNED are ready
-      buildPandaOrPaogi(false);
-      ubxParser.relPosNedReady = false;
-    }
 
 
 
   // *******************************
   // **** other update routines ****
   // *******************************
-  if (bufferStatsTimer > 5000) {
-    printTelem();
-  }
-
-  if (LEDTimer > 1000){
-    LEDTimer = 0;
-    LEDRoutine();
-  }
-
+  if (bufferStatsTimer > 5000) printTelem();
+  LEDS.updateLoop();  
+  checkUSBSerial();
   speedPulse.update();
-  //teensyReset.update();
 
+  #ifdef RESET_H
+    teensyReset.update();
+  #endif
+
+  // to count loop hz & get baseline cpu "idle" time
   LOOPusage.timeIn();
   testCounter++;
   LOOPusage.timeOut();
-  
-  checkUSBSerial();
-
 } // end of loop()
 
 
-void resetClearStartingTimersBuffers()
+void resetStartingTimersBuffers()
 {
   machine.watchdogTimer = 0;
-  if (BNO.isActive) while (!BNO.read(true));
   SerialGPS->clear();
   SerialGPS2->clear();
+  if (BNO.isActive) while (!BNO.read(true));
   startup = true;
 }
 
@@ -249,16 +284,16 @@ void printTelem()
   Serial.print("\r\n\nLoop   cpu: "); printCpuPercent(baselineProcUsage);
   Serial.print(" "); Serial.print(testCounter / bufferStatsTimer); Serial.print("kHz"); // up to 400k hits/s
   Serial.print("\r\nBNO_R  cpu: "); printCpuPercent(cpuUsageArray[0]->reportAve(baselineProcUsage));
-  Serial.print("\r\nGPS1   cpu: "); printCpuPercent(GPS1usage.reportAve(baselineProcUsage));
-  Serial.print("\r\nGPS2   cpu: "); printCpuPercent(GPS2usage.reportAve(baselineProcUsage) - rs232report);
-  Serial.print("\r\nRadio  cpu: "); printCpuPercent(RTKusage.reportAve(baselineProcUsage));
+  Serial.print("\r\nGPS1   cpu: "); printCpuPercent(GPS1usage.reportAve(baselineProcUsage) - rs232report);
+  Serial.print("\r\nGPS2   cpu: "); printCpuPercent(GPS2usage.reportAve(baselineProcUsage));
+  //Serial.print("\r\nRadio  cpu: "); printCpuPercent(RTKusage.reportAve(baselineProcUsage));
   Serial.print("\r\nPGN    cpu: "); printCpuPercent(PGNusage.reportAve(baselineProcUsage));
   Serial.print("\r\nAS     cpu: "); printCpuPercent(ASusage.reportAve() - dacReport);
   Serial.print("\r\nNTRIP  cpu: "); printCpuPercent(NTRIPusage.reportAve());  // uses a timed update, virtually no extra time penalty
-  Serial.print("\r\nIMU_H  cpu: "); printCpuPercent(IMU_Husage.reportAve());
-  Serial.print("\r\nNMEA_P cpu: "); printCpuPercent(NMEA_Pusage.reportAve());
-  Serial.print("\r\nUBX_P  cpu: "); printCpuPercent(UBX_Pusage.reportAve());
-  Serial.print("\r\nUDP_S  cpu: "); printCpuPercent(UDP_Susage.reportAve());
+  //Serial.print("\r\nIMU_H  cpu: "); printCpuPercent(IMU_Husage.reportAve());
+  //Serial.print("\r\nNMEA_P cpu: "); printCpuPercent(NMEA_Pusage.reportAve());
+  //Serial.print("\r\nUBX_P  cpu: "); printCpuPercent(UBX_Pusage.reportAve());
+  //Serial.print("\r\nUDP_S  cpu: "); printCpuPercent(UDP_Susage.reportAve());
   
   #ifdef AIOv50a
     Serial.print("\r\nRS232  cpu: "); printCpuPercent(rs232report); //RS232usage is inside GPS2 "if" statement so it inccurs virtually no extra time penalty
@@ -270,7 +305,7 @@ void printTelem()
   #endif
 
   Serial.println();
-  */
+  */  
 
   testCounter = 0;
   bufferStatsTimer = 0;
@@ -279,6 +314,5 @@ void printTelem()
 void printCpuPercent(uint32_t _time) {
   Serial.printf("%4.1f", (float)_time / 10000.0); Serial.print("%");
 }
-
 
 

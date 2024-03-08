@@ -168,10 +168,7 @@ void autosteerSetup() {
   }
 
   Serial.print("\r\n- AutoSteer enabled, setup complete");
-  // Autosteer Led goes Red if ADS1115 is found
-  //digitalWrite(AUTOSTEER_ACTIVE_LED, 0);
-  //digitalWrite(AUTOSTEER_STANDBY_LED, 1);
-
+  LEDS.setSteerLED(AIO_LEDS::STEER_STATES::AUTOSTEER_READY);
 }  // End of autosteerSetup
 
 
@@ -389,9 +386,8 @@ void autoSteerUpdate() {
       calcSteeringPID();  //do the pid
       motorDrive();       //out to motors the pwm value
 
-      // Autosteer Led goes GREEN if autosteering
-      //digitalWrite(AUTOSTEER_ACTIVE_LED, 1);
-      //digitalWrite(AUTOSTEER_STANDBY_LED, 0);
+      LEDS.setSteerLED(AIO_LEDS::AUTOSTEER_ACTIVE);
+
     } else {
       //we've lost the comm to AgOpenGPS, or just stop request
       //Disable H Bridge for IBT2, hyd aux, etc for cytron
@@ -410,10 +406,8 @@ void autoSteerUpdate() {
       }
 
       motorDrive();  //out to motors the pwm value
+      LEDS.setSteerLED(AIO_LEDS::AUTOSTEER_READY);
 
-      // Autosteer Led goes back to RED when autosteering is stopped
-      //digitalWrite(AUTOSTEER_STANDBY_LED, 1);
-      //digitalWrite(AUTOSTEER_ACTIVE_LED, 0);
       //Serial.print("\r\n\n*** Autosteer watchdog triggered - Autosteer disabled! ***\r\n");
     }
 
@@ -465,6 +459,7 @@ void adcSetup() {
     Serial.print("\r\n  - using Teensy ADC");
     useInternalADC = true;
     autoSteerEnabled = true;
+    LEDS.setSteerLED(AIO_LEDS::STEER_STATES::WAS_READY);
     if (!testBothWasSensors) return;
   }
 
@@ -477,6 +472,7 @@ void adcSetup() {
     Serial.print("\n  - ADS1115 found");
     if (!useInternalADC) useExternalADS = true;
     autoSteerEnabled = true;
+    LEDS.setSteerLED(AIO_LEDS::STEER_STATES::WAS_READY);
     ads1115.setSampleRate(ADS1115_REG_CONFIG_DR_860SPS);
     ads1115.setGain(ADS1115_REG_CONFIG_PGA_6_144V);
     ads1115.setMux(ADS1115_REG_CONFIG_MUX_SINGLE_0);  // ************set according to EEPROM (saved from PGN)*****************
@@ -486,6 +482,7 @@ void adcSetup() {
   {
     Serial.print("\n\n**** No WAS input detected! ****\n\n");
     autoSteerEnabled = false;
+    LEDS.setSteerLED(AIO_LEDS::STEER_STATES::WAS_ERROR);
   }
 }  // end adcSetup()
 

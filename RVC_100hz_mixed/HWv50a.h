@@ -29,11 +29,14 @@
 
 #define AIOv50a
 
+#include "clsPCA9555.h" // https://github.com/nicoverduin/PCA9555
+PCA9555 outputs(0x20);  // 0x20 - I2C addr (A0-A2 grounded), interrupt pin causes boot loop
+#include "machine.h"
+MACHINE machine;
+
 // ********* IO Defines *********
-//const uint8_t RESET_BTN = A14;          // A13 on Matt's v4.0 test board, A14 ununsed on v5.0a
 const uint8_t encoderType = 1;             // 1 - single input, 2 - dual input (quadrature encoder)
 
-constexpr auto statLED = LED_BUILTIN;   //Teensy onboard LED, p13
 const uint8_t WAS_SENSOR_PIN = A15;     // WAS input
 const uint8_t SPEEDPULSE_PIN = 18;      
 const uint8_t SPEEDPULSE10_PIN = 19;   // 1/10 speedpulse output, strictly for human visualization
@@ -45,7 +48,7 @@ uint8_t pcaOutputPinNumbers[8] = { 1, 0, 12, 15, 9, 8, 6, 7 };          // all 8
 
 
 // Cytron
-#define DIR_PIN           6     // IBT2 Enable pin
+#define DIR_PIN           6     // IBT2 Enable pin (IBT not really used on these AIO)
 #define PWM_PIN           9     // IBT2 Left pin
 #define SLEEP_PIN         4     // IBT2 Right pin
 
@@ -55,10 +58,6 @@ uint8_t pcaOutputPinNumbers[8] = { 1, 0, 12, 15, 9, 8, 6, 7 };          // all 8
 #define KICKOUT_D_PIN     3
 #define CURRENT_PIN     A13
 #define KICKOUT_A_PIN   A12
-
-// Status LED's
-#define RGB_LEDS_PIN     33
-#define NUM_RGB_LEDS      4
 
 // ********* Serial Assignments *********
 #define SerialRTK Serial3               // RTK radio

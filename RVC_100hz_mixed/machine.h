@@ -284,8 +284,8 @@ public:
 
   void updateOutputPins()
   {
-    // set pins according to states.functions unless watchdog has timed out, then set to !isPinActiveHigh
-
+    if (!isInit) return;
+    
     if (numOutputPins > 0)
     {
       //if (debugLevel > 3) Serial.print("\r\nPin outputs ");

@@ -8,19 +8,19 @@
   Holding the button longer then longPressPeriod causes the LED to flash and upate() returns true
 */
 
-#ifndef reset_H
-#define reset_H
+#ifndef RESET_H
+#define RESET_H
 
-class Reset {
+class RESET {
   public:
-    Reset(uint8_t _btnIO, uint16_t _longPressPeriod = 10000, uint8_t _ledIO = LED_BUILTIN){
+    RESET(uint8_t _btnIO, uint16_t _longPressPeriod = 10000, uint8_t _ledIO = LED_BUILTIN){
       btnIO = _btnIO;
       pinMode(btnIO, INPUT_PULLUP);
       longPressPeriod = _longPressPeriod;
       ledIO = _ledIO;
       pinMode(ledIO, OUTPUT);
     }
-    ~Reset(void) {}                      //destructor
+    ~RESET(void) {}                      //destructor
 
     bool update() {
       if (digitalRead(btnIO) == LOW){

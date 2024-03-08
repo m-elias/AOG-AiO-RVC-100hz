@@ -24,37 +24,16 @@ void serialSetup()
   #ifdef AIOv50a
     SerialRS232->begin(baudRS232);
     SerialRS232->addMemoryForWrite(RS232txbuffer, buffer_size);
+    //SerialRS232->addMemoryForRead(RS232rxbuffer, buffer_size);    // not needed unless custom rs232 rx code is added
 
     SerialESP32->begin(baudESP32);
-    //SerialESP32->addMemoryForRead(ESP32rxbuffer, buffer_size);
-    //SerialESP32->addMemoryForWrite(ESP32txbuffer, buffer_size);
+    SerialESP32->addMemoryForRead(ESP32rxbuffer, buffer_size);
+    SerialESP32->addMemoryForWrite(ESP32txbuffer, buffer_size);
   #endif
 
   #ifdef JD_DAC_H
     jdDac.setDebugStream(&Serial);
   #endif
-}
-
-void ioSetup()
-{
-  pinMode(statLED, OUTPUT);
-
-  #ifdef AIOv50a
-    pinMode(PIEZO1, OUTPUT);
-    pinMode(PIEZO2, OUTPUT);
-    digitalWrite(PIEZO1, HIGH);
-    digitalWrite(PIEZO2, HIGH);
-  #endif
-
-  #ifdef AIOv4x
-    pinMode(PowerRed_LED, OUTPUT);
-    pinMode(EthernetGreen_LED, OUTPUT);
-    pinMode(GPSRED_LED, OUTPUT);
-    pinMode(GPSGREEN_LED, OUTPUT);
-    pinMode(AUTOSTEER_STANDBY_LED, OUTPUT);
-    pinMode(AUTOSTEER_ACTIVE_LED, OUTPUT);
-  #endif
-  //Serial.print("\r\n- IO set");
 }
 
 void parserSetup()

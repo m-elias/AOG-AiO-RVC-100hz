@@ -1,4 +1,5 @@
-#include <stdint.h>
+#include "elapsedMillis.h"
+//#include <stdint.h>
 class UBX_Parser {
 private:
 
@@ -35,29 +36,23 @@ private:
     //Serial.print("\r\nTTRU: "); Serial.println(micros() - startMsgTime);
     msgReadTime = micros() - startMsgTime;
 
-    switch (this->msgid) {
-      //POSECEF
-      case 0x01:
-        {
-          unsigned long iTOW = (unsigned long)this->unpack_int32(0);
-          long ecefX = this->unpack_int32(4);
-          long ecefY = this->unpack_int32(8);
-          long ecefZ = this->unpack_int32(12);
-          long pAcc = this->unpack_int32(16);
-          this->handle_NAV_POSECEF(iTOW, ecefX, ecefY, ecefZ, pAcc);
-        }
-        break;
+    // UBX frame structure detailed here
+    // https://content.u-blox.com/sites/default/files/documents/u-blox-F9-HPG-1.32_InterfaceDescription_UBX-22008968.pdf
 
+    switch (this->msgid) {
       //RELPOSNED
       case 0x3C:
         {
-          unsigned long iTOW = (unsigned long)this->unpack_int32(4);
-          long relPosN = this->unpack_int32(8);
-          long relPosE = this->unpack_int32(12);
-          long relPosD = this->unpack_int32(16);
-          long relPosLength = this->unpack_int32(20);
-          long relPosHeading = this->unpack_int32(24);
-          this->handle_NAV_RELPOSNED(iTOW, relPosN, relPosE, relPosD, relPosLength, relPosHeading);
+          unsigned long iTOW   = (unsigned long)this->unpack_int32(4);
+          long relPosN         = this->unpack_int32(8);
+          long relPosE         = this->unpack_int32(12);
+          long relPosD         = this->unpack_int32(16);
+          long relPosL         = this->unpack_int32(20);
+          long relPosH         = this->unpack_int32(24);
+          int  relPosHPD       = this->payload[34];
+          int  relPosHPL       = this->payload[35];
+          uint32_t relPosFlags = this->unpack_int32(60);
+          this->handle_NAV_RELPOSNED(iTOW, relPosN, relPosE, relPosD, relPosL, relPosH, relPosHPD, relPosHPL, relPosFlags);
         }
         break;
 
@@ -128,47 +123,38 @@ private:
     return value;
   }
 
-public:
-
-  struct UBX_Data {
-
-    float ecefX, ecefY, ecefZ, ecefAcc;                      // rover ECEF postion in meters
-    float baseRelN, baseRelE, baseRelD, baseRelL, baseRelH;  // moving base relposned in meters
-    uint32_t iTOW;                                           // time of week from relposned
-    byte numSats;                                             // number of Sats from PVT
-    float lat, lon, alt;                                     // position from PVT
-  };
-  UBX_Data ubxData;
-
-  bool relPosNedReady, useDual, pvtRead;
-  uint32_t msgPeriod, msgReadTime;
-
-  void handle_NAV_POSECEF(unsigned long iTOW, long ecefX, long ecefY, long ecefZ, long pAcc) {
-    ubxData.ecefX = (float)ecefX * 0.01;
-    ubxData.ecefY = (float)ecefY * 0.01;
-    ubxData.ecefZ = (float)ecefZ * 0.01;
-    ubxData.ecefAcc = (float)pAcc * 0.01;
-  }
-
   void handle_NAV_RELPOSNED(unsigned long iTOW,
                             long relPosN,
                             long relPosE,
                             long relPosD,
-                            long relPosLength,
-                            long relPosHeading) {
+                            long relPosL,
+                            long relPosH,
+                            int  relPosHPD,
+                            int  relPosHPL,
+                            uint32_t relPosFlags) {
     ubxData.iTOW = iTOW;
-    ubxData.baseRelN = (float)relPosN * 0.01;
-    ubxData.baseRelE = (float)relPosE * 0.01;
-    ubxData.baseRelD = (float)relPosD * 0.01;
-    ubxData.baseRelL = (float)relPosLength * 0.01;
-    ubxData.baseRelH = (float)relPosHeading * 0.00001;
+    ubxData.baseRelN   = (float)relPosN * 0.01;
+    ubxData.baseRelE   = (float)relPosE * 0.01;
+    ubxData.baseRelHPD = (float)relPosHPD * 0.01;
+    ubxData.baseRelD   = (float)relPosD + ubxData.baseRelHPD;
+    ubxData.baseRelHPL = (float)relPosHPL * 0.01;
+    ubxData.baseRelL   = (float)relPosL + ubxData.baseRelHPL;
+
+    ubxData.baseRelH = (float)relPosH * 0.0001 + 900;         // turn the heading 90.0 degrees
+    if (ubxData.baseRelH >= 3600) ubxData.baseRelH -= 3600;
+    if (ubxData.baseRelH < 0) ubxData.baseRelH += 3600;
+    ubxData.baseRelH *= 0.1;
+
+    ubxData.baseRelFlags = relPosFlags;
+
     //Serial.print(millis()); Serial.print(" handle_NAV_RELPOSNED "); Serial.println((micros() - prevMsgTime) / 1000);
     Serial.print("\r\n"); Serial.print(millis());// Serial.print(" "); Serial.print(iTOW);
     Serial.print(" handle_NAV_RELPOSNED "); Serial.print((micros() - prevMsgTime) / 1000);
+    Serial.print("  "); Serial.print((float)ubxData.iTOW / 1000.0, 1);
     msgPeriod = (micros() - prevMsgTime) / 1000;
     prevMsgTime = micros();
-    relPosNedReady = true;
-    useDual = true;
+    relPosTimer = 0;
+    prepDualData();
   }
 
   void handle_NAV_PVT(unsigned long iTOW,
@@ -193,7 +179,6 @@ public:
                       signed long gSpeed,
                       signed long headMot,
                       signed long headVeh) {
-
     ubxData.numSats = (byte)numSV;
     ubxData.lat = (float)lat * 0.0000001;
     ubxData.lon = (float)lon * 0.0000001;
@@ -209,6 +194,67 @@ public:
     Serial.print(" cls:");
     Serial.print(msgclass & 0xFF, HEX);
   }
+
+  void prepDualData(){
+    bool gnssFixOk = ubxData.baseRelFlags & 1;
+    bool diffSoln = ubxData.baseRelFlags & 2;
+    bool relPosValid = ubxData.baseRelFlags & 4;
+    ubxData.carrSoln = (ubxData.baseRelFlags & 24) >> 3;
+    /*bool isMoving = ubxData.baseRelFlags & (32);
+    bool refPosMiss = ubxData.baseRelFlags & (64);
+    bool refObsMiss = ubxData.baseRelFlags & (128);
+    bool refPosHeadingValid = ubxData.baseRelFlags & (256);
+    bool relPosNormalized = ubxData.baseRelFlags & (512);*/
+
+    /*Serial.print("\r\ngnssFixOk: "); Serial.print(gnssFixOk);
+    Serial.print("\r\ndiffSoln: "); Serial.print(diffSoln);
+    Serial.print("\r\nrelPosValid: "); Serial.print(relPosValid);
+    Serial.print("\r\ncarrSoln: "); Serial.print(ubxData.carrSoln);
+    Serial.print("\r\nisMoving: "); Serial.print(isMoving);
+    Serial.print("\r\nrefPosMiss: "); Serial.print(refPosMiss);
+    Serial.print("\r\nrefObsMiss: "); Serial.print(refObsMiss);
+    Serial.print("\r\nrefPosHeadingValid: "); Serial.print(refPosHeadingValid);
+    Serial.print("\r\nrelPosNormalized: "); Serial.print(relPosNormalized);*/
+
+    //must be all ok
+    if (!gnssFixOk) { Serial.print("\r\n*** gnssFixOk! "); Serial.print(gnssFixOk); Serial.print(" ***"); }
+    if (!diffSoln) { Serial.print("\r\n*** diffSoln! "); Serial.print(diffSoln); Serial.print(" ***"); }
+    if (!relPosValid) { Serial.print("\r\n*** relPosValid! "); Serial.print(relPosValid); Serial.print(" ***"); }
+    if (!gnssFixOk || !diffSoln || !relPosValid) return;
+
+    if (ubxData.carrSoln > 1) {        // 1 - float, 2 - full RTK
+      if (ubxData.baseRelL == 0) ubxData.baseRelL += 0.01;    // to prevent 0 division error
+      ubxData.baseRelRoll = (asin(ubxData.baseRelD / ubxData.baseRelL)) * -RAD_TO_DEG;
+      relPosNedReady = true;      // RelPos ready is true so PAOGI will send when the GGA is also ready
+      useDual = true;             // set true for the rest of runtime
+      // set GPS mode LEDs to dual
+    } else {
+      Serial.print("\r\n*** carrSoln: "); Serial.print(ubxData.carrSoln); Serial.print(" ***");
+      ubxData.baseRelRoll *= 0.9;     // "level off" dual roll
+      // set GPS mode LEDs to !dual
+      relPosNedReady = false;         // don't send paogi
+    }
+
+  }
+
+public:
+
+  struct UBX_Data {
+    float baseRelN, baseRelE, baseRelD;   // moving base NED in meters
+    float baseRelL, baseRelH;             // moving base length in meter, heading in degrees
+    float baseRelHPD, baseRelHPL;         // high precision component of D & L
+    uint32_t iTOW;                        // time of week from relposned
+    byte numSats;                         // number of Sats from PVT
+    float lat, lon, alt;                  // position from PVT
+    uint32_t baseRelFlags;                // moving base flags (gnssFixOk, diffSoln, relPosValid, carrSoln etc)
+    float baseRelRoll;                    // calc from D & L
+    int carrSoln;                         // from relposned
+  };
+  UBX_Data ubxData;
+
+  bool relPosNedReady, useDual, pvtRead;
+  uint32_t msgPeriod, msgReadTime;
+  elapsedMillis relPosTimer;
 
   /**
           * Constructs a UBX parser. 

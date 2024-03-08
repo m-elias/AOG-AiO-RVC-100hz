@@ -58,9 +58,9 @@ public:
   }
   ~Eth_UDP(void) {}                      //destructor
 
-  void init()
+  bool init()
   {
-    if (isRunning) return;
+    if (isRunning) return true;
     //Ethernet.MACAddress(mac);                 // get Teensy's internal MAC, doesn't work reliably
     //Ethernet.begin(mac, 2000, 2000);          // start dhcp connection with 2s timeout, that's enough time to get an eth linkStatus update
     //Ethernet.begin(mac, myIP);                // blocks if unplugged
@@ -69,7 +69,7 @@ public:
     // Check for Ethernet hardware present, always returns "EthernetW5500" (3) for Teensy 4.1 w/Eth
     if (Ethernet.hardwareStatus() == EthernetNoHardware) {
       Serial.println("\r\n\n*** Ethernet was not found. GPS via USB only ***");   // maybe using non Ethernet Teensy?
-      return;
+      return false;
     }
 
     Ethernet.setLocalIP(myIP);                  // also non-blocking as opposed to Ethernet.begin(mac, myIP) which block with unplugged/unconnected cable
@@ -114,6 +114,7 @@ public:
     }
 
     isRunning = true;
+    return true;
   }
 
   void SendUdpByte(uint8_t* _data, uint8_t _length, IPAddress _ip, uint16_t _port) {

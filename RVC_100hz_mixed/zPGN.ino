@@ -24,8 +24,7 @@ void checkForPGNs()
 
         if (udpData[3] == 0xFE && len == 14)        // 0xFE (254) - Steer Data (sent at GPS freq, ie 10hz (100ms))
         {
-          //Serial << "\r\nSteer Data 0xFE (254), " << len << " bytes";
-          //Serial.print("\rsteerData update period: "); Serial.println(gpsSpeedUpdateTimer);
+          //Serial << "\r\nSteer Data 0xFE (254), " << len << " bytes " << millis();
           /*Serial.printf(" %6i", micros() - pgn254Time);
           pgn254Time = micros();
           uint32_t pgn254Delay = pgn254Time - nmeaPgnSendTime;
@@ -176,6 +175,7 @@ void checkForPGNs()
 
         else if (udpData[3] == 200 && len == 9)  // 0xC8 (200) - Hello from AgIO
         {
+          LEDS.setPwrEthLED(AIO_LEDS::ETH_CONNECTED);
           //Serial << "\r\nHello from AgIO 0xC8 (200), " << len << " bytes";
 
           // reply as Steer Module
