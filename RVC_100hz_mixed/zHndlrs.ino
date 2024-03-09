@@ -91,10 +91,8 @@ void GNS_Handler() // Rec'd GNS
     nmeaParser.getArg(3, GGA.longitude);    // longitude
     nmeaParser.getArg(4, GGA.lonEW);
     
-    //nmeaParser.getArg(5, GGA.fixQuality);   // fix quality
     char temp[4];
     nmeaParser.getArg(5, temp);
-    Serial.print("\r\nGNS fix qual: "); Serial.print(temp);
     switch (temp[0]) {
       case 'A':
         itoa(1, GGA.fixQuality, 10);  // 1: autonomous, no correction

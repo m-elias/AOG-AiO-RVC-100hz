@@ -250,7 +250,7 @@ void loop()
 
 void resetStartingTimersBuffers()
 {
-  machine.watchdogTimer = 0;
+  //machine.watchdogTimer = 0;
   SerialGPS->clear();
   SerialGPS2->clear();
   if (BNO.isActive) while (!BNO.read(true));

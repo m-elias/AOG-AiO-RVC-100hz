@@ -258,7 +258,6 @@ public:
 
     if (debugLevel > 0 && watchdogTimer > watchdogAlertPeriod) {
       Serial.print("\r\n*** UDP Machine Comms resumed ***");
-      watchdogAlertTriggered = false;
     }
     watchdogTimer = 0;   //reset watchdog timer
 
@@ -284,13 +283,13 @@ public:
 
   void updateOutputPins()
   {
-    if (!isInit) return;
-    
+    // set pins according to states.functions unless watchdog has timed out, then set to !isPinActiveHigh
+
     if (numOutputPins > 0)
     {
       //if (debugLevel > 3) Serial.print("\r\nPin outputs ");
-      for (uint8_t i = 0; i < numOutputPins; i++) {
-        digitalWrite(outputPinNumbers[i], states.functions[config.pinFunction[1 + i]] == config.isPinActiveHigh);                     // ==, XOR
+      for (uint8_t i = 1; i <= numOutputPins; i++) {
+        digitalWrite(outputPinNumbers[i - 1], states.functions[config.pinFunction[i]] == config.isPinActiveHigh);                     // ==, XOR
         //if (debugLevel > 3) Serial.print(i); Serial.print(":"); Serial.print(states.functions[config.pinFunction[i]] == config.isPinActiveHigh); Serial.print(" ");
       }
     }
@@ -299,13 +298,11 @@ public:
     if (pcaOutputs != NULL)
     {
       //if (debugLevel > 3) Serial.print("\r\nPCA outputs ");
-      for (uint8_t i = 0; i < 8; i++) {       // AiO v5.0a has 8 PCA9555 outputs
-        //if (config.pinFunction[i] > 0) {
-          pcaOutputs->digitalWrite(pcaOutputPinNumbers[i], !(states.functions[config.pinFunction[1 + i]] == config.isPinActiveHigh));   // NXOR
+      for (uint8_t i = 1; i <= 8; i++) {       // AiO v5.0a has 8 PCA9555 outputs
+        if (config.pinFunction[i] > 0) {
+          pcaOutputs->digitalWrite(pcaOutputPinNumbers[i - 1], !(states.functions[config.pinFunction[i]] == config.isPinActiveHigh));   // NXOR
           //if (debugLevel > 3) Serial.print(i); Serial.print(":"); Serial.print(!(states.functions[config.pinFunction[i]] == config.isPinActiveHigh)); Serial.print(" ");
-        /*} else {
-          pcaOutputs->digitalWrite(pcaOutputPinNumbers[i - 1], config.isPinActiveHigh);
-        }*/
+        }
       }
     }
 #endif
@@ -380,7 +377,6 @@ public:
       if (debugLevel > 2) printPinConfig();
       saveToEeprom();
       forceOutputUpdate = true;
-      updateStates();
 
       if (debugLevel > 2) Serial.println();
       return true;
@@ -410,7 +406,6 @@ public:
       if (debugLevel > 2) printConfig();
       saveToEeprom();
       forceOutputUpdate = true;
-      updateStates();
       //rebootFunc();    // from old code, is there any reason to reboot?
 
       if (debugLevel > 2) Serial.println();

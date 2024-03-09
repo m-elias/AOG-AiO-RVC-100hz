@@ -1,5 +1,3 @@
-#include "core_pins.h"
-#include <stdint.h>
 /**
     Modified for AiO v5.0a PCA9555 8ch section/machine outputs
       Matt Elias 240219
@@ -44,6 +42,8 @@
 #include "WProgram.h"
 #endif
 
+#include "core_pins.h"
+#include <stdint.h>
 #include "clsPCA9555.h"
 #include <Wire.h>
 
@@ -73,11 +73,11 @@ bool PCA9555::begin() {
     if(_error != 0){
       return false;
     }else{
-      //Wire1.setClock(400000);
-      /*for (uint8_t i = 0; i < 8; i++){
+      Wire1.setClock(400000);
+      for (uint8_t i = 0; i < 8; i++){
         pinMode(outputPins[i], OUTPUT);
         pinMode(inputPins[i], INPUT);
-      }*/
+      }
       enabled = true;
       return true;
     }
@@ -158,7 +158,7 @@ void PCA9555::digitalWrite(uint16_t value) {
 }
 
 void PCA9555::printBinary(uint16_t var) {
-  Serial.print("\r\nB");
+  Serial.print("\nB");
   for (uint16_t mask = 32768; mask; mask >>= 1) {    // prints 4 bits/digits, set mask to the number of bits you want to print, B10000000 << 8 | B10000000
     Serial.write(var  & mask ? '1' : '0');
   }
@@ -215,9 +215,9 @@ void PCA9555::alertISR()
  * @param address Address of I2C chip
  * @param reg    Register to read from
  * @return data in register
- * Reads the data from addressed chip at selected register.
- * If the value is above 255, an error is set.
- * error codes :
+ * Reads the data from addressed chip at selected register. \n
+ * If the value is above 255, an error is set. \n
+ * error codes : \n
  * 256 = either 0 or more than one byte is received from the chip
  */
 uint16_t PCA9555::I2CGetValue(uint8_t address, uint8_t reg) {

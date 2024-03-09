@@ -14,9 +14,11 @@
 #include "WProgram.h"
 #endif
 
+#define DEBUG 1
+
 /** enum with names of ports ED0 - ED15 */
 enum {
-    ED0, ED1, ED2 , ED3 , ED4 , ED5 , ED6 , ED7,
+    ED0, ED1, ED2 , ED3 , ED4 , ED5 , ED6 , ED7 ,
     ED8, ED9, ED10, ED11, ED12, ED13, ED14, ED15
 };
 
@@ -46,14 +48,13 @@ public:
     bool begin();                                        // Checks if PCA is responsive
     void printBinary(uint16_t var);                      // to print binary with leading zeros
     bool enabled;
-    //const uint8_t outputPins[8] = { 1, 0, 12, 15, 9, 8, 6, 7 };
-    //const uint8_t inputPins[8]  = { 14, 13, 11, 10, 2, 3, 4, 5 };
+    const uint8_t outputPins[8] = { 1, 0, 12, 15, 9, 8, 6, 7 };
+    const uint8_t inputPins[8]  = { 14, 13, 11, 10, 2, 3, 4, 5 };
 
 private:
     static PCA9555* instancePointer;
     static void alertISR(void); // Function pointing to actual ISR
     void pinStates();           // Function tied to interrupt
-    #define DEBUG 1
 
     //
     // low level methods

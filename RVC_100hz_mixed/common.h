@@ -1,5 +1,5 @@
 #include "elapsedMillis.h"
-//#include <stdint.h>
+#include <stdint.h>
 #include <Streaming.h>
 #include "zADS1115.h"
 
