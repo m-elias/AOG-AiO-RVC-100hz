@@ -57,7 +57,7 @@ BNO_RVC BNO;                                            // Roomba Vac mode for B
 Eth_UDP UDP = Eth_UDP();
 
 #include "zNMEA.h"
-NMEAParser<2> nmeaParser;                               // A parser is declared with 3 handlers at most
+NMEAParser<3> nmeaParser;                               // A parser is declared with 3 handlers at most
 
 #include "zUBXParser.h"
 UBX_Parser ubxParser;

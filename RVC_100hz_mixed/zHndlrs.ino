@@ -81,7 +81,70 @@ void prepImuPandaData()    // run after GGA update + 40ms (timing for PANDA), fo
   }
 }
 
-void GGA_Handler() //Rec'd GGA
+void GNS_Handler() // Rec'd GNS
+{
+    NMEA_Pusage.timeIn();
+    
+    nmeaParser.getArg(0, GGA.fixTime);      // fix time
+    nmeaParser.getArg(1, GGA.latitude);     // latitude
+    nmeaParser.getArg(2, GGA.latNS);
+    nmeaParser.getArg(3, GGA.longitude);    // longitude
+    nmeaParser.getArg(4, GGA.lonEW);
+    
+    //nmeaParser.getArg(5, GGA.fixQuality);   // fix quality
+    char temp[4];
+    nmeaParser.getArg(5, temp);
+    Serial.print("\r\nGNS fix qual: "); Serial.print(temp);
+    switch (temp[0]) {
+      case 'A':
+        itoa(1, GGA.fixQuality, 10);  // 1: autonomous, no correction
+        break;
+      case 'D':
+        itoa(2, GGA.fixQuality, 10);  // 2: differential (WAAS)
+        break;
+      case 'F':
+        itoa(5, GGA.fixQuality, 10);  // 5: FLOAT
+        break;
+      case 'R':
+        itoa(4, GGA.fixQuality, 10);  // 4: RTK FIX
+        break;
+      case 'E':
+        itoa(6, GGA.fixQuality, 10);  // 6: Dead reckoning
+        break;
+      case 'S':
+        itoa(4, GGA.fixQuality, 10);  // ?: Simulator
+        break;
+      case 'N': default:
+        itoa(0, GGA.fixQuality, 10);  // 0: fix not valid
+        break;
+    }
+
+    nmeaParser.getArg(6, GGA.numSats);      // satellite #
+    nmeaParser.getArg(7, GGA.HDOP);         // HDOP
+    nmeaParser.getArg(8, GGA.altitude);     // altitude
+    nmeaParser.getArg(10, GGA.ageDGPS);     // time of last DGPS update
+
+    Serial.print((String)"\r\n" + millis() + " GNS update ");
+    Serial.print(GGA.fixTime);
+    triggerGGAGNSFlags();
+    gpsLostTimer = 0;                       // Used for GGA timeout (LED's ETC) 
+}
+
+void triggerGGAGNSFlags()   // *** needs better name ***
+{
+  ggaReady = true;                        // we have new GGA sentence
+  imuPandaSyncTimer = 0;                  // reset imu timer
+  imuPandaSyncTrigger = true;
+  startup = true;
+  gps1Stats.incHzCount();
+  LEDS.setGpsLED(atoi(GGA.fixQuality));   
+
+  if (!ubxParser.useDual) {               // if not using Dual 
+    buildPandaOrPaogi(PANDA);             // build the PANDA sentence right away
+  }                                       // otherwise wait until relposned arrives in main loop()
+}
+
+void GGA_Handler() // Rec'd GGA
 {
     NMEA_Pusage.timeIn();
     
@@ -98,18 +161,7 @@ void GGA_Handler() //Rec'd GGA
 
     Serial.print((String)"\r\n" + millis() + " GGA update ");
     Serial.print(GGA.fixTime);
-    ggaReady = true;                        // we have new GGA sentence
-    imuPandaSyncTimer = 0;                  // reset imu timer
-    imuPandaSyncTrigger = true;
-    startup = true;
-    gps1Stats.incHzCount();
-    LEDS.setGpsLED(atoi(GGA.fixQuality));   
-
-    if (!ubxParser.useDual) {               // if not using Dual 
-      buildPandaOrPaogi(PANDA);             // build the PANDA sentence right away
-    }                                       // otherwise wait until relposned arrives in main loop()
-
-    //LEDRoutine();
+    triggerGGAGNSFlags();
     gpsLostTimer = 0;                       // Used for GGA timeout (LED's ETC) 
 }
 

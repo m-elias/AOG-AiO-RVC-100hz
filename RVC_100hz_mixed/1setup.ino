@@ -41,5 +41,6 @@ void parserSetup()
   // the dash means wildcard
   nmeaParser.setErrorHandler(errorHandler);
   nmeaParser.addHandler("G-GGA", GGA_Handler);
+  nmeaParser.addHandler("G-GNS", GNS_Handler);
   nmeaParser.addHandler("G-VTG", VTG_Handler);
 }
