@@ -24,7 +24,7 @@ void checkForPGNs()
 
         if (udpData[3] == 0xFE && len == 14)        // 0xFE (254) - Steer Data (sent at GPS freq, ie 10hz (100ms))
         {
-          //Serial << "\r\nSteer Data 0xFE (254), " << len << " bytes " << millis();
+          //printPgnAnnoucement(udpData[3], (char*)"Steer Data", len);
           /*Serial.printf(" %6i", micros() - pgn254Time);
           pgn254Time = micros();
           uint32_t pgn254Delay = pgn254Time - nmeaPgnSendTime;
@@ -124,7 +124,7 @@ void checkForPGNs()
 
         else if (udpData[3] == 0xFC && len == 14)         // 0xFC (252) - Steer Settings
         {
-          Serial << "\r\nSteer Settings 0xFC (252), " << len << " bytes";
+          printPgnAnnoucement(udpData[3], (char*)"Steer Settings", len);
           //PID values
           steerSettings.Kp = ((float)udpData[5]);    // read Kp from AgOpenGPS
           steerSettings.highPWM = udpData[6];        // read high pwm
@@ -148,7 +148,7 @@ void checkForPGNs()
 
         else if (udpData[3] == 0xFB && len == 14)  // 0xFB (251) - SteerConfig
         {
-          Serial << "\r\nSteer Config, " << len << " bytes";
+          printPgnAnnoucement(udpData[3], (char*)"Steer Config", len);
           uint8_t sett = udpData[5]; //setting0
           if (bitRead(sett, 0)) steerConfig.InvertWAS = 1; else steerConfig.InvertWAS = 0;
           if (bitRead(sett, 1)) steerConfig.IsRelayActiveHigh = 1; else steerConfig.IsRelayActiveHigh = 0;
@@ -175,8 +175,8 @@ void checkForPGNs()
 
         else if (udpData[3] == 200 && len == 9)  // 0xC8 (200) - Hello from AgIO
         {
-          LEDS.setPwrEthLED(AIO_LEDS::ETH_CONNECTED);
-          //Serial << "\r\nHello from AgIO 0xC8 (200), " << len << " bytes";
+          //printPgnAnnoucement(udpData[3], (char*)"Hello from AgIO", len);
+          LEDS.setPwrEthLED(AIO_LEDS::AGIO_CONNECTED);
 
           // reply as Steer Module
           uint8_t helloFromAutoSteer[] = { 0x80, 0x81, 126, 126, 5, 0, 0, 0, 0, 0, 71 };
@@ -217,7 +217,7 @@ void checkForPGNs()
 
         else if (udpData[3] == 201 && len == 11)  // 0xC9 (201) - Subnet Change
         {
-          Serial << "\r\nSubnet Change 0xC9 (201), " << len << " bytes";
+          printPgnAnnoucement(udpData[3], (char*)"Subnet Change", len);
           if (udpData[4] == 5 && udpData[5] == 201 && udpData[6] == 201)  //save in EEPROM and restart
           {
             Serial << "\r\n- IP changed from " << UDP.myIP;
@@ -237,7 +237,7 @@ void checkForPGNs()
 
         else if (udpData[3] == 202 && len == 9)    // 0xCA (202) - Scan Request
         {
-          Serial << "\r\nScan Request 0xCA (202), " << len << " bytes";
+          printPgnAnnoucement(udpData[3], (char*)"Scan Request", len);
           if (udpData[4] == 3 && udpData[5] == 202 && udpData[6] == 202) {
             IPAddress rem_ip = UDP.PGN.remoteIP();
             IPAddress ipDest = { 255, 255, 255, 255 };
@@ -332,8 +332,7 @@ void checkForPGNs()
           #endif
 
           if (none) {
-            Serial.print("\r\n0x"); Serial.print(udpData[3], HEX); Serial.print("("); Serial.print(udpData[3]);
-            Serial.print(") - Unknown PGN data, len: "); Serial.print(len);
+            printPgnAnnoucement(udpData[3], (char*)"Unknown PGN", len);
           }
         }
 
@@ -343,7 +342,14 @@ void checkForPGNs()
   PGNusage.timeOut();
 }
 
+void printPgnAnnoucement(uint8_t _pgnNum, char* _pgnName, uint8_t _len)
+{
+  Serial.print("\r\n0x"); Serial.print(_pgnNum, HEX);
+  Serial.print(" ("); Serial.print(_pgnNum); Serial.print(") - ");
+  Serial.print(_pgnName); Serial.print(", "); Serial.print(_len); Serial.print(" bytes ");
+  Serial.print(millis());
 
+}
 /*
 * To receive NMEA sent via UDP from GPS Source
    - listen on port 2211 GPS1 (single/dual)
@@ -386,6 +392,7 @@ void udpNtrip() {
         //Serial.print("\r\nNTRIP "); Serial.print(millis() - ntripUpdateTime); Serial.print(" len:"); Serial.print(packetLength);
         UDP.RTCM.read(RTCM_packetBuffer, buffer_size);
         SerialGPS->write(RTCM_packetBuffer, buffer_size);
+        LEDS.rtcmReceived();
 
         // up to 256 byte packets are sent from AgIO and most NTRIP RTCM updates are larger so there's usually two packets per update
         if (packetLength < buffer_size){    // if buffer was not full, then end of NTRIP packet, can wait 800ms until we start checking again

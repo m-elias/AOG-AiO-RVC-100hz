@@ -1,3 +1,4 @@
+#include <stdint.h>
 //#include <stdint.h>
 //#include "wiring.h"
 //#include "Arduino.h"
@@ -194,7 +195,14 @@ public:
     mainBrightness = _brightness;
   }
 
+  // queue LED to flash blue at next timed cycle
+  void queueBlueFlash(uint8_t _id) {
+    data[_id].blueFlash = 1;
+  }
+
+  // instantly flash LED blue
   void activateBlueFlash(uint8_t _id) {
+    // add function to instantly flash blue?
     data[_id].blueFlash = 1;
   }
 

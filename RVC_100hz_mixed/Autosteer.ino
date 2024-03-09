@@ -190,9 +190,11 @@ void autoSteerUpdate() {
       // new code for steer "Switch" mode that keeps AutoSteer OFF after current/pressure kickout until switch is cycled
       if (steerReading == LOW) {                       // switching OFF
         steerState = steerReading;                     // set OFF
+        if (prevSteerReading != steerState) LEDS.steerInputAction();
       }
       else if (steerReading == HIGH && prevSteerReading == LOW) {  // switch ON after prev being OFF
         steerState = steerReading;                     // set ON
+        LEDS.steerInputAction();
       }
       prevSteerReading = steerReading;
     }
@@ -201,6 +203,7 @@ void autoSteerUpdate() {
     {
       if (steerReading == HIGH && prevSteerReading == LOW) {   // button is pressed
         steerState = !steerState;
+        LEDS.steerInputAction();
       }
       prevSteerReading = steerReading;                         // get ready to detect next press
 
@@ -213,12 +216,14 @@ void autoSteerUpdate() {
       if (guidanceStatusChanged && guidanceStatus == 1 && steerState == 0 && prevSteerReading == 1) {
         steerState = 1;
         prevSteerReading = !steerState;
+        LEDS.steerInputAction();
       }
 
       // If steering is ON and AoG's GUI btn is switched OFF
       if (guidanceStatusChanged && guidanceStatus == 0 && steerState == 1 && prevSteerReading == 0) {
         steerState = 0;
         prevSteerReading = !steerState;
+        LEDS.steerInputAction();
       }
     }
 

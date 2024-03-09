@@ -116,8 +116,10 @@ void loop()
   udpNMEA();                                // check for NMEA via UDP
   udpNtrip();                               // check for RTCM via UDP (AgIO NTRIP client)
     
-  if (SerialRTK.available())                // Check for RTK Radio RTCM data
-  { SerialGPS->write(SerialRTK.read()); }
+  if (SerialRTK.available()) {               // Check for RTK Radio RTCM data
+    SerialGPS->write(SerialRTK.read());
+    LEDS.rtcmReceived();
+  }
 
   BNOusage.timeIn();
   if (BNO.read()) {                         // there should be new data every 10ms (100hz)

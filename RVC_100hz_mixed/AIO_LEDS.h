@@ -1,3 +1,4 @@
+#include "elapsedMillis.h"
 #include <stdint.h>
 /*
   This is a library written for the Teensy 4.1 microcontroller
@@ -25,8 +26,10 @@
 class AIO_LEDS {
 private:
   #ifdef AIOv50a
-    RGB RGB_LEDS = RGB(1000, 255, 64, 127);   // 1hz RGB update, 255/64/127 RGB brightness balance levels for v5.0a
+  RGB RGB_LEDS = RGB(1000, 255, 64, 127);   // 1hz RGB update, 255/64/127 RGB brightness balance levels for v5.0a
+  elapsedMillis agioHelloTimeoutTimer;
   #endif
+  
 
   #ifdef AIOv4x
     #define GGAReceivedLED        13  // Teensy onboard LED
@@ -48,19 +51,19 @@ public:
   ~AIO_LEDS(void) {}                      //destructor
 
   typedef enum {
-    PWR_OFF,
-    PWR_ON,
-    SETUP_FINISHED,
-    ETH_READY,
-    ETH_CONNECTED,
+    PWR_OFF,            // stage 0: RGB OFF
+    PWR_ON,             // stage 1: red solid
+    SETUP_FINISHED,     // stage 2: red blinking
+    ETH_READY,          // stage 3: green blinking
+    AGIO_CONNECTED,     // stage 4: green solid
   } PWR_ETH_STATES;
 
   typedef enum {
-    ZERO,
-    WAS_ERROR,
-    WAS_READY,
-    AUTOSTEER_READY,
-    AUTOSTEER_ACTIVE
+    ZERO,               // stage 0: RGB OFF
+    WAS_ERROR,          // stage 1: red solid
+    WAS_READY,          // stage 2: red blinking
+    AUTOSTEER_READY,    // stage 3: green blinking
+    AUTOSTEER_ACTIVE    // stage 4: green solid
   } STEER_STATES;
 
 #ifdef AIOv50a
@@ -68,18 +71,30 @@ public:
     //
   }
   void setSteerLED(STEER_STATES _steerState) {
-    RGB_LEDS.set(RGB::LED_ID::STEER, _steerState, DEBUG);
+    if (_steerState != RGB_LEDS.data[RGB::LED_ID::STEER].stage)
+      RGB_LEDS.set(RGB::LED_ID::STEER, _steerState, DEBUG);
   }
 
   void setPwrEthLED(PWR_ETH_STATES _pwrState) {
     RGB_LEDS.set(RGB::LED_ID::PWR_ETH, _pwrState, DEBUG);
+    if (_pwrState == AGIO_CONNECTED) agioHelloTimeoutTimer = 0;
   }
 
   void setGpsLED(uint8_t _gpsFix) {
-    RGB_LEDS.setGpsLED(_gpsFix, DEBUG);
+    if (_gpsFix != RGB_LEDS.data[RGB::LED_ID::GPS].stage)
+      RGB_LEDS.setGpsLED(_gpsFix, DEBUG);
+  }
+
+  void rtcmReceived() {
+    RGB_LEDS.queueBlueFlash(RGB::LED_ID::GPS);
+  }
+
+  void steerInputAction() {
+    RGB_LEDS.activateBlueFlash(RGB::LED_ID::STEER);
   }
 
   void updateLoop(){
+    if (agioHelloTimeoutTimer > 5000 && RGB_LEDS.data[RGB::LED_ID::PWR_ETH].stage != PWR_ETH_STATES::ETH_READY) setPwrEthLED(ETH_READY);
     RGB_LEDS.updateLoop();
   }
 #endif
@@ -112,6 +127,14 @@ public:
 
   void setGpsLED(uint8_t _gpsFix) {
 
+  }
+
+  void rtcmReceived() {
+    
+  }
+
+  void steerInputAction() {
+    
   }
 
   void updateLoop(){
