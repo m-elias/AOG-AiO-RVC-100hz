@@ -27,6 +27,7 @@
 #define Hardware_H
 
 #define AIOv50a
+const char inoVersion[] = "RVC 100hz AiO v5.0a pre-alpha - " __DATE__;
 
 #include "clsPCA9555.h" // https://github.com/nicoverduin/PCA9555
 PCA9555 outputs(0x20);  // 0x20 - I2C addr (A0-A2 grounded), interrupt pin causes boot loop

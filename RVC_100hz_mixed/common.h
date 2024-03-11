@@ -22,11 +22,12 @@ ProcessorUsage UBX_Pusage         ((char*)"UBX_H ");
 ProcessorUsage UDP_Susage         ((char*)"UDP_S ");
 ProcessorUsage DACusage           ((char*)"DAC   ");
 ProcessorUsage MACHusage          ((char*)"MACH  ");
-const uint8_t numCpuUsageTasks = 15;
+ProcessorUsage LEDSusage          ((char*)"LEDS  ");
+const uint8_t numCpuUsageTasks = 16;
 ProcessorUsage* cpuUsageArray[numCpuUsageTasks] = { 
   &BNOusage, &GPS1usage, &GPS2usage, &PGNusage, &ASusage, &NTRIPusage,
   &RS232usage, &LOOPusage, &IMU_Husage, &NMEA_Pusage, &RTKusage, &UBX_Pusage,
-  &UDP_Susage, &DACusage, &MACHusage
+  &UDP_Susage, &DACusage, &MACHusage, &LEDSusage
 };
 HighLowHzStats gps2Stats;
 HighLowHzStats gps1Stats;

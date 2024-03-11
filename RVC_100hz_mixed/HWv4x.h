@@ -27,6 +27,7 @@
 #define Hardware_H
 
 #define AIOv4x
+const char inoVersion[] = "RVC 100hz AiO v4.x pre-alpha - " __DATE__;
 
 // ********* IO Defines *********
 const uint8_t encoderType = 1;             // 1 - single input, 2 - dual input (quadrature encoder)

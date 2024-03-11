@@ -41,7 +41,7 @@ private:
     #define AUTOSTEER_ACTIVE_LED  12  // Green
   #endif
 
-  #define DEBUG  1
+  #define DEBUG  0
 
 public:
   AIO_LEDS()
@@ -53,7 +53,7 @@ public:
   typedef enum {
     PWR_OFF,            // stage 0: RGB OFF
     PWR_ON,             // stage 1: red solid
-    SETUP_FINISHED,     // stage 2: red blinking
+    NO_ETH,             // stage 2: red blinking
     ETH_READY,          // stage 3: green blinking
     AGIO_CONNECTED,     // stage 4: green solid
   } PWR_ETH_STATES;

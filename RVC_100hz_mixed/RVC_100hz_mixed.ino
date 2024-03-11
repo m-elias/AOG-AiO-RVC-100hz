@@ -44,12 +44,6 @@ See PGN.ino for PGN parsing
 
 #include "common.h"
 
-#ifdef AIOv50a
-const char inoVersion[] = "RVC 100hz AiO v5.0a pre-alpha - " __DATE__;
-#else // AIOv4x
-const char inoVersion[] = "RVC 100hz AiO v4.x pre-alpha - " __DATE__;
-#endif
-
 //#include "JD_DAC.h"   // Matt's experimental DAC steering
 //JD_DAC jdDac(Wire1, 0x60);
 
@@ -65,11 +59,10 @@ void setup()
     digitalWrite(PIEZO2, HIGH);
   #endif
 
-  LEDS.setPwrEthLED(AIO_LEDS::PWR_ON);
-
-  //Serial.begin(115200);                   // Teensy doesn't need it
+    //Serial.begin(115200);                   // Teensy doesn't need it
   Serial.print("\r\n\n\n*********************\r\nStarting setup...\r\n");
   Serial.print(inoVersion);
+  LEDS.setPwrEthLED(AIO_LEDS::PWR_ON);
 
   setCpuFrequency(600 * 1000000);           // Set CPU speed to 600mhz, 450mhz is also a good choice(?), setup.ino
   serialSetup();                            // setup.ino
@@ -84,18 +77,20 @@ void setup()
   #endif
 
   autosteerSetup();                         // Autosteer.ino
+
   if (UDP.init())                           // Eth_UDP.h
     LEDS.setPwrEthLED(AIO_LEDS::ETH_READY);
+  else
+    LEDS.setPwrEthLED(AIO_LEDS::NO_ETH);
 
-  #ifdef JD_DAC_H
-    jdDac.update();
-  #endif
+  //#ifdef JD_DAC_H
+    //jdDac.update();
+  //#endif
 
   Serial.println("\r\n\nEnd of setup, waiting for GPS...\r\n"); 
-  //teensyLedOFF();
   delay(1);
   resetStartingTimersBuffers();
-  //LEDS.setPwrEthLED(AIO_LEDS::SETUP_FINISHED);
+  
 }
 
 
@@ -105,6 +100,7 @@ void loop()
   #ifdef JD_DAC_H
     //jdDac.update(); // should be in AS update, but left here for in case it's needed during testing
   #endif
+
   #ifdef AIOv50a
     MACHusage.timeIn();
     machine.watchdogCheck();                // machine.h
@@ -233,7 +229,11 @@ void loop()
   // **** other update routines ****
   // *******************************
   if (bufferStatsTimer > 5000) printTelem();
-  LEDS.updateLoop();  
+  
+  LEDSusage.timeIn();
+  LEDS.updateLoop();
+  LEDSusage.timeOut();
+  
   checkUSBSerial();
   speedPulse.update();
 
@@ -254,6 +254,7 @@ void resetStartingTimersBuffers()
   SerialGPS->clear();
   SerialGPS2->clear();
   if (BNO.isActive) while (!BNO.read(true));
+  machine.watchdogTimer = 0;
   startup = true;
 }
 
@@ -262,13 +263,17 @@ void checkUSBSerial()
 {
   if (Serial.available())
   {
-    if (Serial.read() == 'c')
+    if (Serial.read() == 's')
     {
       Serial.print("\r\n\n* Resetting hi/lo stats *");
       gps1Stats.resetAll();
       gps2Stats.resetAll();
       relJitterStats.resetAll();
       relTtrStats.resetAll();
+    }
+    else if (Serial.read() == 'g')
+    {
+      // toggle on/off GPS debugging msgs
     }
   }
 }
@@ -280,7 +285,7 @@ void printTelem()
   relJitterStats.printStatsReport((char*)"RELj");
   relTtrStats.printStatsReport((char*)"RELr");
 
-  /*uint32_t rs232report = RS232usage.reportAve();
+  uint32_t rs232report = RS232usage.reportAve();
   uint32_t baselineProcUsage = LOOPusage.reportAve();
   uint32_t dacReport = DACusage.reportAve();
   Serial.print("\r\n\nLoop   cpu: "); printCpuPercent(baselineProcUsage);
@@ -292,10 +297,11 @@ void printTelem()
   Serial.print("\r\nPGN    cpu: "); printCpuPercent(PGNusage.reportAve(baselineProcUsage));
   Serial.print("\r\nAS     cpu: "); printCpuPercent(ASusage.reportAve() - dacReport);
   Serial.print("\r\nNTRIP  cpu: "); printCpuPercent(NTRIPusage.reportAve());  // uses a timed update, virtually no extra time penalty
-  //Serial.print("\r\nIMU_H  cpu: "); printCpuPercent(IMU_Husage.reportAve());
-  //Serial.print("\r\nNMEA_P cpu: "); printCpuPercent(NMEA_Pusage.reportAve());
-  //Serial.print("\r\nUBX_P  cpu: "); printCpuPercent(UBX_Pusage.reportAve());
-  //Serial.print("\r\nUDP_S  cpu: "); printCpuPercent(UDP_Susage.reportAve());
+  Serial.print("\r\nIMU_H  cpu: "); printCpuPercent(IMU_Husage.reportAve());
+  Serial.print("\r\nNMEA_P cpu: "); printCpuPercent(NMEA_Pusage.reportAve());
+  Serial.print("\r\nUBX_P  cpu: "); printCpuPercent(UBX_Pusage.reportAve());
+  Serial.print("\r\nUDP_S  cpu: "); printCpuPercent(UDP_Susage.reportAve());
+  Serial.print("\r\nLEDS   cpu: "); printCpuPercent(LEDSusage.reportAve(baselineProcUsage));
   
   #ifdef AIOv50a
     Serial.print("\r\nRS232  cpu: "); printCpuPercent(rs232report); //RS232usage is inside GPS2 "if" statement so it inccurs virtually no extra time penalty
@@ -307,7 +313,7 @@ void printTelem()
   #endif
 
   Serial.println();
-  */  
+  
 
   testCounter = 0;
   bufferStatsTimer = 0;
