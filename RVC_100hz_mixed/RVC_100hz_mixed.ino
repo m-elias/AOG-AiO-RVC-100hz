@@ -110,7 +110,10 @@ void loop()
     MACHusage.timeOut();
   #endif
 
+  PGNusage.timeIn();
   checkForPGNs();                           // check for AgIO Sending PGNs, AgIO sends autosteer data at ~10hz
+  PGNusage.timeOut();
+  
   autoSteerUpdate();                        // Autosteer.ino, update AS loop every 10ms (100hz) regardless of whether there is a BNO installed
   udpNMEA();                                // check for NMEA via UDP
   udpNtrip();                               // check for RTCM via UDP (AgIO NTRIP client)
