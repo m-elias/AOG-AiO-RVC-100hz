@@ -137,7 +137,6 @@ public:
     timeoutTimer = 0;
     return true;
   }
-
 };
 
 #endif

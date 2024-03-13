@@ -31,6 +31,12 @@ void checkForPGNs()
           if (udpData[3] == 0xFE && len == 14)        // 0xFE (254) - Steer Data (sent at GPS freq, ie 10hz (100ms))
           {
             //printPgnAnnoucement(udpData[3], (char*)"Steer Data", len);
+
+            if (aogGpsToAutoSteerLoopTimerEnabled)
+            {
+              aogGpsToAutoSteerLoopTimerEnabled = false;
+              Serial.print((String)"\r\nGPS out to Steer Data in delay: " + aogGpsToAutoSteerLoopTimer);
+            }
             /*Serial.printf(" %6i", micros() - pgn254Time);
             pgn254Time = micros();
             uint32_t pgn254Delay = pgn254Time - nmeaPgnSendTime;
@@ -101,8 +107,8 @@ void checkForPGNs()
             UDP_Susage.timeOut();
 
             //Steer Data 2 -------------------------------------------------
-            if (steerConfig.PressureSensor || steerConfig.CurrentSensor) {
-              if (aog2Count++ > 2) {
+            /*if (steerConfig.PressureSensor || steerConfig.CurrentSensor) {
+              if (aog2Count++ > 2) {                                // send 1/3 of Steer Data rate (GPS hz / 3)
                 // fromAutoSteerData FD 250 - sensor values etc
                 uint8_t PGN_250[] = { 0x80, 0x81, 126, 0xFA, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0xCC };
 
@@ -124,7 +130,30 @@ void checkForPGNs()
                 UDP_Susage.timeOut();
                 aog2Count = 0;
               }
+            }*/
+
+            if (aog2Count++ > 1) {                                // send 1/2 of Steer Data rate (GPS hz / 2)
+              // fromAutoSteerData FD 250 - sensor values etc
+              uint8_t PGN_250[] = { 0x80, 0x81, 126, 0xFA, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0xCC };
+
+              if (steerConfig.PressureSensor || steerConfig.CurrentSensor) {
+                PGN_250[5] = (byte)sensorReading;
+              } else {
+                PGN_250[5] = (byte)pulseCount;
+              }
+
+              CK_A = 0;
+              for (uint8_t i = 2; i < sizeof(PGN_250) - 1; i++) {
+                CK_A = (CK_A + PGN_250[i]);
+              }
+              PGN_250[sizeof(PGN_250) - 1] = CK_A;
+
+              UDP_Susage.timeIn();
+              UDP.SendUdpByte(PGN_250, sizeof(PGN_250), UDP.broadcastIP, UDP.portAgIO_9999);
+              UDP_Susage.timeOut();
+              aog2Count = 0;
             }
+
           }  // 0xFE (254) - Steer Data
 
 
@@ -316,7 +345,15 @@ void checkForPGNs()
             }
           }  // 0xCA (202) - Scan Request
 
-        
+
+          else if (udpData[3] == 100 && len == 22)  // 0x64 (100) - Corrected Position
+          {
+            //printPgnAnnoucement(udpData[3], (char*)"Corrected Position", len);
+
+          }
+
+
+
           else    // catch all other UDP PGN data
           {
             bool none = true;

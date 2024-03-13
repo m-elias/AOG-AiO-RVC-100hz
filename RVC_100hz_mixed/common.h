@@ -33,6 +33,7 @@ HighLowHzStats gps2Stats;
 HighLowHzStats gps1Stats;
 HighLowHzStats relJitterStats;
 HighLowHzStats relTtrStats;
+HighLowHzStats bnoStats;
 SpeedPulse speedPulse(SPEEDPULSE_PIN, SPEEDPULSE10_PIN);     // misc.h
 
 //#include "reset.h"    // no on board buttons for reset
@@ -59,6 +60,7 @@ Eth_UDP UDP = Eth_UDP();
 
 #include "zNMEA.h"
 NMEAParser<3> nmeaParser;                               // A parser is declared with 3 handlers at most
+bool nmeaDebug = 0;
 
 #include "zUBXParser.h"
 UBX_Parser ubxParser;

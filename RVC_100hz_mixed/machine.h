@@ -95,7 +95,7 @@ public:
   bool isInit;
   elapsedMillis watchdogTimer;
 
-  uint8_t debugLevel = 3;
+  uint8_t debugLevel = 0;
     // 0 - debug prints OFF
     // 1 - alerts/errors only
     // 2 - init info
@@ -256,10 +256,11 @@ public:
       updateOutputPins();
     }
 
-    if (debugLevel > 0 && watchdogTimer > watchdogAlertPeriod) {
+    if (debugLevel > 0 && watchdogAlertTriggered) { //watchdogTimer > watchdogAlertPeriod) {
       Serial.print("\r\n*** UDP Machine Comms resumed ***");
     }
     watchdogTimer = 0;   //reset watchdog timer
+    watchdogAlertTriggered = false;
 
     // *** Sending PGN_237 isn't necessary/doesn't do anything?
 
@@ -490,30 +491,26 @@ public:
 
   void printConfig()
   {
-    if (debugLevel > 1) {
-      Serial.print("\r\n- raiseTime: "); Serial.print(config.raiseTime);
-      Serial.print("\r\n- lowerTime: "); Serial.print(config.lowerTime);
-      Serial.print("\r\n- relayActiveHigh: "); Serial.print(config.isPinActiveHigh);
-      Serial.print("\r\n- hydLiftEnable: "); Serial.print(config.hydLiftEnable);
-      Serial.print("\r\n- user1: "); Serial.print(config.user1);
-      Serial.print("\r\n- user2: "); Serial.print(config.user2);
-      Serial.print("\r\n- user3: "); Serial.print(config.user3);
-      Serial.print("\r\n- user4: "); Serial.print(config.user4);
-    }
+    Serial.print("\r\n- raiseTime: "); Serial.print(config.raiseTime);
+    Serial.print("\r\n- lowerTime: "); Serial.print(config.lowerTime);
+    Serial.print("\r\n- relayActiveHigh: "); Serial.print(config.isPinActiveHigh);
+    Serial.print("\r\n- hydLiftEnable: "); Serial.print(config.hydLiftEnable);
+    Serial.print("\r\n- user1: "); Serial.print(config.user1);
+    Serial.print("\r\n- user2: "); Serial.print(config.user2);
+    Serial.print("\r\n- user3: "); Serial.print(config.user3);
+    Serial.print("\r\n- user4: "); Serial.print(config.user4);
   }
 
   void printPinConfig()
   {
-    if (debugLevel > 1) {
-      for (uint8_t i = 1; i < uint8_t(sizeof(config.pinFunction)); i++) {
-        Serial.print("\r\n- Pin ");
-        Serial.print((i < 10 ? " " : ""));
-        Serial.print(i); Serial.print(": ");
-        Serial.print((config.pinFunction[i] < 10 ? " " : ""));
-        Serial.print(config.pinFunction[i]);
-        Serial.print(" ");
-        Serial.print(functionNames[config.pinFunction[i]]);
-      }
+    for (uint8_t i = 1; i < uint8_t(sizeof(config.pinFunction)); i++) {
+      Serial.print("\r\n- Pin ");
+      Serial.print((i < 10 ? " " : ""));
+      Serial.print(i); Serial.print(": ");
+      Serial.print((config.pinFunction[i] < 10 ? " " : ""));
+      Serial.print(config.pinFunction[i]);
+      Serial.print(" ");
+      Serial.print(functionNames[config.pinFunction[i]]);
     }
   }
 

@@ -1,22 +1,23 @@
 /*
-Combined Ace repo code and adapted for AiO v4.x RVC 100hz
+Used Ace repo code and adapted for AiO v4.x/5.0a RVC 100hz
 - Started with code from Teensy "Nav" Ace module https://github.com/farmerbriantee/Ace/tree/master/Hardware/Ace
 - Added code bits from old AIO v4 I2C firmware https://github.com/AgHardware/Boards/tree/main/Boards/TeensyModules/AIO%20Micro%20v4/Firmware/Autosteer_gps_teensy_v4
+- Much many new original code written for performance monitoring, LED control, section control etc
 
 Single
-- Save BNO reading 60ms before next GGA
+- Save BNO reading 60ms before next GGA/GNS
 	- roll/heading will be ready for PANDA later
 	- if no BNO, prep vars with 0xFFFF heading, 0 roll/yaw/pitch
-- Once GGA arrives (if !useDual)
+- Once GGA/GNS arrives (if !useDual)
 	- build PANDA msg and send out
 	- Otherwise if useDual, wait for relposned in main loop()
 Dual
 - if relposned arrives
 	- set useDual for duration of runtime
-- Each time new GGA & rel arrive
+- Each time new GGA/GNS & relposned arrive
 	- if fix/diffsol/posvalid all good
 		- calc roll from dual baseline/relposD
-			- if carrsoln is not RTK lower dual roll *0.9
+			- if carrsoln is not full RTK "wind down" dual roll by x0.9 each GPS update
 	- Send paogi
 
 
@@ -24,6 +25,7 @@ To-do
 - consolidate all EEPROM addrs in one place?
     - Ethernet, Autosteer, machine
 - test autosteer watch dog timeout from lost comms
+- verify Module Hello repy telemetry is working (display in AgIO advanced view)
 
 - Testing !!!
   - pressure/current inputs should be scaled the same as old firmware, only bench tested by Matt
@@ -44,11 +46,13 @@ See PGN.ino for PGN parsing
 
 #include "common.h"
 
-//#include "JD_DAC.h"   // Matt's experimental DAC steering
+//#include "JD_DAC.h"   // experimental JD 2 track DAC steering & SCV/remote hyd control
 //JD_DAC jdDac(Wire1, 0x60);
 
 elapsedMillis bufferStatsTimer = 3000;
 uint32_t testCounter;
+bool printCpuUsages = false;
+bool printStats = false;
 
 void setup()
 {
@@ -76,12 +80,12 @@ void setup()
     } else Serial << "\r\n*** Section outputs (PCA9555) NOT detected! ***";
   #endif
 
-  autosteerSetup();                         // Autosteer.ino
-
   if (UDP.init())                           // Eth_UDP.h
     LEDS.setPwrEthLED(AIO_LEDS::ETH_READY);
   else
     LEDS.setPwrEthLED(AIO_LEDS::NO_ETH);
+
+  autosteerSetup();                         // Autosteer.ino
 
   //#ifdef JD_DAC_H
     //jdDac.update();
@@ -90,7 +94,6 @@ void setup()
   Serial.println("\r\n\nEnd of setup, waiting for GPS...\r\n"); 
   delay(1);
   resetStartingTimersBuffers();
-  
 }
 
 
@@ -117,9 +120,17 @@ void loop()
     LEDS.rtcmReceived();
   }
 
+  RS232usage.timeIn();
+  if (SerialRS232->available()) {               // Check for RTK Radio RTCM data
+    Serial.write(SerialRS232->read());
+  }
+  RS232usage.timeOut();
+
   BNOusage.timeIn();
   if (BNO.read()) {                         // there should be new data every 10ms (100hz)
     //Serial.print("\r\nBNO");
+    bnoStats.incHzCount();
+    bnoStats.update(1);
   }
   BNOusage.timeOut();
 
@@ -127,7 +138,7 @@ void loop()
   if (imuPandaSyncTrigger && imuPandaSyncTimer >= 40) {
     prepImuPandaData();
     imuPandaSyncTrigger = false;       // wait for next GGA update before resetting imuDelayTimer again
-    Serial.println();
+    //Serial.println();
   }
 
 
@@ -147,11 +158,11 @@ void loop()
     uint8_t gps1Read = SerialGPS->read();
     nmeaParser << gps1Read;
     
-    #ifdef AIOv50a
+    /*#ifdef AIOv50a
       RS232usage.timeIn();
       SerialRS232->write(gps1Read);
       RS232usage.timeOut();
-    #endif
+    #endif*/
 
     //Serial.write(gps1Read);
     //Serial.print((String)"\nSerialGPS update " + SerialGPS->available() + " " + millis() + " d:" + (char)gps1Read);
@@ -211,7 +222,7 @@ void loop()
   }
 
 
-  // this is only for telemetry monitoring
+  // this is only for dual stats monitoring
   if (dualTime != ubxParser.ubxData.iTOW)
   {
     //itowVsHandleTime = micros();
@@ -263,57 +274,82 @@ void checkUSBSerial()
 {
   if (Serial.available())
   {
-    if (Serial.read() == 's')
+    uint8_t usbRead = Serial.read();
+    if (usbRead == 'r')
     {
       Serial.print("\r\n\n* Resetting hi/lo stats *");
       gps1Stats.resetAll();
       gps2Stats.resetAll();
       relJitterStats.resetAll();
       relTtrStats.resetAll();
+      bnoStats.resetAll();
     }
-    else if (Serial.read() == 'g')
+    else if (usbRead == 'n')
     {
-      // toggle on/off GPS debugging msgs
+      nmeaDebug = !nmeaDebug;
+    }
+    else if (usbRead == 'c')
+    {
+      printCpuUsages = !printCpuUsages;
+    }
+    else if (usbRead == 's')
+    {
+      printStats = !printStats;
+    }
+    else if (usbRead == 'm')
+    {
+      machine.debugLevel = max(Serial.read() - '0', 5);
+      Serial.print((String)"\r\nMachine debugLevel: " + machine.debugLevel);
+    }
+    else if (usbRead >= '0' && usbRead <= '5')
+    {
+      LEDS.setGpsLED(usbRead - '0', true);
     }
   }
 }
 
 void printTelem()
 {
-  gps1Stats.printStatsReport((char*)"GPS1");
-  gps2Stats.printStatsReport((char*)"GPS2");
-  relJitterStats.printStatsReport((char*)"RELj");
-  relTtrStats.printStatsReport((char*)"RELr");
+  if (printStats)
+  {
+    gps1Stats.printStatsReport((char*)"GPS1");
+    gps2Stats.printStatsReport((char*)"GPS2");
+    relJitterStats.printStatsReport((char*)"RELj");
+    relTtrStats.printStatsReport((char*)"RELr");
+    bnoStats.printStatsReport((char*)"BNO");
+  }
 
-  uint32_t rs232report = RS232usage.reportAve();
-  uint32_t baselineProcUsage = LOOPusage.reportAve();
-  uint32_t dacReport = DACusage.reportAve();
-  Serial.print("\r\n\nLoop   cpu: "); printCpuPercent(baselineProcUsage);
-  Serial.print(" "); Serial.print(testCounter / bufferStatsTimer); Serial.print("kHz"); // up to 400k hits/s
-  Serial.print("\r\nBNO_R  cpu: "); printCpuPercent(cpuUsageArray[0]->reportAve(baselineProcUsage));
-  Serial.print("\r\nGPS1   cpu: "); printCpuPercent(GPS1usage.reportAve(baselineProcUsage) - rs232report);
-  Serial.print("\r\nGPS2   cpu: "); printCpuPercent(GPS2usage.reportAve(baselineProcUsage));
-  //Serial.print("\r\nRadio  cpu: "); printCpuPercent(RTKusage.reportAve(baselineProcUsage));
-  Serial.print("\r\nPGN    cpu: "); printCpuPercent(PGNusage.reportAve(baselineProcUsage));
-  Serial.print("\r\nAS     cpu: "); printCpuPercent(ASusage.reportAve() - dacReport);
-  Serial.print("\r\nNTRIP  cpu: "); printCpuPercent(NTRIPusage.reportAve());  // uses a timed update, virtually no extra time penalty
-  Serial.print("\r\nIMU_H  cpu: "); printCpuPercent(IMU_Husage.reportAve());
-  Serial.print("\r\nNMEA_P cpu: "); printCpuPercent(NMEA_Pusage.reportAve());
-  Serial.print("\r\nUBX_P  cpu: "); printCpuPercent(UBX_Pusage.reportAve());
-  Serial.print("\r\nUDP_S  cpu: "); printCpuPercent(UDP_Susage.reportAve());
-  Serial.print("\r\nLEDS   cpu: "); printCpuPercent(LEDSusage.reportAve(baselineProcUsage));
-  
-  #ifdef AIOv50a
-    Serial.print("\r\nRS232  cpu: "); printCpuPercent(rs232report); //RS232usage is inside GPS2 "if" statement so it inccurs virtually no extra time penalty
-    Serial.print("\r\nMach   cpu: "); printCpuPercent(MACHusage.reportAve(baselineProcUsage));
-  #endif
+  if (printCpuUsages)
+  {
+    uint32_t rs232report = RS232usage.reportAve();
+    uint32_t baselineProcUsage = LOOPusage.reportAve();
+    uint32_t dacReport = DACusage.reportAve();
+    Serial.print("\r\n\nLoop   cpu: "); printCpuPercent(baselineProcUsage);
+    Serial.print(" "); Serial.print(testCounter / bufferStatsTimer); Serial.print("kHz"); // up to 400k hits/s
+    Serial.print("\r\nBNO_R  cpu: "); printCpuPercent(cpuUsageArray[0]->reportAve(baselineProcUsage));
+    Serial.print("\r\nGPS1   cpu: "); printCpuPercent(GPS1usage.reportAve(baselineProcUsage));// - rs232report);
+    Serial.print("\r\nGPS2   cpu: "); printCpuPercent(GPS2usage.reportAve(baselineProcUsage));
+    //Serial.print("\r\nRadio  cpu: "); printCpuPercent(RTKusage.reportAve(baselineProcUsage));
+    Serial.print("\r\nPGN    cpu: "); printCpuPercent(PGNusage.reportAve(baselineProcUsage));
+    Serial.print("\r\nAS     cpu: "); printCpuPercent(ASusage.reportAve() - dacReport);
+    Serial.print("\r\nNTRIP  cpu: "); printCpuPercent(NTRIPusage.reportAve());  // uses a timed update, virtually no extra time penalty
+    Serial.print("\r\nIMU_H  cpu: "); printCpuPercent(IMU_Husage.reportAve());
+    Serial.print("\r\nNMEA_P cpu: "); printCpuPercent(NMEA_Pusage.reportAve());
+    Serial.print("\r\nUBX_P  cpu: "); printCpuPercent(UBX_Pusage.reportAve());
+    Serial.print("\r\nUDP_S  cpu: "); printCpuPercent(UDP_Susage.reportAve());
+    Serial.print("\r\nLEDS   cpu: "); printCpuPercent(LEDSusage.reportAve(baselineProcUsage));
+    
+    #ifdef AIOv50a
+      Serial.print("\r\nRS232  cpu: "); printCpuPercent(rs232report); //RS232usage is inside GPS2 "if" statement so it inccurs virtually no extra time penalty
+      Serial.print("\r\nMach   cpu: "); printCpuPercent(MACHusage.reportAve(baselineProcUsage));
+    #endif
 
-  #ifdef JD_DAC_H
-    Serial.print("\r\nDAC    cpu: "); printCpuPercent(dacReport);
-  #endif
+    #ifdef JD_DAC_H
+      Serial.print("\r\nDAC    cpu: "); printCpuPercent(dacReport);
+    #endif
 
-  Serial.println();
-  
+    Serial.println();
+  }
 
   testCounter = 0;
   bufferStatsTimer = 0;

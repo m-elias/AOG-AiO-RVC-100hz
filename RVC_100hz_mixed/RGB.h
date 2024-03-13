@@ -41,8 +41,6 @@ private:
   uint32_t blueFlashStopTime;
 
 public:
-  #define DEBUG       1
-
   typedef enum {
     PWR_ETH,
     GPS,
@@ -109,13 +107,15 @@ public:
       case 8:                         // 8: Simulation mode
         set(LED_ID::GPS, STAGE4_GREEN, _debug);
         return;
-      case 3: case 7: default:       // 3: Not applicable, 7: Manual input mode
-        set(LED_ID::GPS, STAGE0_OFF, DEBUG);
+      case 3: case 7: default:        // 3: Not applicable, 7: Manual input mode
+        set(LED_ID::GPS, STAGE0_OFF, true);
         return;
     }
   }
 
   void set(uint8_t _id, uint8_t _stage, bool _debug = false) {
+    if (_stage == data[_id].stage) return;
+    
     if (_stage == STAGE3_GREEN_BLINK || _stage == STAGE4_GREEN ) {
       data[_id].redValue = 0;
       data[_id].greenValue = greenBrightnessScale;

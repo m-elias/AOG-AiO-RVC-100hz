@@ -34,6 +34,8 @@ struct IMU_DATA {
 
 //uint32_t nmeaPgnSendTime, nmeaPgnMaxPeriod, nmeaPgnAvePeriod, nmeaPgnMinPeriod = 99999;
 //uint8_t nmeaCount;
+elapsedMicros aogGpsToAutoSteerLoopTimer;
+bool aogGpsToAutoSteerLoopTimerEnabled;
 
 // If odd characters showed up
 void errorHandler() {
@@ -122,20 +124,22 @@ void GNS_Handler() // Rec'd GNS
     nmeaParser.getArg(8, GGA.altitude);     // altitude
     nmeaParser.getArg(10, GGA.ageDGPS);     // time of last DGPS update
 
-    Serial.print((String)"\r\n" + millis() + " GNS update ");
-    Serial.print(GGA.fixTime);
-    triggerGGAGNSFlags();
+    if (nmeaDebug) Serial.print((String)"\r\n" + millis() + " GNS update ");
+    if (nmeaDebug) Serial.print(GGA.fixTime);
+    GGA_GNS_PostProcess();
     gpsLostTimer = 0;                       // Used for GGA timeout (LED's ETC) 
 }
 
-void triggerGGAGNSFlags()   // *** needs better name ***
+void GGA_GNS_PostProcess()                // called by either GGA or GNS handler
 {
-  ggaReady = true;                        // we have new GGA sentence
+  ggaReady = true;                        // we have new GGA or GNS sentence
   imuPandaSyncTimer = 0;                  // reset imu timer
   imuPandaSyncTrigger = true;
   startup = true;
   gps1Stats.incHzCount();
-  LEDS.setGpsLED(atoi(GGA.fixQuality));   
+  LEDS.setGpsLED(atoi(GGA.fixQuality));
+  aogGpsToAutoSteerLoopTimer = 0;
+  //aogGpsToAutoSteerLoopTimerEnabled = 1;  // uncomment to print "AIO GPS->AOG->Steer Data back to AIO" delay
 
   if (!ubxParser.useDual) {               // if not using Dual 
     buildPandaOrPaogi(PANDA);             // build the PANDA sentence right away
@@ -157,9 +161,9 @@ void GGA_Handler() // Rec'd GGA
     nmeaParser.getArg(8, GGA.altitude);     // altitude
     nmeaParser.getArg(12, GGA.ageDGPS);     // time of last DGPS update
 
-    Serial.print((String)"\r\n" + millis() + " GGA update ");
-    Serial.print(GGA.fixTime);
-    triggerGGAGNSFlags();
+    if (nmeaDebug) Serial.print((String)"\r\n" + millis() + " GGA update ");
+    if (nmeaDebug) Serial.print(GGA.fixTime);
+    GGA_GNS_PostProcess();
     gpsLostTimer = 0;                       // Used for GGA timeout (LED's ETC) 
 }
 
@@ -182,16 +186,7 @@ void buildPandaOrPaogi(bool _panda)    // only called by GGA_Handler (above)
     strcat(nmea, GGA.longitude); strcat(nmea, ",");
     strcat(nmea, GGA.lonEW); strcat(nmea, ",");       // 5
     strcat(nmea, GGA.fixQuality); strcat(nmea, ",");
-
-    if (ubxParser.pvtRead) {
-      char temp[3];
-      itoa(ubxParser.ubxData.numSats, temp, 10);    // ubx pvt has more accurate # SVs, only send it at about 1hz
-      strcat(nmea, temp);
-    } else {
-      strcat(nmea, GGA.numSats);
-    }
-
-    strcat(nmea, ",");
+    strcat(nmea, GGA.numSats); strcat(nmea, ",");
     strcat(nmea, GGA.HDOP); strcat(nmea, ",");
     strcat(nmea, GGA.altitude); strcat(nmea, ",");    // 9
     strcat(nmea, GGA.ageDGPS); strcat(nmea, ",");
@@ -221,8 +216,8 @@ void buildPandaOrPaogi(bool _panda)    // only called by GGA_Handler (above)
     strcat(nmea, "\r\n");
     NMEA_Pusage.timeOut();
 
-    Serial.print("\r\n"); Serial.print(millis()); Serial.print(" ");// Serial.print(GGA.fixTime); Serial.print(" ");
-    Serial.write(nmea);
+    if (nmeaDebug) { Serial.print("\r\n"); Serial.print(millis()); Serial.print(" "); }// Serial.print(GGA.fixTime); Serial.print(" ");
+    if (nmeaDebug) Serial.write(nmea);
 
     if (UDP.isRunning)        //If ethernet running send the GPS there
     {
