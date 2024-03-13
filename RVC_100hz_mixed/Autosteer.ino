@@ -204,6 +204,17 @@ void autoSteerUpdate() {
       if (steerReading == HIGH && prevSteerReading == LOW) {   // button is pressed
         steerState = !steerState;
         LEDS.steerInputAction();
+
+
+              // "raw" method, bypasses limit checks
+              //uint8_t PGN_99[] = { 0x80, 0x81, 126, 0x99, 2, 'H', 'e', 'l', 'l', 'o', ' ', 'A', 'o', 'G', '!', '!' }; //, 0xCC };
+              //UDP.SendUdpByte(PGN_99, sizeof(PGN_99), UDP.broadcastIP, UDP.portAgIO_9999);
+
+              // "proper" function
+              char msg[] = "AutoSteer Btn";
+              UDP.SendUdpFreeForm(msg, sizeof(msg), 2, UDP.broadcastIP, UDP.portAgIO_9999);
+              
+              
       }
       prevSteerReading = steerReading;                         // get ready to detect next press
 

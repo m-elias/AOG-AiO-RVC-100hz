@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include "elapsedMillis.h"
 #include "IPAddress.h"
 #ifndef _ETHER_h
@@ -127,6 +128,38 @@ public:
     PGN.beginPacket(_ip, _port);
     PGN.write(_charBuf, _length);
     PGN.endPacket();
+  }
+
+  void SendUdpFreeForm(char _msg[], uint8_t _len, char _seconds, IPAddress dip, uint16_t dport)
+  {
+    char header[5] = { 0x80, 0x81, 126, 0x99};   // free form msg PGN header, 126 is steer module ID (not used yet)
+    char ForTheWire[_len + 6];
+
+    _seconds = max(1, _seconds);      // limit 1-10 sec msg box time
+    _seconds = min(10, _seconds);
+    header[4] = _seconds;
+
+    for (byte i = 0; i < 5; i++) {
+      ForTheWire[i] = header[i];
+    }
+
+    for (byte i = 0; i < _len; i++) {
+      ForTheWire[i + 5] = _msg[i];
+    }
+
+    ForTheWire[_len + 5] = 0;
+
+    Serial.println();
+    Serial.print(ForTheWire[4], DEC);
+    Serial.print(" ");
+    for (byte i = 5; i < strlen(ForTheWire); i++) {
+      Serial.print(ForTheWire[i]);
+    }
+
+    PGN.beginPacket(dip, dport);
+    PGN.write(ForTheWire, strlen(ForTheWire)); // +1 to include null terminator
+    PGN.endPacket();
+
   }
 
   void SaveModuleIP(void) {
