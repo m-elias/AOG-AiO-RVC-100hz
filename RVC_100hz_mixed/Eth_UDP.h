@@ -130,6 +130,15 @@ public:
     PGN.endPacket();
   }
 
+
+
+  // "raw" method, bypasses limit checks in firmware but AOG should still have limits
+  //uint8_t PGN_99[] = { 0x80, 0x81, 126, 0x99, 2, 'H', 'e', 'l', 'l', 'o', ' ', 'A', 'o', 'G', '!', '!' }; //, 0xCC };
+  //UDP.SendUdpByte(PGN_99, sizeof(PGN_99), UDP.broadcastIP, UDP.portAgIO_9999);
+
+  // "proper" function
+  //char msg[] = "AutoSteer Btn";
+  //char msgTime = 2;
   void SendUdpFreeForm(char _msg[], uint8_t _len, char _seconds, IPAddress dip, uint16_t dport)
   {
     char header[5] = { 0x80, 0x81, 126, 0x99};   // free form msg PGN header, 126 is steer module ID (not used yet)
@@ -149,12 +158,13 @@ public:
 
     ForTheWire[_len + 5] = 0;
 
-    Serial.println();
+    Serial.print("\r\nPop-up msg sent to AOG: ");
     Serial.print(ForTheWire[4], DEC);
-    Serial.print(" ");
+    Serial.print("s \"");
     for (byte i = 5; i < strlen(ForTheWire); i++) {
       Serial.print(ForTheWire[i]);
     }
+    Serial.print("\"");
 
     PGN.beginPacket(dip, dport);
     PGN.write(ForTheWire, strlen(ForTheWire)); // +1 to include null terminator
