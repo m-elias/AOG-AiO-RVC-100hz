@@ -284,7 +284,6 @@ void checkForPGNs()
       uint8_t scanReplySteer[] = { 128, 129, 126, 203, 7,
                               UDP.myIP[0], UDP.myIP[1], UDP.myIP[2], UDP.myIP[3],
                               rem_ip[0], rem_ip[1], rem_ip[2], 23 };
-      //checksum
       int16_t CK_A = 0;
       for (uint8_t i = 2; i < sizeof(scanReplySteer) - 1; i++) {
         CK_A = (CK_A + scanReplySteer[i]);
@@ -298,7 +297,6 @@ void checkForPGNs()
         uint8_t scanReplyIMU[] = { 128, 129, 121, 203, 7,
                                 UDP.myIP[0], UDP.myIP[1], UDP.myIP[2], UDP.myIP[3],
                                 rem_ip[0], rem_ip[1], rem_ip[2], 23 };
-        //checksum
         CK_A = 0;
         for (uint8_t i = 2; i < sizeof(scanReplyIMU) - 1; i++) {
           CK_A = (CK_A + scanReplyIMU[i]);
@@ -314,7 +312,6 @@ void checkForPGNs()
         uint8_t scanReplyMachine[] = { 128, 129, 123, 203, 7,
                                 UDP.myIP[0], UDP.myIP[1], UDP.myIP[2], UDP.myIP[3],
                                 rem_ip[0], rem_ip[1], rem_ip[2], 23 };
-        //checksum
         CK_A = 0;
         for (uint8_t i = 2; i < sizeof(scanReplyMachine) - 1; i++) {
           CK_A = (CK_A + scanReplyMachine[i]);

@@ -363,7 +363,7 @@ public:
       return true;
     } // 0xC8 (200) - Hello from AgIO
 
-    // take care of in zPGN.ino as it already has all the info
+    // taken care of in zPGN.ino as it already has all the info
     /*if (pgnData[3] == 202 && pgnDataLen == 9)       // 0xCA (202) - Scan Request
     {
       //Serial.print("\r\n"); Serial.print(*rtnDestIP);

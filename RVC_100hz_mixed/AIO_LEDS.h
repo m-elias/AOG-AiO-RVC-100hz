@@ -73,7 +73,7 @@ public:
   }
   void setSteerLED(STEER_STATES _steerState) {
     //if (_steerState != RGB_LEDS.data[RGB::LED_ID::STEER].stage)
-      RGB_LEDS.set(RGB::LED_ID::STEER, _steerState, DEBUG);
+    RGB_LEDS.set(RGB::LED_ID::STEER, _steerState, DEBUG);
   }
 
   void setPwrEthLED(PWR_ETH_STATES _pwrState) {
@@ -83,8 +83,7 @@ public:
 
   void setGpsLED(uint8_t _gpsFix, bool _debug = false) {
     //if (_gpsFix != RGB_LEDS.data[RGB::LED_ID::GPS].stage)
-      RGB_LEDS.setGpsLED(_gpsFix, _debug);
-
+    RGB_LEDS.setGpsLED(_gpsFix, _debug);
     gpsUpdateTimeoutTimer = 0;
   }
 
