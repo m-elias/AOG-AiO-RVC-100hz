@@ -11,8 +11,9 @@
 
 
 /*
-  AgIO Hello received should timeout if no new Hello received in X seconds
-  GPS fix should start at solid red (stage 1) and also timeout back to stage 1
+  AgIO Hello received (PWR_ETH RGB) times out if no new Hello received in 5 seconds
+    - drops down to ETH_READY (GREEN_BINK)
+  GPS fix also times out to stage 0 (OFF) after 1 second of no new GPS fix updates
   
 */
 
@@ -27,7 +28,7 @@ class AIO_LEDS {
 private:
   #ifdef AIOv50a
   RGB RGB_LEDS = RGB(1000, 255, 64, 127);   // 1hz RGB update, 255/64/127 RGB brightness balance levels for v5.0a
-  elapsedMillis agioHelloTimeoutTimer;
+  elapsedMillis agioHelloTimeoutTimer, gpsUpdateTimeoutTimer;
   #endif
   
 
@@ -41,7 +42,7 @@ private:
     #define AUTOSTEER_ACTIVE_LED  12  // Green
   #endif
 
-  #define DEBUG  0
+  bool DEBUG = 0;
 
 public:
   AIO_LEDS()
@@ -71,7 +72,7 @@ public:
     //
   }
   void setSteerLED(STEER_STATES _steerState) {
-    if (_steerState != RGB_LEDS.data[RGB::LED_ID::STEER].stage)
+    //if (_steerState != RGB_LEDS.data[RGB::LED_ID::STEER].stage)
       RGB_LEDS.set(RGB::LED_ID::STEER, _steerState, DEBUG);
   }
 
@@ -80,9 +81,11 @@ public:
     if (_pwrState == AGIO_CONNECTED) agioHelloTimeoutTimer = 0;
   }
 
-  void setGpsLED(uint8_t _gpsFix) {
-    if (_gpsFix != RGB_LEDS.data[RGB::LED_ID::GPS].stage)
-      RGB_LEDS.setGpsLED(_gpsFix, DEBUG);
+  void setGpsLED(uint8_t _gpsFix, bool _debug = false) {
+    //if (_gpsFix != RGB_LEDS.data[RGB::LED_ID::GPS].stage)
+      RGB_LEDS.setGpsLED(_gpsFix, _debug);
+
+    gpsUpdateTimeoutTimer = 0;
   }
 
   void rtcmReceived() {
@@ -94,7 +97,10 @@ public:
   }
 
   void updateLoop(){
-    if (agioHelloTimeoutTimer > 5000 && RGB_LEDS.data[RGB::LED_ID::PWR_ETH].stage != PWR_ETH_STATES::ETH_READY) setPwrEthLED(ETH_READY);
+    //if (agioHelloTimeoutTimer > 5000 && RGB_LEDS.data[RGB::LED_ID::PWR_ETH].stage != PWR_ETH_STATES::ETH_READY) setPwrEthLED(ETH_READY);
+    if (agioHelloTimeoutTimer > 5000) setPwrEthLED(ETH_READY);  // sets PWR__ETH RGB to green_blink if AgIO Hello times out after 5s
+    if (gpsUpdateTimeoutTimer > 3000) setGpsLED(3);              // sets GPS RGB OFF if no GPS update after 1s
+
     RGB_LEDS.updateLoop();
   }
 #endif
@@ -145,8 +151,6 @@ public:
       digitalWrite(Power_on_LED, 1);
       digitalWrite(Ethernet_Active_LED, 0);
     }
-
-    //asdf
 
   }
 #endif

@@ -185,7 +185,6 @@ private:
     ubxData.alt = (float)height * 0.001;
     Serial.print("\r\n"); Serial.print(millis()); Serial.print(" handle_NAV_PVT ");// Serial.print((micros() - prevMsgTime) / 1000);
     //prevMsgTime = micros();
-    pvtRead = true;
   }
 
   void reportUnhandled(char msgid) {
@@ -252,7 +251,7 @@ public:
   };
   UBX_Data ubxData;
 
-  bool relPosNedReady, useDual, pvtRead;
+  bool relPosNedReady, useDual;
   uint32_t msgPeriod, msgReadTime;
   elapsedMillis relPosTimer;
 
