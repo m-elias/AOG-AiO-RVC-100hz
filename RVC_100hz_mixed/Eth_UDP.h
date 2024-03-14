@@ -149,22 +149,23 @@ public:
     header[6] = _seconds;
 
     char ForTheWire[_len + 8];
-    Serial.print("\r\n");
+    //Serial.print("\r\n");
     for (byte i = 0; i < 7; i++) {
       ForTheWire[i] = header[i];
-      Serial.print(ForTheWire[i], DEC); Serial.print(" ");
+      //Serial.print(ForTheWire[i], DEC); Serial.print(" ");
     }
 
     for (byte i = 0; i < _len; i++) {
       ForTheWire[i + 7] = _msg[i];
-      Serial.print(ForTheWire[i+7]);
+      //Serial.print(ForTheWire[i+7]);
     }
 
     ForTheWire[_len + 7] = 0;
 
-    Serial.print("\r\nPop-up msg sent to AOG: ");
-    Serial.print(ForTheWire[5], DEC); Serial.print("\\"); Serial.print(ForTheWire[6], DEC);
-    Serial.print("s \"");
+    if (_type == 1) { Serial.print("\r\n"); Serial.print(ForTheWire[6], DEC); Serial.print("s timed "); }
+    else Serial.print("\r\nOK ")
+
+    Serial.print(" pop-up msg sent to AOG: "); Serial.print("\"");
     for (byte i = 7; i < sizeof(ForTheWire) - 1; i++) {
       Serial.print(ForTheWire[i]);
     }
