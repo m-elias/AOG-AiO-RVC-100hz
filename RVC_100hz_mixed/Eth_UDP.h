@@ -139,35 +139,39 @@ public:
   // "proper" function
   //char msg[] = "AutoSteer Btn";
   //char msgTime = 2;
-  void SendUdpFreeForm(char _msg[], uint8_t _len, char _seconds, IPAddress dip, uint16_t dport)
+  void SendUdpFreeForm(uint8_t _type, char _msg[], uint8_t _len, char _seconds, IPAddress dip, uint16_t dport)
   {
-    char header[5] = { 0x80, 0x81, 126, 0x99};   // free form msg PGN header, 126 is steer module ID (not used yet)
-    char ForTheWire[_len + 6];
+    char header[7] = { 0x80, 0x81, 126, 0x99, 0, 1, 1};   // free form msg PGN header, 126 is steer module ID (not used yet)
+    header[5] = _type;
 
     _seconds = max(1, _seconds);      // limit 1-10 sec msg box time
     _seconds = min(10, _seconds);
-    header[4] = _seconds;
+    header[6] = _seconds;
 
-    for (byte i = 0; i < 5; i++) {
+    char ForTheWire[_len + 8];
+    Serial.print("\r\n");
+    for (byte i = 0; i < 7; i++) {
       ForTheWire[i] = header[i];
+      Serial.print(ForTheWire[i], DEC); Serial.print(" ");
     }
 
     for (byte i = 0; i < _len; i++) {
-      ForTheWire[i + 5] = _msg[i];
+      ForTheWire[i + 7] = _msg[i];
+      Serial.print(ForTheWire[i+7]);
     }
 
-    ForTheWire[_len + 5] = 0;
+    ForTheWire[_len + 7] = 0;
 
     Serial.print("\r\nPop-up msg sent to AOG: ");
-    Serial.print(ForTheWire[4], DEC);
+    Serial.print(ForTheWire[5], DEC); Serial.print("\\"); Serial.print(ForTheWire[6], DEC);
     Serial.print("s \"");
-    for (byte i = 5; i < strlen(ForTheWire); i++) {
+    for (byte i = 7; i < sizeof(ForTheWire) - 1; i++) {
       Serial.print(ForTheWire[i]);
     }
     Serial.print("\"");
 
     PGN.beginPacket(dip, dport);
-    PGN.write(ForTheWire, strlen(ForTheWire)); // +1 to include null terminator
+    PGN.write(ForTheWire, sizeof(ForTheWire)); // +1 to include null terminator
     PGN.endPacket();
 
   }

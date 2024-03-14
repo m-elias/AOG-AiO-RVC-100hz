@@ -212,6 +212,7 @@ void checkForPGNs()
   {
     //printPgnAnnoucement(udpData[3], (char*)"Hello from AgIO", len);
     LEDS.setPwrEthLED(AIO_LEDS::AGIO_CONNECTED);
+    //Serial.print("\r\n***** AgIO Hello byte 5-7: "); Serial.print(udpData[5]); Serial.print(" "); Serial.print(udpData[6]); Serial.print(" "); Serial.print(udpData[7]); Serial.print(" ");
 
     // reply as Steer Module
     uint8_t helloFromAutoSteer[] = { 0x80, 0x81, 126, 126, 5, 0, 0, 0, 0, 0, 71 };
@@ -344,7 +345,7 @@ void checkForPGNs()
       
       Serial.println("\r\r\n ---------");
     }
-    //return;         // no return, allow machine object to process machine reply below
+    return;
   } // 0xCA (202) - Scan Request
 
 
@@ -369,12 +370,13 @@ void checkForPGNs()
       pgnMatched = true;
       if (machineReplyLen > 0)
       {
-        Serial.print("\r\nReply len "); Serial.print(machineReplyLen); Serial.print(" >");
+        /*Serial.print("\r\nReply len "); Serial.print(machineReplyLen); Serial.print(" >");
         for (byte i = 0; i < machineReplyLen; i++) {
           Serial.print(machineReplyData[i]); Serial.print(" ");
-        }
+        }*/
         UDP.SendUdpByte(machineReplyData, machineReplyLen, UDP.broadcastIP, UDP.portAgIO_9999);
         //Serial << "\r\nChecking machine PGNs";
+        // 0xC8 (200) - Hello from AgIO
         // 0xE5 (229) - 64 Section Data
         // 0xEB (235) - Section Dimensions
         // 0xEC (236) - Machine Pin Config

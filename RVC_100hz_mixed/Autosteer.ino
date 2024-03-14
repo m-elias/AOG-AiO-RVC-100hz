@@ -193,7 +193,7 @@ void autoSteerUpdate() {
         if (prevSteerReading != steerState) {
           char msg[] = "AutoSteer Switch OFF";
           char msgTime = 2;
-          UDP.SendUdpFreeForm(msg, sizeof(msg), msgTime, UDP.broadcastIP, UDP.portAgIO_9999);
+          UDP.SendUdpFreeForm(1, msg, strlen(msg), msgTime, UDP.broadcastIP, UDP.portAgIO_9999);
           LEDS.steerInputAction();
         }
       }
@@ -201,7 +201,7 @@ void autoSteerUpdate() {
         steerState = steerReading;                     // set ON
         char msg[] = "AutoSteer Switch ON";
         char msgTime = 2;
-        UDP.SendUdpFreeForm(msg, sizeof(msg), msgTime, UDP.broadcastIP, UDP.portAgIO_9999);
+        UDP.SendUdpFreeForm(1, msg, strlen(msg), msgTime, UDP.broadcastIP, UDP.portAgIO_9999);
         LEDS.steerInputAction();
       }
       prevSteerReading = steerReading;
@@ -216,7 +216,7 @@ void autoSteerUpdate() {
         if (steerState) msg = (char*)"AutoSteer Btn ON";
         else msg = (char*)"AutoSteer Btn OFF";
         char msgTime = 2;
-        UDP.SendUdpFreeForm(msg, strlen(msg), msgTime, UDP.broadcastIP, UDP.portAgIO_9999);
+        UDP.SendUdpFreeForm(1, msg, strlen(msg), msgTime, UDP.broadcastIP, UDP.portAgIO_9999);
       }
       prevSteerReading = steerReading;                         // get ready to detect next press
 
@@ -316,6 +316,8 @@ void autoSteerUpdate() {
     if (read != workInput) {
       Serial.printf("\r\nWORK input: %s", (read == 1 ? "OFF" : "ON"));
       workInput = read;
+      char msg[] = "Work switch";
+      UDP.SendUdpFreeForm(2, msg, strlen(msg), 1, UDP.broadcastIP, UDP.portAgIO_9999);
     }
 
     switchByte = 0;

@@ -113,7 +113,7 @@ void loop()
   PGNusage.timeIn();
   checkForPGNs();                           // check for AgIO Sending PGNs, AgIO sends autosteer data at ~10hz
   PGNusage.timeOut();
-  
+
   autoSteerUpdate();                        // Autosteer.ino, update AS loop every 10ms (100hz) regardless of whether there is a BNO installed
   udpNMEA();                                // check for NMEA via UDP
   udpNtrip();                               // check for RTCM via UDP (AgIO NTRIP client)
@@ -301,7 +301,8 @@ void checkUSBSerial()
     }
     else if (usbRead == 'm')
     {
-      machine.debugLevel = max(Serial.read() - '0', 5);
+      machine.debugLevel = min(Serial.read() - '0', 5);
+      machine.debugLevel = max(Serial.read() - '0', 0);
       Serial.print((String)"\r\nMachine debugLevel: " + machine.debugLevel);
     }
     else if (usbRead >= '0' && usbRead <= '5')
