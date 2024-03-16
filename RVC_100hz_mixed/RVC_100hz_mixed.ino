@@ -68,7 +68,7 @@ void setup()
   Serial.print(inoVersion);
   LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::PWR_ON);
 
-  setCpuFrequency(600 * 1000000);           // Set CPU speed to 600mhz, 450mhz is also a good choice(?), setup.ino
+  setCpuFrequency(150 * 1000000);           // Set CPU speed to 600mhz, 450mhz is also a good choice(?), setup.ino
   serialSetup();                            // setup.ino
   parserSetup();                            // setup.ino
   BNO.begin(SerialIMU);                     // BNO_RVC.cpp
