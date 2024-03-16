@@ -57,16 +57,15 @@ void printTelem()
 
   if (printCpuUsages)
   {
-    uint32_t rs232report = RS232usage.reportAve();
     uint32_t baselineProcUsage = LOOPusage.reportAve();
     uint32_t dacReport = DACusage.reportAve();
     Serial.print("\r\n\nLoop   cpu: "); printCpuPercent(baselineProcUsage);
     Serial.print(" "); Serial.print(testCounter / bufferStatsTimer); Serial.print("kHz"); // up to 400k hits/s
     Serial.print("\r\nBNO_R  cpu: "); printCpuPercent(cpuUsageArray[0]->reportAve(baselineProcUsage));
-    Serial.print("\r\nGPS1   cpu: "); printCpuPercent(GPS1usage.reportAve(baselineProcUsage));// - rs232report);
+    Serial.print("\r\nGPS1   cpu: "); printCpuPercent(GPS1usage.reportAve(baselineProcUsage));
     Serial.print("\r\nGPS2   cpu: "); printCpuPercent(GPS2usage.reportAve(baselineProcUsage));
     //Serial.print("\r\nRadio  cpu: "); printCpuPercent(RTKusage.reportAve(baselineProcUsage));
-    Serial.print("\r\nPGN    cpu: "); printCpuPercent(PGNusage.reportAve(baselineProcUsage));
+    Serial.print("\r\nPGN    cpu: "); printCpuPercent(PGNusage.reportAve());   // uses a timed update, virtually no extra time penalty
     Serial.print("\r\nAS     cpu: "); printCpuPercent(ASusage.reportAve() - dacReport);
     Serial.print("\r\nNTRIP  cpu: "); printCpuPercent(NTRIPusage.reportAve());  // uses a timed update, virtually no extra time penalty
     Serial.print("\r\nIMU_H  cpu: "); printCpuPercent(IMU_Husage.reportAve());
@@ -77,7 +76,7 @@ void printTelem()
     Serial.print("\r\nMach   cpu: "); printCpuPercent(MACHusage.reportAve(baselineProcUsage));
     
     #ifdef AIOv50a
-      Serial.print("\r\nRS232  cpu: "); printCpuPercent(rs232report); //RS232usage is inside GPS2 "if" statement so it inccurs virtually no extra time penalty
+      Serial.print("\r\nRS232  cpu: "); printCpuPercent(RS232usage.reportAve(baselineProcUsage));
     #endif
 
     #ifdef JD_DAC_H

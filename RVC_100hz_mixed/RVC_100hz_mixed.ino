@@ -44,9 +44,9 @@ See common.h for library & other variable definitions
 See PGN.ino for PGN parsing
 */
 
-// pick only one or the other
-//#include "HWv50a.h"
-#include "HWv4x.h"
+// pick only one or the other board file
+#include "HWv50a.h"
+//#include "HWv4x.h"
 
 const uint8_t encoderType = 1;  // 1 - single input
                                 // 2 - dual input (quadrature encoder), uses Kickout_A (Pressure) & Kickout_D (Remote) inputs
@@ -117,15 +117,15 @@ void loop()
   udpNMEA();                                // check for NMEA via UDP
   udpNtrip();                               // check for RTCM via UDP (AgIO NTRIP client)
     
-  if (SerialRTK.available()) {               // Check for RTK Radio RTCM data
-    SerialGPS->write(SerialRTK.read());
+  if (SerialRTK.available()) {              // Check for RTK Radio RTCM data
+    SerialGPS->write(SerialRTK.read());     // send to GPS1
     LEDs.queueBlueFlash(LED_ID::GPS);
   }
 
   #ifdef AIOv50a
   RS232usage.timeIn();
-  if (SerialRS232->available()) {               // Check for RTK Radio RTCM data
-    Serial.write(SerialRS232->read());
+  if (SerialRS232->available()) {           // Check for RS232 data
+    Serial.write(SerialRS232->read());      // just print to USB for testing
   }
   RS232usage.timeOut();
   #endif
@@ -163,6 +163,7 @@ void loop()
     nmeaParser << gps1Read;
     
     /*#ifdef AIOv50a
+      GPS1usage.timeOut();
       RS232usage.timeIn();
       SerialRS232->write(gps1Read);
       RS232usage.timeOut();
@@ -190,6 +191,7 @@ void loop()
     ubxParser.parse(gps2Read);
 
     /*#ifdef AIOv50a
+      GPS2usage.timeOut();
       RS232usage.timeIn();
       SerialRS232->write(gps2Read);
       RS232usage.timeOut();
