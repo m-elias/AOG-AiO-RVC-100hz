@@ -15,6 +15,7 @@ public:
   {
     if (!startupReset) {
       resetLongPeriod();
+      resetShortPeriod();
       startupReset = true;
       return;
     }

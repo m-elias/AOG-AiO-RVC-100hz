@@ -15,8 +15,8 @@ void checkForPGNs()
   static uint32_t pgnCheckTime;
   uint32_t millisNow = millis();
   if (millisNow < pgnCheckTime) return;   // only need to check for new PGN data every ms, not 100s of times per ms
-  pgnCheckTime = millisNow;     // allow check every ms
-  //Serial.print((String)"\r\n" + millis() + " PGN check");
+  //Serial.print((String)"\r\n" + millisNow + " PGN check " + pgnCheckTime);
+  pgnCheckTime = millisNow + 1;     // allow check every ms
 
   if (!UDP.isRunning) return;                           // When ethernet is not running, return directly. parsePacket() will block when we don't
   uint16_t len = UDP.PGN.parsePacket();                 //get data from AgIO sent by 9999 to this 8888
