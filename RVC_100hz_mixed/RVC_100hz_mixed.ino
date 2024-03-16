@@ -41,8 +41,8 @@ See PGN.ino for PGN parsing
 */
 
 // pick only one or the other
-#include "HWv50a.h"
-//#include "HWv4x.h"
+//#include "HWv50a.h"
+#include "HWv4x.h"
 
 #include "common.h"
 
@@ -123,11 +123,13 @@ void loop()
     LEDS.rtcmReceived();
   }
 
+  #ifdef AIOv50a
   RS232usage.timeIn();
   if (SerialRS232->available()) {               // Check for RTK Radio RTCM data
     Serial.write(SerialRS232->read());
   }
   RS232usage.timeOut();
+  #endif
 
   BNOusage.timeIn();
   if (BNO.read()) {                         // there should be new data every 10ms (100hz)
@@ -245,7 +247,7 @@ void loop()
   if (bufferStatsTimer > 5000) printTelem();
   
   LEDSusage.timeIn();
-  LEDS.updateLoop();
+  LEDS.updateLoop(Ethernet.linkStatus());
   LEDSusage.timeOut();
   
   checkUSBSerial();
@@ -268,7 +270,9 @@ void resetStartingTimersBuffers()
   SerialGPS->clear();
   SerialGPS2->clear();
   if (BNO.isActive) while (!BNO.read(true));
+  #ifdef AIOv50a
   machine.watchdogTimer = 0;
+  #endif
   startup = true;
 }
 
@@ -299,16 +303,20 @@ void checkUSBSerial()
     {
       printStats = !printStats;
     }
-    else if (usbRead == 'm')
+    #ifdef AIOv50a
+    else if (usbRead == 'm' && Serial.available() > 0)
     {
-      machine.debugLevel = min(Serial.read() - '0', 5);
-      machine.debugLevel = max(Serial.read() - '0', 0);
+      usbRead = Serial.read();
+      if (usbRead >= '0' && usbRead <= '5') {
+        machine.debugLevel = usbRead - '0';   // convert ASCII numerical char to byte
+      }
       Serial.print((String)"\r\nMachine debugLevel: " + machine.debugLevel);
     }
     else if (usbRead >= '0' && usbRead <= '5')
     {
       LEDS.setGpsLED(usbRead - '0', true);
     }
+    #endif
   }
 }
 

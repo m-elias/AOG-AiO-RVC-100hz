@@ -21,27 +21,26 @@
 #define H_LED_H
 
 #ifdef AIOv50a
-#include "RGB.h"
+  #include "RGB.h"
 #endif
 
 class AIO_LEDS {
 private:
   #ifdef AIOv50a
-  RGB RGB_LEDS = RGB(1000, 255, 64, 127);   // 1hz RGB update, 255/64/127 RGB brightness balance levels for v5.0a
-  elapsedMillis agioHelloTimeoutTimer, gpsUpdateTimeoutTimer;
+    RGB RGB_LEDS = RGB(1000, 255, 64, 127);   // 1hz RGB update, 255/64/127 RGB brightness balance levels for v5.0a
   #endif
   
-
   #ifdef AIOv4x
-    #define GGAReceivedLED        13  // Teensy onboard LED
-    #define Power_on_LED           5  // Red
-    #define Ethernet_Active_LED    6  // Green
-    #define GPSRED_LED             9  // Red (Flashing = NO IMU or Dual, ON = GPS fix with IMU)
-    #define GPSGREEN_LED          10  // Green (Flashing = Dual bad, ON = Dual good)
-    #define AUTOSTEER_STANDBY_LED 11  // Red
-    #define AUTOSTEER_ACTIVE_LED  12  // Green
+    #define GGA_LED            13  // Teensy onboard LED
+    #define PWR_ETH_RED_LED     5  // Red
+    #define PWR_ETH_GRN_LED     6  // Green
+    #define GPS_RED_LED         9  // Red (Flashing = NO IMU or Dual, ON = GPS fix with IMU)
+    #define GPS_GRN_LED        10  // Green (Flashing = Dual bad, ON = Dual good)
+    #define AUTOSTEER_RED_LED  11  // Red
+    #define AUTOSTEER_GRN_LED  12  // Green
   #endif
 
+  elapsedMillis agioHelloTimeoutTimer, gpsUpdateTimeoutTimer;
   bool DEBUG = 0;
 
 public:
@@ -95,10 +94,10 @@ public:
     RGB_LEDS.activateBlueFlash(RGB::LED_ID::STEER);
   }
 
-  void updateLoop(){
+  void updateLoop(bool _linkStatus){
     //if (agioHelloTimeoutTimer > 5000 && RGB_LEDS.data[RGB::LED_ID::PWR_ETH].stage != PWR_ETH_STATES::ETH_READY) setPwrEthLED(ETH_READY);
-    if (agioHelloTimeoutTimer > 5000) setPwrEthLED(ETH_READY);  // sets PWR__ETH RGB to green_blink if AgIO Hello times out after 5s
-    if (gpsUpdateTimeoutTimer > 3000) setGpsLED(3);              // sets GPS RGB OFF if no GPS update after 1s
+    if (agioHelloTimeoutTimer > 5000) setPwrEthLED(ETH_READY);   // sets PWR__ETH RGB to green_blink if AgIO Hello times out after 5s
+    if (gpsUpdateTimeoutTimer > 3000) setGpsLED(3);              // sets GPS RGB OFF if no GPS update for 3s
 
     RGB_LEDS.updateLoop();
   }
@@ -106,49 +105,62 @@ public:
 
 #ifdef AIOv4x
   void init() {
-    pinMode(GGAReceivedLED, OUTPUT);
-    pinMode(PowerRed_LED, OUTPUT);
-    pinMode(EthernetGreen_LED, OUTPUT);
-    pinMode(GPSRED_LED, OUTPUT);
-    pinMode(GPSGREEN_LED, OUTPUT);
-    pinMode(AUTOSTEER_ACTIVE_LED, OUTPUT);
-    pinMode(AUTOSTEER_STANDBY_LED, OUTPUT);
+    pinMode(GGA_LED, OUTPUT);
+    pinMode(PWR_ETH_RED_LED, OUTPUT);
+    pinMode(PWR_ETH_GRN_LED, OUTPUT);
+    pinMode(GPS_RED_LED, OUTPUT);
+    pinMode(GPS_GRN_LED, OUTPUT);
+    pinMode(AUTOSTEER_GRN_LED, OUTPUT);
+    pinMode(AUTOSTEER_RED_LED, OUTPUT);
   }
-  void setSteerLED(STEER_STATES _steerState) {
-    if (_steerState == AUTOSTEER_READY) {    // Autosteer Led goes Red if ADS1115 is found
-      digitalWrite(AUTOSTEER_ACTIVE_LED, 0);
-      digitalWrite(AUTOSTEER_STANDBY_LED, 1);
+
+  void setSteerLED(STEER_STATES _state) {
+    if (_state == AUTOSTEER_READY) {    // Autosteer Led goes Red if ADS1115 is found
+      digitalWrite(AUTOSTEER_RED_LED, 1);
+      digitalWrite(AUTOSTEER_GRN_LED, 0);
     }
-    if (_steerState == AUTOSTEER_ACTIVE) {
-      // Autosteer Led goes GREEN if autosteering
-      //digitalWrite(AUTOSTEER_ACTIVE_LED, 1);
-      //digitalWrite(AUTOSTEER_STANDBY_LED, 0);
+    else if (_state == AUTOSTEER_ACTIVE) {
+      digitalWrite(AUTOSTEER_RED_LED, 0);
+      digitalWrite(AUTOSTEER_GRN_LED, 1);
     }
   }
 
-  void setPwrEthLED(PWR_ETH_STATES _pwrState) {
-
+  void setPwrEthLED(PWR_ETH_STATES _state) {
+    /*if (_state == PWR_ON) {
+      digitalWrite(PWR_ETH_RED_LED, 1);
+      digitalWrite(PWR_ETH_GRN_LED, 0);
+    }
+    else if (_state == AGIO_CONNECTED) {
+      digitalWrite(AUTOSTEER_RED_LED, 0);
+      digitalWrite(AUTOSTEER_GRN_LED, 1);
+    }*/
+    if (_state == AGIO_CONNECTED) agioHelloTimeoutTimer = 0;
   }
 
   void setGpsLED(uint8_t _gpsFix) {
-
+    gpsUpdateTimeoutTimer = 0;
   }
 
   void rtcmReceived() {
-    
+    // nothing for v4
   }
 
   void steerInputAction() {
-    
+    // nothing for v4
   }
 
-  void updateLoop(){
-    if (UDP.linkStatus() == LinkON) {
-      digitalWrite(Power_on_LED, 0);
-      digitalWrite(Ethernet_Active_LED, 1);
+  void updateLoop(bool _linkStatus){
+    if (_linkStatus ==  1) {                  //LinkON
+      digitalWrite(PWR_ETH_RED_LED, 0);
+      digitalWrite(PWR_ETH_GRN_LED, 1);
     } else {
-      digitalWrite(Power_on_LED, 1);
-      digitalWrite(Ethernet_Active_LED, 0);
+      digitalWrite(PWR_ETH_RED_LED, 1);
+      digitalWrite(PWR_ETH_GRN_LED, 0);
+    }
+
+    if (gpsUpdateTimeoutTimer > 3000) {       // sets GPS LEDs OFF if no GPS update for 3s
+      digitalWrite(GPS_RED_LED, 0);
+      digitalWrite(GPS_GRN_LED, 0);
     }
 
   }
@@ -157,40 +169,3 @@ public:
 };
 #endif
 
-
-  //pinMode(statLED, OUTPUT);
-
-/*
-
-constexpr auto statLED = LED_BUILTIN;   //Teensy onboard LED, p13
-*/
-/*
-void LEDRoutine()
-{
-	//here can go all the winking and blinking at a human pace
-
-  teensyLedToggle();
-
-	if (gpsLostTimer > 10000) //GGA age over 10sec
-	{
-		//digitalWrite(GPSRED_LED, LOW);
-		//digitalWrite(GPSGREEN_LED, LOW);
-	}
-  LEDTimer = 0;
-}
-
-void teensyLedToggle()
-{
-  digitalWrite(statLED, !digitalRead(statLED));
-}
-
-void teensyLedON()
-{
-  digitalWrite(statLED, HIGH);
-}
-
-void teensyLedOFF()
-{
-  digitalWrite(statLED, LOW);
-}
-*/
