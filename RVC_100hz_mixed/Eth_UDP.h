@@ -133,12 +133,17 @@ public:
 
 
   // "raw" method, bypasses limit checks in firmware but AOG should still have limits
-  //uint8_t PGN_99[] = { 0x80, 0x81, 126, 0x99, 2, 'H', 'e', 'l', 'l', 'o', ' ', 'A', 'o', 'G', '!', '!' }; //, 0xCC };
+  //uint8_t PGN_99[] = { 0x80, 0x81, 126, 0x99, n/u, 1-2, 1-10s, 'H', 'e', 'l', 'l', 'o', ' ', 'A', 'o', 'G', '!', '!' }; //, 0xCC };
   //UDP.SendUdpByte(PGN_99, sizeof(PGN_99), UDP.broadcastIP, UDP.portAgIO_9999);
 
   // "proper" function
-  //char msg[] = "AutoSteer Btn";
+  //char msg[] = "AutoSteer Switch ON";
   //char msgTime = 2;
+  //UDP.SendUdpFreeForm(1, msg, strlen(msg), msgTime, UDP.broadcastIP, UDP.portAgIO_9999);
+
+  //char msg[] = "Work switch";
+  //UDP.SendUdpFreeForm(2, msg, strlen(msg), 1, UDP.broadcastIP, UDP.portAgIO_9999);
+
   void SendUdpFreeForm(uint8_t _type, char _msg[], uint8_t _len, char _seconds, IPAddress dip, uint16_t dport)
   {
     char header[7] = { 0x80, 0x81, 126, 0x99, 0, 1, 1};   // free form msg PGN header, 126 is steer module ID (not used yet)

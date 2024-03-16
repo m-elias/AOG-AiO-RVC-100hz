@@ -66,7 +66,7 @@ void setup()
     //Serial.begin(115200);                   // Teensy doesn't need it
   Serial.print("\r\n\n\n*********************\r\nStarting setup...\r\n");
   Serial.print(inoVersion);
-  LEDS.setPwrEthLED(AIO_LEDS::PWR_ON);
+  LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::PWR_ON);
 
   setCpuFrequency(600 * 1000000);           // Set CPU speed to 600mhz, 450mhz is also a good choice(?), setup.ino
   serialSetup();                            // setup.ino
@@ -81,15 +81,11 @@ void setup()
   #endif
 
   if (UDP.init())                           // Eth_UDP.h
-    LEDS.setPwrEthLED(AIO_LEDS::ETH_READY);
+    LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::ETH_READY);
   else
-    LEDS.setPwrEthLED(AIO_LEDS::NO_ETH);
+    LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::NO_ETH);
 
   autosteerSetup();                         // Autosteer.ino
-
-  //#ifdef JD_DAC_H
-    //jdDac.update();
-  //#endif
 
   Serial.println("\r\n\nEnd of setup, waiting for GPS...\r\n"); 
   delay(1);
@@ -100,10 +96,6 @@ void setup()
 
 void loop()
 {
-  #ifdef JD_DAC_H
-    //jdDac.update(); // should be in AS update, but left here for in case it's needed during testing
-  #endif
-
   #ifdef AIOv50a
     MACHusage.timeIn();
     machine.watchdogCheck();                // machine.h
@@ -120,7 +112,7 @@ void loop()
     
   if (SerialRTK.available()) {               // Check for RTK Radio RTCM data
     SerialGPS->write(SerialRTK.read());
-    LEDS.rtcmReceived();
+    LEDs.queueBlueFlash(LED_ID::GPS);
   }
 
   #ifdef AIOv50a
@@ -247,7 +239,7 @@ void loop()
   if (bufferStatsTimer > 5000) printTelem();
   
   LEDSusage.timeIn();
-  LEDS.updateLoop(Ethernet.linkStatus());
+  LEDs.updateLoop();
   LEDSusage.timeOut();
   
   checkUSBSerial();
@@ -312,11 +304,14 @@ void checkUSBSerial()
       }
       Serial.print((String)"\r\nMachine debugLevel: " + machine.debugLevel);
     }
-    else if (usbRead >= '0' && usbRead <= '5')
-    {
-      LEDS.setGpsLED(usbRead - '0', true);
-    }
     #endif
+    else if (usbRead == 'g' && Serial.available() > 0)
+    {
+      usbRead = Serial.read();
+      if (usbRead >= '0' && usbRead <= '5') {
+        LEDs.setGpsLED(usbRead - '0', true);
+      }
+    }
   }
 }
 

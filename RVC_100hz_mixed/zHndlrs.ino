@@ -140,7 +140,7 @@ void GGA_GNS_PostProcess()                // called by either GGA or GNS handler
   imuPandaSyncTrigger = true;
   startup = true;
   gps1Stats.incHzCount();
-  LEDS.setGpsLED(atoi(GGA.fixQuality));
+  LEDs.setGpsLED(atoi(GGA.fixQuality));
   aogGpsToAutoSteerLoopTimer = 0;
   //aogGpsToAutoSteerLoopTimerEnabled = 1;  // uncomment to print "AIO GPS->AOG->Steer Data back to AIO" delay
 

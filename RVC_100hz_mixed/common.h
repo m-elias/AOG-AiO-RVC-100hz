@@ -3,10 +3,12 @@
 #include <Streaming.h>
 #include "zADS1115.h"
 
-#include "AIO_LEDS.h"
-AIO_LEDS LEDS;
+#include "machine.h"
+MACHINE machine;      // still use for v4 as it suppressing machine PGN messages
 
-#include "misc.h"
+#include "LEDS.h"
+LEDS LEDs = LEDS(1000, 255, 64, 127);   // 1hz RGB update, 255/64/127 RGB brightness balance levels for v5.0a
+
 ProcessorUsage BNOusage           ((char*)"BNO   ");
 ProcessorUsage GPS1usage          ((char*)"GPS1  ");
 ProcessorUsage GPS2usage          ((char*)"GPS2  ");
@@ -34,7 +36,6 @@ HighLowHzStats gps1Stats;
 HighLowHzStats relJitterStats;
 HighLowHzStats relTtrStats;
 HighLowHzStats bnoStats;
-SpeedPulse speedPulse(SPEEDPULSE_PIN, SPEEDPULSE10_PIN);     // misc.h
 
 //#include "reset.h"    // no on board buttons for reset
 //const uint8_t RESET_BTN = A14;          // A13 on Matt's v4.0 test board, A14 ununsed on v5.0a

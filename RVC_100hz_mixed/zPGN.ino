@@ -226,7 +226,8 @@ void checkForPGNs()
   if (udpData[3] == 200 && len == 9)  // 0xC8 (200) - Hello from AgIO
   {
     //printPgnAnnoucement(udpData[3], (char*)"Hello from AgIO", len);
-    LEDS.setPwrEthLED(AIO_LEDS::AGIO_CONNECTED);
+    LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::AGIO_CONNECTED, true);
+
     //Serial.print("\r\n***** AgIO Hello byte 5-7: "); Serial.print(udpData[5]); Serial.print(" "); Serial.print(udpData[6]); Serial.print(" "); Serial.print(udpData[7]); Serial.print(" ");
 
     // reply as Steer Module
@@ -247,6 +248,14 @@ void checkForPGNs()
       UDP_Susage.timeOut();
     }
 
+    // reply as IMU if equipped
+    if (BNO.isActive) {
+      uint8_t helloFromIMU[] = { 128, 129, 121, 121, 5, 0, 0, 0, 0, 0, 71 };
+      UDP_Susage.timeIn();
+      UDP.SendUdpByte(helloFromIMU, sizeof(helloFromIMU), UDP.broadcastIP, UDP.portAgIO_9999);
+      UDP_Susage.timeOut();
+    }
+
     /*#ifdef MACHINE_H
       if (machine.isInit) {
         uint8_t helloFromMachine[] = { 0x80, 0x81, 123, 123, 5, 0, 0, 0, 0, 0, 71 };
@@ -258,13 +267,7 @@ void checkForPGNs()
       }
     #endif*/
         
-    // reply as IMU if equipped
-    if (BNO.isActive) {
-      uint8_t helloFromIMU[] = { 128, 129, 121, 121, 5, 0, 0, 0, 0, 0, 71 };
-      UDP_Susage.timeIn();
-      UDP.SendUdpByte(helloFromIMU, sizeof(helloFromIMU), UDP.broadcastIP, UDP.portAgIO_9999);
-      UDP_Susage.timeOut();
-    }
+    pgnMatched = true;
     //return;         // no return, allow machine object to process machine reply below
   } // 0xC8 (200) - Hello from AgIO
 
@@ -457,7 +460,7 @@ void udpNtrip() {
         //Serial.print("\r\nNTRIP "); Serial.print(millis() - ntripUpdateTime); Serial.print(" len:"); Serial.print(packetLength);
         UDP.RTCM.read(RTCM_packetBuffer, buffer_size);
         SerialGPS->write(RTCM_packetBuffer, buffer_size);
-        LEDS.rtcmReceived();
+        LEDs.queueBlueFlash(LED_ID::GPS);
 
         // up to 256 byte packets are sent from AgIO and most NTRIP RTCM updates are larger so there's usually two packets per update
         if (packetLength < buffer_size){    // if buffer was not full, then end of NTRIP packet, can wait 800ms until we start checking again

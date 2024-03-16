@@ -34,7 +34,8 @@ const uint8_t encoderType = 1;             // 1 - single input, 2 - dual input (
 
 const uint8_t WAS_SENSOR_PIN = A0;      // WAS input
 const uint8_t SPEEDPULSE_PIN = 36;
-const uint8_t SPEEDPULSE10_PIN = 33;    // dummy pin, no connection on v4.x
+#include "misc.h"
+SpeedPulse speedPulse(SPEEDPULSE_PIN);     // misc.h
 
 // Cytron
 #define DIR_PIN           4     // IBT2 Enable pin

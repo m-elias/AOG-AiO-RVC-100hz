@@ -31,8 +31,6 @@ const char inoVersion[] = "RVC 100hz AiO v5.0a pre-alpha - " __DATE__;
 
 #include "clsPCA9555.h" // https://github.com/nicoverduin/PCA9555
 PCA9555 outputs(0x20);  // 0x20 - I2C addr (A0-A2 grounded), interrupt pin causes boot loop
-#include "machine.h"
-MACHINE machine;
 
 // ********* IO Defines *********
 const uint8_t encoderType = 1;             // 1 - single input, 2 - dual input (quadrature encoder)
@@ -40,6 +38,9 @@ const uint8_t encoderType = 1;             // 1 - single input, 2 - dual input (
 const uint8_t WAS_SENSOR_PIN = A15;     // WAS input
 const uint8_t SPEEDPULSE_PIN = 18;      
 const uint8_t SPEEDPULSE10_PIN = 19;   // 1/10 speedpulse output, strictly for human visualization
+#include "misc.h"
+SpeedPulse speedPulse(SPEEDPULSE_PIN, SPEEDPULSE10_PIN);     // misc.h
+
 const uint8_t PIEZO1 = 37;
 const uint8_t PIEZO2 = 36;
 

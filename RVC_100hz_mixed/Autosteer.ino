@@ -137,7 +137,11 @@ void autosteerSetup() {
   pinMode(KICKOUT_D_PIN, INPUT_PULLUP);     // also set by Encoder library
 
   // Disable pullup/down resistors for analog input pins
+  #ifdef AIOv50a
   pinMode(WORK_PIN, INPUT_DISABLE);
+  #else
+  pinMode(WORK_PIN, INPUT_PULLUP);
+  #endif
   pinMode(CURRENT_PIN, INPUT_DISABLE);
   //pinMode(KICKOUT_A_PIN, INPUT_PULLUP);   // set in steerConfigInit() according to function
   //pinMode(KICKOUT_A_PIN, INPUT_DISABLE);
@@ -168,7 +172,7 @@ void autosteerSetup() {
   }
 
   Serial.print("\r\n- AutoSteer enabled, setup complete");
-  LEDS.setSteerLED(AIO_LEDS::STEER_STATES::AUTOSTEER_READY);
+  LEDs.set(LED_ID::STEER, STEER_STATE::AUTOSTEER_READY);
 }  // End of autosteerSetup
 
 
@@ -194,7 +198,7 @@ void autoSteerUpdate() {
           char msg[] = "AutoSteer Switch OFF";
           char msgTime = 2;
           UDP.SendUdpFreeForm(1, msg, strlen(msg), msgTime, UDP.broadcastIP, UDP.portAgIO_9999);
-          LEDS.steerInputAction();
+          LEDs.activateBlueFlash(LED_ID::STEER);
         }
       }
       else if (steerReading == HIGH && prevSteerReading == LOW) {  // switch ON after prev being OFF
@@ -202,7 +206,7 @@ void autoSteerUpdate() {
         char msg[] = "AutoSteer Switch ON";
         char msgTime = 2;
         UDP.SendUdpFreeForm(1, msg, strlen(msg), msgTime, UDP.broadcastIP, UDP.portAgIO_9999);
-        LEDS.steerInputAction();
+        LEDs.activateBlueFlash(LED_ID::STEER);
       }
       prevSteerReading = steerReading;
     }
@@ -211,7 +215,7 @@ void autoSteerUpdate() {
     {
       if (steerReading == HIGH && prevSteerReading == LOW) {   // button is pressed
         steerState = !steerState;
-        LEDS.steerInputAction();
+        LEDs.activateBlueFlash(LED_ID::STEER);
         char* msg;
         if (steerState) msg = (char*)"AutoSteer Btn ON";
         else msg = (char*)"AutoSteer Btn OFF";
@@ -229,14 +233,14 @@ void autoSteerUpdate() {
       if (guidanceStatusChanged && guidanceStatus == 1 && steerState == 0 && prevSteerReading == 1) {
         steerState = 1;
         prevSteerReading = !steerState;
-        LEDS.steerInputAction();
+        LEDs.activateBlueFlash(LED_ID::STEER);
       }
 
       // If steering is ON and AoG's GUI btn is switched OFF
       if (guidanceStatusChanged && guidanceStatus == 0 && steerState == 1 && prevSteerReading == 0) {
         steerState = 0;
         prevSteerReading = !steerState;
-        LEDS.steerInputAction();
+        LEDs.activateBlueFlash(LED_ID::STEER);
       }
     }
 
@@ -311,13 +315,14 @@ void autoSteerUpdate() {
       }
     }
 
-    //Serial.println(analogRead(WORK_PIN));
+    #ifdef AIOv50a
     uint8_t read = analogRead(WORK_PIN) > ANALOG_TRIG_THRES ? HIGH : LOW;           // read work input
+    #else
+    uint8_t read = digitalRead(WORK_PIN);
+    #endif
     if (read != workInput) {
       Serial.printf("\r\nWORK input: %s", (read == 1 ? "OFF" : "ON"));
       workInput = read;
-      char msg[] = "Work switch";
-      UDP.SendUdpFreeForm(2, msg, strlen(msg), 1, UDP.broadcastIP, UDP.portAgIO_9999);
     }
 
     switchByte = 0;
@@ -406,7 +411,7 @@ void autoSteerUpdate() {
       calcSteeringPID();  //do the pid
       motorDrive();       //out to motors the pwm value
 
-      LEDS.setSteerLED(AIO_LEDS::AUTOSTEER_ACTIVE);
+      LEDs.set(LED_ID::STEER, STEER_STATE::AUTOSTEER_ACTIVE);
 
     } else {
       //we've lost the comm to AgOpenGPS, or just stop request
@@ -426,7 +431,7 @@ void autoSteerUpdate() {
       }
 
       motorDrive();  //out to motors the pwm value
-      LEDS.setSteerLED(AIO_LEDS::AUTOSTEER_READY);
+      LEDs.set(LED_ID::STEER, STEER_STATE::AUTOSTEER_READY);
 
       //Serial.print("\r\n\n*** Autosteer watchdog triggered - Autosteer disabled! ***\r\n");
     }
@@ -479,7 +484,7 @@ void adcSetup() {
     Serial.print("\r\n  - using Teensy ADC");
     useInternalADC = true;
     autoSteerEnabled = true;
-    LEDS.setSteerLED(AIO_LEDS::STEER_STATES::WAS_READY);
+    LEDs.set(LED_ID::STEER, STEER_STATE::WAS_READY);
     if (!testBothWasSensors) return;
   }
 
@@ -492,7 +497,7 @@ void adcSetup() {
     Serial.print("\n  - ADS1115 found");
     if (!useInternalADC) useExternalADS = true;
     autoSteerEnabled = true;
-    LEDS.setSteerLED(AIO_LEDS::STEER_STATES::WAS_READY);
+    LEDs.set(LED_ID::STEER, STEER_STATE::WAS_READY);
     ads1115.setSampleRate(ADS1115_REG_CONFIG_DR_860SPS);
     ads1115.setGain(ADS1115_REG_CONFIG_PGA_6_144V);
     ads1115.setMux(ADS1115_REG_CONFIG_MUX_SINGLE_0);  // ************set according to EEPROM (saved from PGN)*****************
@@ -502,7 +507,7 @@ void adcSetup() {
   {
     Serial.print("\n\n**** No WAS input detected! ****\n\n");
     autoSteerEnabled = false;
-    LEDS.setSteerLED(AIO_LEDS::STEER_STATES::WAS_ERROR);
+    LEDs.set(LED_ID::STEER, STEER_STATE::WAS_ERROR);
   }
 }  // end adcSetup()
 
