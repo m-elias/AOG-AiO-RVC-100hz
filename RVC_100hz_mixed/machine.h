@@ -96,7 +96,7 @@ public:
   bool isInit;
   elapsedMillis watchdogTimer;
 
-  uint8_t debugLevel = 0;
+  uint8_t debugLevel = 3;
     // 0 - debug prints OFF
     // 1 - alerts/errors only
     // 2 - init info

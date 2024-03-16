@@ -71,7 +71,7 @@ typedef struct {
 	IO_REG_TYPE            pin2_bitmask;
 	uint8_t                state;
 	int32_t                position;
-  int8_t                 count;
+  uint8_t                count;
 } Encoder_internal_state_t;
 
 class Encoder

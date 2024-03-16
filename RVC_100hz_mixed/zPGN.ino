@@ -202,6 +202,21 @@ void checkForPGNs()
     if (bitRead(sett, 2)) steerConfig.CurrentSensor = 1; else steerConfig.CurrentSensor = 0;
     if (bitRead(sett, 3)) steerConfig.IsUseY_Axis = 1; else steerConfig.IsUseY_Axis = 0;
 
+    Serial.print("\r\nInvertWAS "); Serial.print(steerConfig.InvertWAS);
+    Serial.print("\r\nIsRelayActiveHigh "); Serial.print(steerConfig.IsRelayActiveHigh);
+    Serial.print("\r\nMotorDriveDirection "); Serial.print(steerConfig.MotorDriveDirection);
+    Serial.print("\r\nSingleInputWAS "); Serial.print(steerConfig.SingleInputWAS);
+    Serial.print("\r\nCytronDriver "); Serial.print(steerConfig.CytronDriver);
+    Serial.print("\r\nSteerSwitch "); Serial.print(steerConfig.SteerSwitch);
+    Serial.print("\r\nSteerButton "); Serial.print(steerConfig.SteerButton);
+    Serial.print("\r\nShaftEncoder "); Serial.print(steerConfig.ShaftEncoder);
+    Serial.print("\r\nIsDanfoss "); Serial.print(steerConfig.IsDanfoss);
+    Serial.print("\r\nPressureSensor "); Serial.print(steerConfig.PressureSensor);
+    Serial.print("\r\nCurrentSensor "); Serial.print(steerConfig.CurrentSensor);
+    Serial.print("\r\nIsUseY_Axis "); Serial.print(steerConfig.IsUseY_Axis);
+    Serial.print("\r\nPulseCountMax "); Serial.print(steerConfig.PulseCountMax);
+    Serial.println();
+
     EEPROM.put(40, steerConfig);            
     steerConfigInit();  // Re-Init
     return;             // no other processing needed

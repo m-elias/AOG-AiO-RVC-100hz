@@ -73,6 +73,9 @@ void prepImuPandaData()    // run after GGA update + 40ms (timing for PANDA), fo
 
     itoa(BNO.rvcData.angVel, IMU.yawRate, 10);
     BNO.rvcData.angVel = 0;
+
+    //digitalWrite(GPS_RED_LED, 0);
+    //digitalWrite(GPS_GRN_LED, 0);
   }
   else    // No BNO in RVC mode or its disconnected, set IMU PANDA components to signal AOG that there's no IMU
   {

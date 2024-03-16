@@ -1,9 +1,9 @@
-#include <stdint.h>
-#include "elapsedMillis.h"
-#include "IPAddress.h"
 #ifndef _ETHER_h
 #define _ETHER_h
 
+#include <stdint.h>
+#include "elapsedMillis.h"
+#include "IPAddress.h"
 #include "Arduino.h"
 #include <NativeEthernet.h>
 #include <NativeEthernetUdp.h>
@@ -163,7 +163,7 @@ public:
     ForTheWire[_len + 7] = 0;
 
     if (_type == 1) { Serial.print("\r\n"); Serial.print(ForTheWire[6], DEC); Serial.print("s timed "); }
-    else Serial.print("\r\nOK ")
+    else Serial.print("\r\nOK ");
 
     Serial.print(" pop-up msg sent to AOG: "); Serial.print("\"");
     for (byte i = 7; i < sizeof(ForTheWire) - 1; i++) {
