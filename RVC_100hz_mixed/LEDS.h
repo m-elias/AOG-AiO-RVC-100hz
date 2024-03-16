@@ -1,7 +1,3 @@
-#include <stdint.h>
-//#include <stdint.h>
-//#include "wiring.h"
-//#include "Arduino.h"
 /*
   This is a library written for AgOpenGPS AIO PCBs with RGB faceplate LEDs
   - written by Matt Elias, 2024
@@ -19,6 +15,8 @@
 
 #include "elapsedMillis.h"
 #include <Adafruit_NeoPixel.h>  // https://github.com/adafruit/Adafruit_NeoPixel/blob/master/Adafruit_NeoPixel.h
+#include "core_pins.h"
+#include <stdint.h>
 
 typedef enum {
   PWR_ETH,
@@ -36,7 +34,7 @@ typedef enum {
 } LED_STAGE;
 
 typedef enum {
-  PWR_OFF,            // stage 0: RGB OFF
+  PWR_OFF,            // stage 0: LED OFF
   PWR_ON,             // stage 1: red solid
   NO_ETH,             // stage 2: red blinking
   ETH_READY,          // stage 3: green blinking
@@ -44,7 +42,7 @@ typedef enum {
 } PWR_ETH_STATE;
 
 typedef enum {
-  ZERO,               // stage 0: RGB OFF
+  ZERO,               // stage 0: LED OFF
   WAS_ERROR,          // stage 1: red solid
   WAS_READY,          // stage 2: red blinking
   AUTOSTEER_READY,    // stage 3: green blinking
@@ -53,10 +51,24 @@ typedef enum {
 
 class LEDS {
 private:
-  const uint8_t WS2811_PIN = 33;
-  const uint8_t NUM_LEDS = 4;
-  Adafruit_NeoPixel WS2811 = Adafruit_NeoPixel(NUM_LEDS, WS2811_PIN, NEO_BGR + NEO_KHZ800);
+  #ifdef AIOv4x
+    /*#define PWR_ETH_RED_LED   5  // LED 1 - Red
+    #define PWR_ETH_GRN_LED     6  // LED 1 - Green
+    #define GPS_RED_LED         9  // LED 2 - Red
+    #define GPS_GRN_LED        10  // LED 2 - Green
+    #define AUTOSTEER_RED_LED  11  // LED 3 - Red
+    #define AUTOSTEER_GRN_LED  12  // LED 3 - Green*/
+    const uint8_t v4redLEDio[3] = { 5, 9, 11 };
+    const uint8_t v4grnLEDio[3] = { 6, 10, 12 };
+    const uint8_t NUM_LEDS = 3;
+  #else 
+    const uint8_t NUM_LEDS = 4;
+  #endif
 
+  const uint8_t WS2811_PIN = 33;    // unused IO on v4
+  Adafruit_NeoPixel WS2811 = Adafruit_NeoPixel(NUM_LEDS, WS2811_PIN, NEO_BGR + NEO_KHZ800);
+  #define GGA_LED    13  // Teensy built-in LED
+    
   uint8_t mainBrightness       = 255;     // main brightness level, 0-255, controls all RGB LEDs
   uint8_t redBrightnessScale   = 255;     // sets brightness scaling, 0-255, for balancing R G B elements
   uint8_t greenBrightnessScale = 255;
@@ -79,29 +91,18 @@ private:
     "UNUSED"
   };
 
-  #ifdef AIOv4x
-    /*#define GGA_LED            13  // Teensy built-in LED
-    #define PWR_ETH_RED_LED     5  // LED 1 - Red
-    #define PWR_ETH_GRN_LED     6  // LED 1 - Green
-    #define GPS_RED_LED         9  // LED 2 - Red
-    #define GPS_GRN_LED        10  // LED 2 - Green
-    #define AUTOSTEER_RED_LED  11  // LED 3 - Red
-    #define AUTOSTEER_GRN_LED  12  // LED 3 - Green*/
-    const uint8_t v4redLEDio[4] = { 5, 9, 11, 35 };
-    const uint8_t v4grnLEDio[4] = { 6, 10, 12, 20 };
-  #endif
 
 
 public:
 
-  struct RGB_DATA {
+  struct LED_DATA {
     uint8_t stage;           // stores hierarchy of stages, bit0 - red solid, bit1 - red blink, bit2 - green blink, bit3 - green solid, highest ON bit determines color
     uint8_t redValue;        // stores red value while LED is OFF during a blink stage
     uint8_t greenValue;
     uint8_t blueValue;
     //bool blinkState;
     bool blueFlash;
-  }; RGB_DATA data[4];
+  }; LED_DATA data[4];
 
   LEDS(uint16_t _updatePeriod) {
     updatePeriod = _updatePeriod;
@@ -124,6 +125,7 @@ public:
         pinMode(v4grnLEDio[i], OUTPUT);
       }
     #endif
+    pinMode(GGA_LED, OUTPUT);
     WS2811.begin();
     delay(1);
     WS2811.clear();
@@ -131,7 +133,12 @@ public:
     updateLoop();
   }
 
-  void setGpsLED(uint8_t _fixState, bool _debug = false) {
+  void toggleTeensyLED() {
+    digitalWrite(GGA_LED, !digitalRead(GGA_LED));
+  }
+
+  void setGpsLED(uint8_t _fixState, bool _debug = false)
+  {
     gpsUpdateTimeoutTimer = 0;
 
     switch (_fixState) {
@@ -159,7 +166,8 @@ public:
     }
   }
 
-  void set(uint8_t _id, uint8_t _stage, bool _debug = false) {
+  void set(uint8_t _id, uint8_t _stage, bool _debug = false)
+  {
     if (_id == LED_ID::PWR_ETH && _stage == AGIO_CONNECTED) agioHelloTimeoutTimer = 0;
     if (_stage == data[_id].stage) return;
     
@@ -199,7 +207,8 @@ public:
     #endif
   }
 
-  void updateLoop() {
+  void updateLoop()
+  {
     if (agioHelloTimeoutTimer > 5000) set(LED_ID::PWR_ETH, ETH_READY, true); // sets PWR__ETH LED to green_blink if AgIO Hello times out after 5s
     if (gpsUpdateTimeoutTimer > 3000) setGpsLED(3, true);                    // sets GPS LED OFF if no GPS update for 3s
 
@@ -233,10 +242,9 @@ public:
       {
         blueFlashState = 1;
 
-        for (byte i = 0; i < NUM_LEDS; i++) {
-          if (data[i].blueFlash) {
-            WS2811.setPixelColor(i, 0, 0, blueBrightnessScale);
-          }
+        for (byte i = 0; i < NUM_LEDS; i++)
+        {
+          if (data[i].blueFlash) WS2811.setPixelColor(i, 0, 0, blueBrightnessScale);
         }
         WS2811.show();
       }
@@ -246,7 +254,8 @@ public:
         //blueFlashState = 0;
         blueFlashEnabled = 0;
 
-        for (byte i = 0; i < NUM_LEDS; i++) {
+        for (byte i = 0; i < NUM_LEDS; i++)
+        {
           if (data[i].blueFlash) {
             // add "&& !blinkNextLoop" to additionally flash blue during ON stage of blink cycle
             if ((data[i].stage == STAGE2_RED_BLINK || data[i].stage == STAGE3_GREEN_BLINK)) {// && !blinkNextLoop) {
@@ -273,7 +282,7 @@ public:
 
   // instantly flash LED blue
   void activateBlueFlash(uint8_t _id) {
-    // add function to instantly flash blue?
+    // add code to instantly flash blue instead of waiting for next timed cycle
     data[_id].blueFlash = 1;
   }
 

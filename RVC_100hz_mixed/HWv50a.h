@@ -29,12 +29,7 @@
 #define AIOv50a
 const char inoVersion[] = "RVC 100hz AiO v5.0a pre-alpha - " __DATE__;
 
-#include "clsPCA9555.h" // https://github.com/nicoverduin/PCA9555
-PCA9555 outputs(0x20);  // 0x20 - I2C addr (A0-A2 grounded), interrupt pin causes boot loop
-
 // ********* IO Defines *********
-const uint8_t encoderType = 1;             // 1 - single input, 2 - dual input (quadrature encoder)
-
 const uint8_t WAS_SENSOR_PIN = A15;     // WAS input
 const uint8_t SPEEDPULSE_PIN = 18;      
 const uint8_t SPEEDPULSE10_PIN = 19;   // 1/10 speedpulse output, strictly for human visualization
@@ -43,10 +38,6 @@ SpeedPulse speedPulse(SPEEDPULSE_PIN, SPEEDPULSE10_PIN);     // misc.h
 
 const uint8_t PIEZO1 = 37;
 const uint8_t PIEZO2 = 36;
-
-uint8_t pcaOutputPinNumbers[8] = { 1, 0, 12, 15, 9, 8, 6, 7 };          // all 8 PCA9555 section/machine output pin numbers
-//const uint8_t pcaInputPinNumbers[]  = { 14, 13, 11, 10, 2, 3, 4, 5 };   // all 8 PCA9555 section/machine output "sensing" pin numbers
-
 
 // Cytron
 #define DIR_PIN           6     // IBT2 Enable pin (IBT not really used on these AIO)

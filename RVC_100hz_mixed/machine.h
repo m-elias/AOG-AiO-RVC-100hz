@@ -158,6 +158,8 @@ public:
 
   void watchdogCheck()
   {
+    if (!isInit) return;
+
     if (watchdogTimer > watchdogTimeoutPeriod)    // watchdogTimer reset with Machine Data PGN, should be 64 Section instead or both?
     {
       if (debugLevel > 0) Serial.print("\r\n*** UDP Machine Comms lost for 4s, setting all outputs OFF! ***");

@@ -130,6 +130,7 @@ void GNS_Handler() // Rec'd GNS
     if (nmeaDebug) Serial.print((String)"\r\n" + millis() + " GNS update ");
     if (nmeaDebug) Serial.print(GGA.fixTime);
     GGA_GNS_PostProcess();
+    LEDs.toggleTeensyLED();
     gpsLostTimer = 0;                       // Used for GGA timeout (LED's ETC) 
 }
 
@@ -167,6 +168,7 @@ void GGA_Handler() // Rec'd GGA
     if (nmeaDebug) Serial.print((String)"\r\n" + millis() + " GGA update ");
     if (nmeaDebug) Serial.print(GGA.fixTime);
     GGA_GNS_PostProcess();
+    LEDs.toggleTeensyLED();
     gpsLostTimer = 0;                       // Used for GGA timeout (LED's ETC) 
 }
 

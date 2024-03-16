@@ -44,3 +44,15 @@ void parserSetup()
   nmeaParser.addHandler("G-GNS", GNS_Handler);
   nmeaParser.addHandler("G-VTG", VTG_Handler);
 }
+
+void resetStartingTimersBuffers()
+{
+  //machine.watchdogTimer = 0;
+  SerialGPS->clear();
+  SerialGPS2->clear();
+  if (BNO.isActive) while (!BNO.read(true));
+  #ifdef AIOv50a
+  machine.watchdogTimer = 0;
+  #endif
+  startup = true;
+}

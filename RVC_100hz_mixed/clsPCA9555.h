@@ -46,8 +46,8 @@ public:
     bool begin();                                        // Checks if PCA is responsive
     void printBinary(uint16_t var);                      // to print binary with leading zeros
     bool enabled;
-    const uint8_t outputPins[8] = { 1, 0, 12, 15, 9, 8, 6, 7 };
-    const uint8_t inputPins[8]  = { 14, 13, 11, 10, 2, 3, 4, 5 };
+    //const uint8_t outputPins[8] = { 1, 0, 12, 15, 9, 8, 6, 7 };
+    //const uint8_t inputPins[8]  = { 14, 13, 11, 10, 2, 3, 4, 5 };
 
 private:
     static PCA9555* instancePointer;

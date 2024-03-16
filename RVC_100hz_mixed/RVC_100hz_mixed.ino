@@ -11,6 +11,7 @@ Single
 - Once GGA/GNS arrives (if !useDual)
 	- build PANDA msg and send out
 	- Otherwise if useDual, wait for relposned in main loop()
+
 Dual
 - if relposned arrives
 	- set useDual for duration of runtime
@@ -20,12 +21,16 @@ Dual
 			- if carrsoln is not full RTK "wind down" dual roll by x0.9 each GPS update
 	- Send paogi
 
+Machine/Section outputs
+- only supported by v5.0a
+
 
 To-do
 - consolidate all EEPROM addrs in one place?
     - Ethernet, Autosteer, machine
-- test autosteer watch dog timeout from lost comms
-- verify Module Hello repy telemetry is working (display in AgIO advanced view)
+- test/fix autosteer watch dog timeout from lost comms
+- write piezo class
+- expand machine/PCA9555 to monitor output pins with input pins
 
 - Testing !!!
   - pressure/current inputs should be scaled the same as old firmware, only bench tested by Matt
@@ -34,15 +39,17 @@ To-do
 
 
 
-See hw.h for hardware (board specfic) definitions (IO & Serial)
-See defines.h for library & other variable definitions
+See HWv??.h for hardware (board specfic) definitions (IO & Serial)
+See common.h for library & other variable definitions
 See PGN.ino for PGN parsing
-
 */
 
 // pick only one or the other
 //#include "HWv50a.h"
 #include "HWv4x.h"
+
+const uint8_t encoderType = 1;  // 1 - single input
+                                // 2 - dual input (quadrature encoder), uses Kickout_A (Pressure) & Kickout_D (Remote) inputs
 
 #include "common.h"
 
@@ -73,12 +80,12 @@ void setup()
   parserSetup();                            // setup.ino
   BNO.begin(SerialIMU);                     // BNO_RVC.cpp
 
-  #ifdef AIOv50a
+  //#ifdef AIOv50a
     if (outputs.begin()) {
       Serial << "\r\nSection outputs (PCA9555) detected (8 channels, low side switching)";   // clsPCA9555.cpp
       machine.init(&outputs, pcaOutputPinNumbers, 100);                                      // mach.h
     } else Serial << "\r\n*** Section outputs (PCA9555) NOT detected! ***";
-  #endif
+  //#endif
 
   if (UDP.init())                           // Eth_UDP.h
     LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::ETH_READY);
@@ -89,18 +96,18 @@ void setup()
 
   Serial.println("\r\n\nEnd of setup, waiting for GPS...\r\n"); 
   delay(1);
-  resetStartingTimersBuffers();
+  resetStartingTimersBuffers();             // setup.ino
 }
 
 
 
 void loop()
 {
-  #ifdef AIOv50a
+  //#ifdef AIOv50a
     MACHusage.timeIn();
     machine.watchdogCheck();                // machine.h
     MACHusage.timeOut();
-  #endif
+  //#endif
 
   PGNusage.timeIn();
   checkForPGNs();                           // check for AgIO Sending PGNs, AgIO sends autosteer data at ~10hz
@@ -219,6 +226,11 @@ void loop()
   }
 
 
+  // *************************************************************************************************
+  // ************************************* other update routines *************************************
+  // *************************************************************************************************
+
+
   // this is only for dual stats monitoring
   if (dualTime != ubxParser.ubxData.iTOW)
   {
@@ -230,23 +242,17 @@ void loop()
     dualTime = ubxParser.ubxData.iTOW;
   }
   
-
-
-
-  // *******************************
-  // **** other update routines ****
-  // *******************************
   if (bufferStatsTimer > 5000) printTelem();
   
   LEDSusage.timeIn();
-  LEDs.updateLoop();
+  LEDs.updateLoop();                  // LEDS.h
   LEDSusage.timeOut();
   
-  checkUSBSerial();
-  speedPulse.update();
+  checkUSBSerial();                   // debug.ino
+  speedPulse.update();                // misc.h
 
   #ifdef RESET_H
-    teensyReset.update();
+    teensyReset.update();             // reset.h
   #endif
 
   // to count loop hz & get baseline cpu "idle" time
@@ -256,114 +262,5 @@ void loop()
 } // end of loop()
 
 
-void resetStartingTimersBuffers()
-{
-  //machine.watchdogTimer = 0;
-  SerialGPS->clear();
-  SerialGPS2->clear();
-  if (BNO.isActive) while (!BNO.read(true));
-  #ifdef AIOv50a
-  machine.watchdogTimer = 0;
-  #endif
-  startup = true;
-}
-
-
-void checkUSBSerial()
-{
-  if (Serial.available())
-  {
-    uint8_t usbRead = Serial.read();
-    if (usbRead == 'r')
-    {
-      Serial.print("\r\n\n* Resetting hi/lo stats *");
-      gps1Stats.resetAll();
-      gps2Stats.resetAll();
-      relJitterStats.resetAll();
-      relTtrStats.resetAll();
-      bnoStats.resetAll();
-    }
-    else if (usbRead == 'n')
-    {
-      nmeaDebug = !nmeaDebug;
-    }
-    else if (usbRead == 'c')
-    {
-      printCpuUsages = !printCpuUsages;
-    }
-    else if (usbRead == 's')
-    {
-      printStats = !printStats;
-    }
-    #ifdef AIOv50a
-    else if (usbRead == 'm' && Serial.available() > 0)
-    {
-      usbRead = Serial.read();
-      if (usbRead >= '0' && usbRead <= '5') {
-        machine.debugLevel = usbRead - '0';   // convert ASCII numerical char to byte
-      }
-      Serial.print((String)"\r\nMachine debugLevel: " + machine.debugLevel);
-    }
-    #endif
-    else if (usbRead == 'g' && Serial.available() > 0)
-    {
-      usbRead = Serial.read();
-      if (usbRead >= '0' && usbRead <= '5') {
-        LEDs.setGpsLED(usbRead - '0', true);
-      }
-    }
-  }
-}
-
-void printTelem()
-{
-  if (printStats)
-  {
-    gps1Stats.printStatsReport((char*)"GPS1");
-    gps2Stats.printStatsReport((char*)"GPS2");
-    relJitterStats.printStatsReport((char*)"RELj");
-    relTtrStats.printStatsReport((char*)"RELr");
-    bnoStats.printStatsReport((char*)"BNO");
-  }
-
-  if (printCpuUsages)
-  {
-    uint32_t rs232report = RS232usage.reportAve();
-    uint32_t baselineProcUsage = LOOPusage.reportAve();
-    uint32_t dacReport = DACusage.reportAve();
-    Serial.print("\r\n\nLoop   cpu: "); printCpuPercent(baselineProcUsage);
-    Serial.print(" "); Serial.print(testCounter / bufferStatsTimer); Serial.print("kHz"); // up to 400k hits/s
-    Serial.print("\r\nBNO_R  cpu: "); printCpuPercent(cpuUsageArray[0]->reportAve(baselineProcUsage));
-    Serial.print("\r\nGPS1   cpu: "); printCpuPercent(GPS1usage.reportAve(baselineProcUsage));// - rs232report);
-    Serial.print("\r\nGPS2   cpu: "); printCpuPercent(GPS2usage.reportAve(baselineProcUsage));
-    //Serial.print("\r\nRadio  cpu: "); printCpuPercent(RTKusage.reportAve(baselineProcUsage));
-    Serial.print("\r\nPGN    cpu: "); printCpuPercent(PGNusage.reportAve(baselineProcUsage));
-    Serial.print("\r\nAS     cpu: "); printCpuPercent(ASusage.reportAve() - dacReport);
-    Serial.print("\r\nNTRIP  cpu: "); printCpuPercent(NTRIPusage.reportAve());  // uses a timed update, virtually no extra time penalty
-    Serial.print("\r\nIMU_H  cpu: "); printCpuPercent(IMU_Husage.reportAve());
-    Serial.print("\r\nNMEA_P cpu: "); printCpuPercent(NMEA_Pusage.reportAve());
-    Serial.print("\r\nUBX_P  cpu: "); printCpuPercent(UBX_Pusage.reportAve());
-    Serial.print("\r\nUDP_S  cpu: "); printCpuPercent(UDP_Susage.reportAve());
-    Serial.print("\r\nLEDS   cpu: "); printCpuPercent(LEDSusage.reportAve(baselineProcUsage));
-    
-    #ifdef AIOv50a
-      Serial.print("\r\nRS232  cpu: "); printCpuPercent(rs232report); //RS232usage is inside GPS2 "if" statement so it inccurs virtually no extra time penalty
-      Serial.print("\r\nMach   cpu: "); printCpuPercent(MACHusage.reportAve(baselineProcUsage));
-    #endif
-
-    #ifdef JD_DAC_H
-      Serial.print("\r\nDAC    cpu: "); printCpuPercent(dacReport);
-    #endif
-
-    Serial.println();
-  }
-
-  testCounter = 0;
-  bufferStatsTimer = 0;
-}
-
-void printCpuPercent(uint32_t _time) {
-  Serial.printf("%4.1f", (float)_time / 10000.0); Serial.print("%");
-}
 
 
