@@ -11,6 +11,7 @@
 
 void checkForPGNs()
 {
+  #ifdef AIOv50a
   ESP32usage.timeIn();
   if (SerialESP32->available())
   {
@@ -48,6 +49,7 @@ void checkForPGNs()
     }
   }
   ESP32usage.timeOut();
+  #endif
 
 
   PGNusage.timeIn();
@@ -67,6 +69,7 @@ void checkForPGNs()
   if (udpData[0] != 0x80 || udpData[1] != 0x81 || udpData[2] != 0x7F) return;  // verify first 3 PGN header bytes
   bool pgnMatched = false;
 
+  #ifdef AIOv50a
   //if (udpData[3] != 100) {
     ESP32usage.timeIn();
     SerialESP32->write(udpData, len);
@@ -77,6 +80,7 @@ void checkForPGNs()
     }*/
     ESP32usage.timeOut();
   //}
+  #endif
 
   // changed to multiple IF statements instead of IF ELSE so that AgIO Hello and Scan Request PGNs can be pickedup by other object/classes (ie machine)
 

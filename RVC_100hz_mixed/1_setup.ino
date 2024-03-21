@@ -57,7 +57,9 @@ void resetStartingTimersBuffers()
   //machine.watchdogTimer = 0;
   SerialGPS->clear();
   SerialGPS2->clear();
+  #ifdef AIOv50a
   SerialESP32->clear();
+  #endif
   if (BNO.isActive) while (!BNO.read(true));
   machine.watchdogTimer = 0;
   startup = true;
