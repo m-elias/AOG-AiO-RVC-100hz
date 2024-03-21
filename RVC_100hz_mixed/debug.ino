@@ -59,6 +59,7 @@ void printTelem()
   {
     uint32_t baselineProcUsage = LOOPusage.reportAve();
     uint32_t dacReport = DACusage.reportAve();
+    uint32_t esp32Report = ESP32usage.reportAve();
     Serial.print("\r\n\nLoop   cpu: "); printCpuPercent(baselineProcUsage);
     Serial.print(" "); Serial.print(testCounter / bufferStatsTimer); Serial.print("kHz"); // up to 400k hits/s
     Serial.print("\r\nBNO_R  cpu: "); printCpuPercent(cpuUsageArray[0]->reportAve(baselineProcUsage));
@@ -74,6 +75,7 @@ void printTelem()
     Serial.print("\r\nUDP_S  cpu: "); printCpuPercent(UDP_Susage.reportAve());
     Serial.print("\r\nLEDS   cpu: "); printCpuPercent(LEDSusage.reportAve(baselineProcUsage));
     Serial.print("\r\nMach   cpu: "); printCpuPercent(MACHusage.reportAve(baselineProcUsage));
+    Serial.print("\r\nESP32  cpu: "); printCpuPercent(ESP32usage.reportAve(baselineProcUsage));
     
     #ifdef AIOv50a
       Serial.print("\r\nRS232  cpu: "); printCpuPercent(RS232usage.reportAve(baselineProcUsage));

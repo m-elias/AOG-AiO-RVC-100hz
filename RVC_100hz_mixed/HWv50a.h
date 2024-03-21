@@ -1,3 +1,4 @@
+#include "HardwareSerial.h"
 //
 // connection plan:
 // Teensy Serial 5 RX (21) to F9P Position receiver TX1 (Position data)
@@ -53,6 +54,7 @@ const uint8_t PIEZO2 = 36;
 
 // ********* Serial Assignments *********
 #define SerialRTK Serial3               // RTK radio
+//HardwareSerial SerialRTK = Serial3;   // causes boot loop
 HardwareSerial* SerialIMU = &Serial6;   // IMU BNO-085 in RVC serial mode
 HardwareSerial* SerialGPS = &Serial5;   // Main postion receiver (GGA & VTG)
 HardwareSerial* SerialGPS2 = &Serial8;  // Dual heading receiver  (relposNED)
@@ -63,7 +65,7 @@ HardwareSerial* SerialESP32 = &Serial2; // ESP32
 const int32_t baudGPS = 921600;
 const int32_t baudRTK = 115200;     // most are using Xbee radios with default of 115200, *webconfig*
 const int32_t baudRS232 = 57600;
-const int32_t baudESP32 = 460800;
+const int32_t baudESP32 = 115200;
 
 #else
 There has been a PCB/hardware selection error, only select one HWxxx.h file

@@ -2,16 +2,54 @@
 
   UDP - Receive PGNs sent from AgIO - sent to port 8888
 
-  most of this code taken from old AIO I2C firmware
+  a lot of this code taken from old AIO I2C firmware
 
 */
 
 #define UDP_MAX_PACKET_SIZE 40         // Buffer For Receiving 8888 UDP PGN Data
-uint8_t udpData[UDP_MAX_PACKET_SIZE];  // UDP_TX_PACKET_MAX_SIZE is not large enough for machine pin settings PGN
 //uint32_t pgn254Time, pgn254MaxDelay, pgn254AveDelay, pgn254MinDelay = 99999;
 
 void checkForPGNs()
 {
+  ESP32usage.timeIn();
+  if (SerialESP32->available())
+  {
+    static uint8_t incomingBytes[50];
+    static uint8_t incomingIndex;
+    incomingBytes[incomingIndex] = SerialESP32->read();
+    incomingIndex++;
+    /*Serial.print("\r\nindex: "); Serial.print(incomingIndex);
+    Serial.print(" ");
+    for (byte i = 0; i < incomingIndex; i++) {
+      Serial.print(incomingBytes[i]);
+      Serial.print(" ");
+    }*/
+
+    if (incomingBytes[incomingIndex - 2] == 13 && incomingBytes[incomingIndex - 1] == 10)
+    {
+      if (incomingBytes[0] == 128 && incomingBytes[1] == 129)
+      {
+
+        // Modules--Wifi:9999-->ESP32--serial-->Teensy--ethernet:9999-->AgIO
+        UDP.SendUdpByte(incomingBytes, incomingIndex - 2, UDP.broadcastIP, UDP.portAgIO_9999);
+
+        //pass data to USB for debug
+        Serial.print("\r\nE32-s->T41-e:9999->AgIO ");
+        for (byte i = 0; i < incomingIndex - 2; i++) {
+          Serial.print(incomingBytes[i]);
+          Serial.print(" ");
+        }
+        Serial.print((String)" (" + SerialESP32->available() + ")");
+      } else {
+        Serial.print("\r\n\nCR/LF detected but [0]/[1] bytes != 128/129\r\n");
+      }
+      incomingIndex = 0;
+    }
+  }
+  ESP32usage.timeOut();
+
+
+  PGNusage.timeIn();
   static uint32_t pgnCheckTime;
   uint32_t millisNow = millis();
   if (millisNow < pgnCheckTime) return;   // only need to check for new PGN data every ms, not 100s of times per ms
@@ -21,206 +59,31 @@ void checkForPGNs()
   if (!UDP.isRunning) return;                           // When ethernet is not running, return directly. parsePacket() will block when we don't
   uint16_t len = UDP.PGN.parsePacket();                 //get data from AgIO sent by 9999 to this 8888
   if (UDP.PGN.remotePort() != 9999 || len < 5) return;  //make sure from AgIO
+
+  uint8_t udpData[UDP_MAX_PACKET_SIZE];  // UDP_TX_PACKET_MAX_SIZE is not large enough for machine pin settings PGN
   UDP.PGN.read(udpData, UDP_MAX_PACKET_SIZE);
 
   if (udpData[0] != 0x80 || udpData[1] != 0x81 || udpData[2] != 0x7F) return;  // verify first 3 PGN header bytes
   bool pgnMatched = false;
 
+  //if (udpData[3] != 100) {
+    ESP32usage.timeIn();
+    SerialESP32->write(udpData, len);
+    SerialESP32->println();   // to signal end of PGN
+    Serial.print("\r\nAgIO-e:8888->T41-s->E32 ");
+    for (uint8_t i = 0; i < len; i++) {
+      Serial.print(udpData[i]); Serial.print(" ");
+    }
+    ESP32usage.timeOut();
+  //}
+
   // changed to multiple IF statements instead of IF ELSE so that AgIO Hello and Scan Request PGNs can be pickedup by other object/classes (ie machine)
-  if (udpData[3] == 0xFE && len == 14)        // 0xFE (254) - Steer Data (sent at GPS freq, ie 10hz (100ms))
+
+  if (udpData[3] == 100 && len == 22)  // 0x64 (100) - Corrected Position
   {
-    //printPgnAnnoucement(udpData[3], (char*)"Steer Data", len);
-
-    if (aogGpsToAutoSteerLoopTimerEnabled)
-    {
-      aogGpsToAutoSteerLoopTimerEnabled = false;
-      Serial.print((String)"\r\nGPS out to Steer Data in delay: " + aogGpsToAutoSteerLoopTimer);
-    }
-    /*Serial.printf(" %6i", micros() - pgn254Time);
-    pgn254Time = micros();
-    uint32_t pgn254Delay = pgn254Time - nmeaPgnSendTime;
-    if (pgn254Delay < pgn254MinDelay) pgn254MinDelay = pgn254Delay;
-    if (pgn254Delay > pgn254MaxDelay) pgn254MaxDelay = pgn254Delay;
-    if (pgn254AveDelay == 0) pgn254AveDelay = pgn254Delay;
-    else pgn254AveDelay = pgn254AveDelay * 0.99 + pgn254Delay * 0.01;
-    Serial.printf("->PGN254 delay: %4iuS  %4i %4i %4i", pgn254Delay, pgn254MinDelay, pgn254AveDelay, pgn254MaxDelay);*/
-    float gpsSpeed = ((float)(udpData[5] | udpData[6] << 8)) * 0.1;   // speed data comes in as km/hr x10
-    //Serial << "\r\n speed:" << gpsSpeed << " "; Serial.print(udpData[5], BIN); Serial << " "; Serial.print(udpData[6], BIN);
-    speedPulse.updateSpeed(gpsSpeed);
-
-    prevGuidanceStatus = guidanceStatus;
-    guidanceStatus = udpData[7];
-    guidanceStatusChanged = (guidanceStatus != prevGuidanceStatus);
-
-    //Bit 8,9    set point steer angle * 100 is sent
-    steerAngleSetPoint = ((float)(udpData[8] | ((int8_t)udpData[9]) << 8)) * 0.01;  //high low bytes
-
-    // moved to 100hz AS loop for quicker reactions
-    if ((bitRead(guidanceStatus, 0) == 0) || (steerState == 0)) { // || (gpsSpeed < 0.1)) {
-      watchdogTimer = WATCHDOG_FORCE_VALUE;  //turn off steering motor
-      //Serial.print(" OFF");
-    } else {                                 //valid conditions to turn on autosteer
-      watchdogTimer = 0;                     //reset watchdog
-      //Serial.print(" ON");
-    }
-
-    //Bit 10 Tram
-    //tram = udpData[10];
-
-    //Bit 11
-    //relay = udpData[11];
-
-    //Bit 12
-    //relayHi = udpData[12];
-
-    //----------------------------------------------------------------------------
-    // Reply to send to AgIO
-    // fromAutoSteerData FD 253 - ActualSteerAngle*100 -56, SwitchByte-7, pwmDisplay-8
-    uint8_t PGN_253[] = { 0x80, 0x81, 126, 0xFD, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0xCC };
-
-    int16_t sa = (int16_t)(steerAngleActual * 100);
-    PGN_253[5] = (uint8_t)sa;
-    PGN_253[6] = sa >> 8;
-
-    // heading
-    PGN_253[7] = (uint8_t)9999;
-    PGN_253[8] = 9999 >> 8;
-
-    // roll
-    PGN_253[9] = (uint8_t)8888;
-    PGN_253[10] = 8888 >> 8;
-
-    PGN_253[11] = switchByte;
-    PGN_253[12] = (uint8_t)pwmDrive;
-
-    //checksum
-    int16_t CK_A = 0;
-    for (uint8_t i = 2; i < sizeof(PGN_253) - 1; i++)
-      CK_A = (CK_A + PGN_253[i]);
-
-    PGN_253[sizeof(PGN_253) - 1] = CK_A;
-
-    //off to AOG
-    UDP_Susage.timeIn();
-    UDP.SendUdpByte(PGN_253, sizeof(PGN_253), UDP.broadcastIP, UDP.portAgIO_9999);
-    UDP_Susage.timeOut();
-
-    //Steer Data 2 -------------------------------------------------
-    /*if (steerConfig.PressureSensor || steerConfig.CurrentSensor) {
-      if (aog2Count++ > 2) {                                // send 1/3 of Steer Data rate (GPS hz / 3)
-        // fromAutoSteerData FD 250 - sensor values etc
-        uint8_t PGN_250[] = { 0x80, 0x81, 126, 0xFA, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0xCC };
-
-        //Send fromAutosteer2
-        PGN_250[5] = (byte)sensorReading;
-
-        //add the checksum for AOG2
-        CK_A = 0;
-
-        for (uint8_t i = 2; i < sizeof(PGN_250) - 1; i++) {
-          CK_A = (CK_A + PGN_250[i]);
-        }
-
-        PGN_250[sizeof(PGN_250) - 1] = CK_A;
-
-        //off to AOG
-        UDP_Susage.timeIn();
-        UDP.SendUdpByte(PGN_250, sizeof(PGN_250), UDP.broadcastIP, UDP.portAgIO_9999);
-        UDP_Susage.timeOut();
-        aog2Count = 0;
-      }
-    }*/
-
-    if (aog2Count++ > 1) {                                // send 1/2 of Steer Data rate (GPS hz / 2)
-      // fromAutoSteerData FD 250 - sensor values etc
-      uint8_t PGN_250[] = { 0x80, 0x81, 126, 0xFA, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0xCC };
-
-      if (steerConfig.PressureSensor || steerConfig.CurrentSensor) {
-        PGN_250[5] = (byte)sensorReading;
-      } else {
-        PGN_250[5] = (byte)pulseCount;
-      }
-
-      CK_A = 0;
-      for (uint8_t i = 2; i < sizeof(PGN_250) - 1; i++) {
-        CK_A = (CK_A + PGN_250[i]);
-      }
-      PGN_250[sizeof(PGN_250) - 1] = CK_A;
-
-      UDP_Susage.timeIn();
-      UDP.SendUdpByte(PGN_250, sizeof(PGN_250), UDP.broadcastIP, UDP.portAgIO_9999);
-      UDP_Susage.timeOut();
-      aog2Count = 0;
-    }
-    return;                     // no other processing needed
-  }  // 0xFE (254) - Steer Data
-
-
-  if (udpData[3] == 0xFC && len == 14)         // 0xFC (252) - Steer Settings
-  {
-    printPgnAnnoucement(udpData[3], (char*)"Steer Settings", len);
-    //PID values
-    steerSettings.Kp = ((float)udpData[5]);    // read Kp from AgOpenGPS
-    steerSettings.highPWM = udpData[6];        // read high pwm
-    steerSettings.lowPWM = (float)udpData[7];  // read lowPWM from AgOpenGPS
-    steerSettings.minPWM = udpData[8];         //read the minimum amount of PWM for instant on
-
-    float temp = (float)steerSettings.minPWM * 1.2;
-    steerSettings.lowPWM = (byte)temp;
-
-    steerSettings.steerSensorCounts = udpData[9];   //sent as setting displayed in AOG
-    steerSettings.wasOffset = (udpData[10]);        //read was zero offset Lo
-    steerSettings.wasOffset |= (udpData[11] << 8);  //read was zero offset Hi
-    steerSettings.AckermanFix = (float)udpData[12] * 0.01;
-
-    //Serial << "\r\nwasOffset: " << steerSettings.wasOffset;
-
-    EEPROM.put(10, steerSettings);
-    steerSettingsInit();  // Re-Init steer settings
-    return;               // no other processing needed
-  }  // 0xFC (252) - Steer Settings
-
-
-  if (udpData[3] == 0xFB && len == 14)  // 0xFB (251) - SteerConfig
-  {
-    printPgnAnnoucement(udpData[3], (char*)"Steer Config", len);
-    uint8_t sett = udpData[5]; //setting0
-    if (bitRead(sett, 0)) steerConfig.InvertWAS = 1; else steerConfig.InvertWAS = 0;
-    if (bitRead(sett, 1)) steerConfig.IsRelayActiveHigh = 1; else steerConfig.IsRelayActiveHigh = 0;
-    if (bitRead(sett, 2)) steerConfig.MotorDriveDirection = 1; else steerConfig.MotorDriveDirection = 0;
-    if (bitRead(sett, 3)) steerConfig.SingleInputWAS = 1; else steerConfig.SingleInputWAS = 0;
-    if (bitRead(sett, 4)) steerConfig.CytronDriver = 1; else steerConfig.CytronDriver = 0;
-    if (bitRead(sett, 5)) steerConfig.SteerSwitch = 1; else steerConfig.SteerSwitch = 0;
-    if (bitRead(sett, 6)) steerConfig.SteerButton = 1; else steerConfig.SteerButton = 0;
-    if (bitRead(sett, 7)) steerConfig.ShaftEncoder = 1; else steerConfig.ShaftEncoder = 0;
-
-    steerConfig.PulseCountMax = udpData[6];
-
-    sett = udpData[8]; //setting1 - Danfoss valve etc
-    if (bitRead(sett, 0)) steerConfig.IsDanfoss = 1; else steerConfig.IsDanfoss = 0;
-    if (bitRead(sett, 1)) steerConfig.PressureSensor = 1; else steerConfig.PressureSensor = 0;
-    if (bitRead(sett, 2)) steerConfig.CurrentSensor = 1; else steerConfig.CurrentSensor = 0;
-    if (bitRead(sett, 3)) steerConfig.IsUseY_Axis = 1; else steerConfig.IsUseY_Axis = 0;
-
-    Serial.print("\r\nInvertWAS "); Serial.print(steerConfig.InvertWAS);
-    Serial.print("\r\nIsRelayActiveHigh "); Serial.print(steerConfig.IsRelayActiveHigh);
-    Serial.print("\r\nMotorDriveDirection "); Serial.print(steerConfig.MotorDriveDirection);
-    Serial.print("\r\nSingleInputWAS "); Serial.print(steerConfig.SingleInputWAS);
-    Serial.print("\r\nCytronDriver "); Serial.print(steerConfig.CytronDriver);
-    Serial.print("\r\nSteerSwitch "); Serial.print(steerConfig.SteerSwitch);
-    Serial.print("\r\nSteerButton "); Serial.print(steerConfig.SteerButton);
-    Serial.print("\r\nShaftEncoder "); Serial.print(steerConfig.ShaftEncoder);
-    Serial.print("\r\nIsDanfoss "); Serial.print(steerConfig.IsDanfoss);
-    Serial.print("\r\nPressureSensor "); Serial.print(steerConfig.PressureSensor);
-    Serial.print("\r\nCurrentSensor "); Serial.print(steerConfig.CurrentSensor);
-    Serial.print("\r\nIsUseY_Axis "); Serial.print(steerConfig.IsUseY_Axis);
-    Serial.print("\r\nPulseCountMax "); Serial.print(steerConfig.PulseCountMax);
-    Serial.println();
-
-    EEPROM.put(40, steerConfig);            
-    steerConfigInit();  // Re-Init
-    return;             // no other processing needed
-  }  // 0xFB (251) - SteerConfig
+    //printPgnAnnoucement(udpData[3], (char*)"Corrected Position", len);
+    return;                    // no other processing needed
+  }
 
 
   if (udpData[3] == 200 && len == 9)  // 0xC8 (200) - Hello from AgIO
@@ -367,11 +230,200 @@ void checkForPGNs()
   } // 0xCA (202) - Scan Request
 
 
-  if (udpData[3] == 100 && len == 22)  // 0x64 (100) - Corrected Position
+  if (udpData[3] == 0xFB && len == 14)  // 0xFB (251) - SteerConfig
   {
-    //printPgnAnnoucement(udpData[3], (char*)"Corrected Position", len);
-    return;                    // no other processing needed
-  }
+    printPgnAnnoucement(udpData[3], (char*)"Steer Config", len);
+    uint8_t sett = udpData[5]; //setting0
+    if (bitRead(sett, 0)) steerConfig.InvertWAS = 1; else steerConfig.InvertWAS = 0;
+    if (bitRead(sett, 1)) steerConfig.IsRelayActiveHigh = 1; else steerConfig.IsRelayActiveHigh = 0;
+    if (bitRead(sett, 2)) steerConfig.MotorDriveDirection = 1; else steerConfig.MotorDriveDirection = 0;
+    if (bitRead(sett, 3)) steerConfig.SingleInputWAS = 1; else steerConfig.SingleInputWAS = 0;
+    if (bitRead(sett, 4)) steerConfig.CytronDriver = 1; else steerConfig.CytronDriver = 0;
+    if (bitRead(sett, 5)) steerConfig.SteerSwitch = 1; else steerConfig.SteerSwitch = 0;
+    if (bitRead(sett, 6)) steerConfig.SteerButton = 1; else steerConfig.SteerButton = 0;
+    if (bitRead(sett, 7)) steerConfig.ShaftEncoder = 1; else steerConfig.ShaftEncoder = 0;
+
+    steerConfig.PulseCountMax = udpData[6];
+
+    sett = udpData[8]; //setting1 - Danfoss valve etc
+    if (bitRead(sett, 0)) steerConfig.IsDanfoss = 1; else steerConfig.IsDanfoss = 0;
+    if (bitRead(sett, 1)) steerConfig.PressureSensor = 1; else steerConfig.PressureSensor = 0;
+    if (bitRead(sett, 2)) steerConfig.CurrentSensor = 1; else steerConfig.CurrentSensor = 0;
+    if (bitRead(sett, 3)) steerConfig.IsUseY_Axis = 1; else steerConfig.IsUseY_Axis = 0;
+
+    Serial.print("\r\nInvertWAS "); Serial.print(steerConfig.InvertWAS);
+    Serial.print("\r\nIsRelayActiveHigh "); Serial.print(steerConfig.IsRelayActiveHigh);
+    Serial.print("\r\nMotorDriveDirection "); Serial.print(steerConfig.MotorDriveDirection);
+    Serial.print("\r\nSingleInputWAS "); Serial.print(steerConfig.SingleInputWAS);
+    Serial.print("\r\nCytronDriver "); Serial.print(steerConfig.CytronDriver);
+    Serial.print("\r\nSteerSwitch "); Serial.print(steerConfig.SteerSwitch);
+    Serial.print("\r\nSteerButton "); Serial.print(steerConfig.SteerButton);
+    Serial.print("\r\nShaftEncoder "); Serial.print(steerConfig.ShaftEncoder);
+    Serial.print("\r\nIsDanfoss "); Serial.print(steerConfig.IsDanfoss);
+    Serial.print("\r\nPressureSensor "); Serial.print(steerConfig.PressureSensor);
+    Serial.print("\r\nCurrentSensor "); Serial.print(steerConfig.CurrentSensor);
+    Serial.print("\r\nIsUseY_Axis "); Serial.print(steerConfig.IsUseY_Axis);
+    Serial.print("\r\nPulseCountMax "); Serial.print(steerConfig.PulseCountMax);
+    Serial.println();
+
+    EEPROM.put(40, steerConfig);            
+    steerConfigInit();  // Re-Init
+    return;             // no other processing needed
+  }  // 0xFB (251) - SteerConfig
+
+
+  if (udpData[3] == 0xFC && len == 14)         // 0xFC (252) - Steer Settings
+  {
+    printPgnAnnoucement(udpData[3], (char*)"Steer Settings", len);
+    //PID values
+    steerSettings.Kp = ((float)udpData[5]);    // read Kp from AgOpenGPS
+    steerSettings.highPWM = udpData[6];        // read high pwm
+    steerSettings.lowPWM = (float)udpData[7];  // read lowPWM from AgOpenGPS
+    steerSettings.minPWM = udpData[8];         //read the minimum amount of PWM for instant on
+
+    float temp = (float)steerSettings.minPWM * 1.2;
+    steerSettings.lowPWM = (byte)temp;
+
+    steerSettings.steerSensorCounts = udpData[9];   //sent as setting displayed in AOG
+    steerSettings.wasOffset = (udpData[10]);        //read was zero offset Lo
+    steerSettings.wasOffset |= (udpData[11] << 8);  //read was zero offset Hi
+    steerSettings.AckermanFix = (float)udpData[12] * 0.01;
+
+    //Serial << "\r\nwasOffset: " << steerSettings.wasOffset;
+
+    EEPROM.put(10, steerSettings);
+    steerSettingsInit();  // Re-Init steer settings
+    return;               // no other processing needed
+  }  // 0xFC (252) - Steer Settings
+
+
+  if (udpData[3] == 0xFE && len == 14)        // 0xFE (254) - Steer Data (sent at GPS freq, ie 10hz (100ms))
+  {
+    //printPgnAnnoucement(udpData[3], (char*)"Steer Data", len);
+
+    if (aogGpsToAutoSteerLoopTimerEnabled)
+    {
+      aogGpsToAutoSteerLoopTimerEnabled = false;
+      Serial.print((String)"\r\nGPS out to Steer Data in delay: " + aogGpsToAutoSteerLoopTimer);
+    }
+    /*Serial.printf(" %6i", micros() - pgn254Time);
+    pgn254Time = micros();
+    uint32_t pgn254Delay = pgn254Time - nmeaPgnSendTime;
+    if (pgn254Delay < pgn254MinDelay) pgn254MinDelay = pgn254Delay;
+    if (pgn254Delay > pgn254MaxDelay) pgn254MaxDelay = pgn254Delay;
+    if (pgn254AveDelay == 0) pgn254AveDelay = pgn254Delay;
+    else pgn254AveDelay = pgn254AveDelay * 0.99 + pgn254Delay * 0.01;
+    Serial.printf("->PGN254 delay: %4iuS  %4i %4i %4i", pgn254Delay, pgn254MinDelay, pgn254AveDelay, pgn254MaxDelay);*/
+    float gpsSpeed = ((float)(udpData[5] | udpData[6] << 8)) * 0.1;   // speed data comes in as km/hr x10
+    //Serial << "\r\n speed:" << gpsSpeed << " "; Serial.print(udpData[5], BIN); Serial << " "; Serial.print(udpData[6], BIN);
+    speedPulse.updateSpeed(gpsSpeed);
+
+    prevGuidanceStatus = guidanceStatus;
+    guidanceStatus = udpData[7];
+    guidanceStatusChanged = (guidanceStatus != prevGuidanceStatus);
+
+    //Bit 8,9    set point steer angle * 100 is sent
+    steerAngleSetPoint = ((float)(udpData[8] | ((int8_t)udpData[9]) << 8)) * 0.01;  //high low bytes
+
+    // moved to 100hz AS loop for quicker reactions
+    if ((bitRead(guidanceStatus, 0) == 0) || (steerState == 0)) { // || (gpsSpeed < 0.1)) {
+      watchdogTimer = WATCHDOG_FORCE_VALUE;  //turn off steering motor
+      //Serial.print(" OFF");
+    } else {                                 //valid conditions to turn on autosteer
+      watchdogTimer = 0;                     //reset watchdog
+      //Serial.print(" ON");
+    }
+
+    //Bit 10 Tram
+    //tram = udpData[10];
+
+    //Bit 11
+    //relay = udpData[11];
+
+    //Bit 12
+    //relayHi = udpData[12];
+
+    //----------------------------------------------------------------------------
+    // Reply to send to AgIO
+    // fromAutoSteerData FD 253 - ActualSteerAngle*100 -56, SwitchByte-7, pwmDisplay-8
+    uint8_t PGN_253[] = { 0x80, 0x81, 126, 0xFD, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0xCC };
+
+    int16_t sa = (int16_t)(steerAngleActual * 100);
+    PGN_253[5] = (uint8_t)sa;
+    PGN_253[6] = sa >> 8;
+
+    // heading
+    PGN_253[7] = (uint8_t)9999;
+    PGN_253[8] = 9999 >> 8;
+
+    // roll
+    PGN_253[9] = (uint8_t)8888;
+    PGN_253[10] = 8888 >> 8;
+
+    PGN_253[11] = switchByte;
+    PGN_253[12] = (uint8_t)pwmDrive;
+
+    //checksum
+    int16_t CK_A = 0;
+    for (uint8_t i = 2; i < sizeof(PGN_253) - 1; i++)
+      CK_A = (CK_A + PGN_253[i]);
+
+    PGN_253[sizeof(PGN_253) - 1] = CK_A;
+
+    //off to AOG
+    UDP_Susage.timeIn();
+    UDP.SendUdpByte(PGN_253, sizeof(PGN_253), UDP.broadcastIP, UDP.portAgIO_9999);
+    UDP_Susage.timeOut();
+
+    //Steer Data 2 -------------------------------------------------
+    /*if (steerConfig.PressureSensor || steerConfig.CurrentSensor) {
+      if (aog2Count++ > 2) {                                // send 1/3 of Steer Data rate (GPS hz / 3)
+        // fromAutoSteerData FD 250 - sensor values etc
+        uint8_t PGN_250[] = { 0x80, 0x81, 126, 0xFA, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0xCC };
+
+        //Send fromAutosteer2
+        PGN_250[5] = (byte)sensorReading;
+
+        //add the checksum for AOG2
+        CK_A = 0;
+
+        for (uint8_t i = 2; i < sizeof(PGN_250) - 1; i++) {
+          CK_A = (CK_A + PGN_250[i]);
+        }
+
+        PGN_250[sizeof(PGN_250) - 1] = CK_A;
+
+        //off to AOG
+        UDP_Susage.timeIn();
+        UDP.SendUdpByte(PGN_250, sizeof(PGN_250), UDP.broadcastIP, UDP.portAgIO_9999);
+        UDP_Susage.timeOut();
+        aog2Count = 0;
+      }
+    }*/
+
+    if (aog2Count++ > 1) {                                // send 1/2 of Steer Data rate (GPS hz / 2)
+      // fromAutoSteerData FD 250 - sensor values etc
+      uint8_t PGN_250[] = { 0x80, 0x81, 126, 0xFA, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0xCC };
+
+      if (steerConfig.PressureSensor || steerConfig.CurrentSensor) {
+        PGN_250[5] = (byte)sensorReading;
+      } else {
+        PGN_250[5] = (byte)pulseCount;
+      }
+
+      CK_A = 0;
+      for (uint8_t i = 2; i < sizeof(PGN_250) - 1; i++) {
+        CK_A = (CK_A + PGN_250[i]);
+      }
+      PGN_250[sizeof(PGN_250) - 1] = CK_A;
+
+      UDP_Susage.timeIn();
+      UDP.SendUdpByte(PGN_250, sizeof(PGN_250), UDP.broadcastIP, UDP.portAgIO_9999);
+      UDP_Susage.timeOut();
+      aog2Count = 0;
+    }
+    return;                     // no other processing needed
+  }  // 0xFE (254) - Steer Data
 
 
 

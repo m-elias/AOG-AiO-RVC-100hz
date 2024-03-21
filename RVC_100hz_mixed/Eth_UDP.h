@@ -25,7 +25,7 @@ public:
 	unsigned int portRTCM_2233 = 2233;     // Why 2211? 22XX=GPS then 2211=GPS1 2222=GPS2 2233=RTCM3 corrections easy to remember.
 	EthernetUDP RTCM;                      // UDP object for incoming RTCM
   
-	unsigned int portSteer_8888 = 8888;    // UDP port that Modules (like this one) listens to
+	unsigned int portSteer_8888 = 8888;    // UDP port that Modules (like this one) listen to
 	EthernetUDP PGN;                       // UDP object for PGNs on port 8888
 	unsigned int portAgIO_9999 = 9999;     // UDP port that AgIO listens to, send data here
 

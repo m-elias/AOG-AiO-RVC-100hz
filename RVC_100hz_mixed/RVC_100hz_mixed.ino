@@ -31,6 +31,8 @@ To-do
 - test/fix autosteer watch dog timeout from lost comms
 - write piezo class
 - expand machine/PCA9555 to monitor output pins with input pins
+- add analog PCB ID input
+- use 2nd Eth jack LED for something?
 
 - Testing !!!
   - pressure/current inputs should be scaled the same as old firmware, only bench tested by Matt
@@ -103,14 +105,11 @@ void setup()
 
 void loop()
 {
-  //#ifdef AIOv50a
-    MACHusage.timeIn();
-    machine.watchdogCheck();                // machine.h
-    MACHusage.timeOut();
-  //#endif
+  MACHusage.timeIn();
+  machine.watchdogCheck();                 // machine.h, run machine class for v4.x to suppress unprocessed PGN messages, also reduces #ifdefs
+  MACHusage.timeOut();
 
-  PGNusage.timeIn();
-  checkForPGNs();                           // check for AgIO Sending PGNs, AgIO sends autosteer data at ~10hz
+  checkForPGNs();                           // zPGN.ino, check for AgIO or SerialESP32 Sending PGNs
   PGNusage.timeOut();
 
   autoSteerUpdate();                        // Autosteer.ino, update AS loop every 10ms (100hz) regardless of whether there is a BNO installed

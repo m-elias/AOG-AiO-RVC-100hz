@@ -15,6 +15,8 @@
     - add section switch code, maybe in it's own class?
     - add GPS speed output options/code
     - maybe split up machine functions and sections into seperate classes or seperate output groups
+    - support 64 section only init/functions (no other machine controls)
+    - split Arduino pin inversion from PCA pin inversion or add setting to either match or invert PCA from Arduino pins
 */
 
 #ifndef MACHINE_H
@@ -389,7 +391,7 @@ public:
     } // 0xCA (202) - Scan Request*/
 
 
-    if (pgnData[3] == 229 && pgnDataLen == 16)             // 0xE5 (229) - 64 Section Data, len: 16
+    else if (pgnData[3] == 229 && pgnDataLen == 16)             // 0xE5 (229) - 64 Section Data, len: 16
     {                                                      // use this instead of relayLo/Hi from other PGNs because it works for zones/groups too
       
       if (debugLevel > 3) { Serial.print("\r\n0x"); Serial.print(pgnData[3], HEX); Serial.print(" ("); Serial.print(pgnData[3]); Serial.print(") - "); }
