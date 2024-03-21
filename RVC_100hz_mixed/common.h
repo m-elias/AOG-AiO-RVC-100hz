@@ -96,6 +96,10 @@ uint8_t RTKrxbuffer[buffer_size];       // Extra RTK serial rx buffer
 
 extern "C" uint32_t set_arm_clock(uint32_t frequency);  // required prototype to set CPU speed
 
+elapsedMillis bufferStatsTimer = 3000;
+uint32_t testCounter;
+bool printCpuUsages = false;
+bool printStats = false;
 
 
 

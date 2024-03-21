@@ -1,49 +1,11 @@
 /*
-Used Ace repo code and adapted for AiO v4.x/5.0a RVC 100hz
-- Started with code from Teensy "Nav" Ace module https://github.com/farmerbriantee/Ace/tree/master/Hardware/Ace
-- Added code bits from old AIO v4 I2C firmware https://github.com/AgHardware/Boards/tree/main/Boards/TeensyModules/AIO%20Micro%20v4/Firmware/Autosteer_gps_teensy_v4
-- Much many new original code written for performance monitoring, LED control, section control etc
-
-Single
-- Save BNO reading 60ms before next GGA/GNS
-	- roll/heading will be ready for PANDA later
-	- if no BNO, prep vars with 0xFFFF heading, 0 roll/yaw/pitch
-- Once GGA/GNS arrives (if !useDual)
-	- build PANDA msg and send out
-	- Otherwise if useDual, wait for relposned in main loop()
-
-Dual
-- if relposned arrives
-	- set useDual for duration of runtime
-- Each time new GGA/GNS & relposned arrive
-	- if fix/diffsol/posvalid all good
-		- calc roll from dual baseline/relposD
-			- if carrsoln is not full RTK "wind down" dual roll by x0.9 each GPS update
-	- Send paogi
-
-Machine/Section outputs
-- only supported by v5.0a
-
-
-To-do
-- consolidate all EEPROM addrs in one place?
-    - Ethernet, Autosteer, machine
-- test/fix autosteer watch dog timeout from lost comms
-- write piezo class
-- expand machine/PCA9555 to monitor output pins with input pins
-- add analog PCB ID input
-- use 2nd Eth jack LED for something?
-
-- Testing !!!
-  - pressure/current inputs should be scaled the same as old firmware, only bench tested by Matt
-  - Single/IMU PANDA calcs should be the same as Ace branch
-  - Dual PAOGI calcs should be the same as old I2C AIO firmware
-
-
 
 See HWv??.h for hardware (board specfic) definitions (IO & Serial)
 See common.h for library & other variable definitions
+See debug.ino for optional debug commands
 See PGN.ino for PGN parsing
+See notes.ino for additional information
+
 */
 
 // pick only one or the other board file
@@ -52,42 +14,28 @@ See PGN.ino for PGN parsing
 
 const uint8_t encoderType = 1;  // 1 - single input
                                 // 2 - dual input (quadrature encoder), uses Kickout_A (Pressure) & Kickout_D (Remote) inputs
+                                // 3 - variable duty cycle, for future updates
 
 #include "common.h"
-
 //#include "JD_DAC.h"   // experimental JD 2 track DAC steering & SCV/remote hyd control
 //JD_DAC jdDac(Wire1, 0x60);
 
-elapsedMillis bufferStatsTimer = 3000;
-uint32_t testCounter;
-bool printCpuUsages = false;
-bool printStats = false;
-
 void setup()
 {
-  #ifdef AIOv50a
-    pinMode(PIEZO1, OUTPUT);
-    pinMode(PIEZO2, OUTPUT);
-    digitalWrite(PIEZO1, HIGH);
-    digitalWrite(PIEZO2, HIGH);
-  #endif
-
-    //Serial.begin(115200);                   // Teensy doesn't need it
+  //Serial.begin(115200);                   // Teensy doesn't need it
   Serial.print("\r\n\n\n*********************\r\nStarting setup...\r\n");
   Serial.print(inoVersion);
   LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::PWR_ON);
 
-  setCpuFrequency(150 * 1000000);           // Set CPU speed to 600mhz, 450mhz is also a good choice(?), setup.ino
+  setCpuFrequency(150 * 1000000);           // Set CPU speed, default is 600mhz, 150mhz still seems fast enough, setup.ino
   serialSetup();                            // setup.ino
   parserSetup();                            // setup.ino
   BNO.begin(SerialIMU);                     // BNO_RVC.cpp
 
-  //#ifdef AIOv50a
-    if (outputs.begin()) {
-      Serial << "\r\nSection outputs (PCA9555) detected (8 channels, low side switching)";   // clsPCA9555.cpp
-      machine.init(&outputs, pcaOutputPinNumbers, 100);                                      // mach.h
-    } else Serial << "\r\n*** Section outputs (PCA9555) NOT detected! ***";
-  //#endif
+  if (outputs.begin()) {
+    Serial << "\r\nSection outputs (PCA9555) detected (8 channels, low side switching)";   // clsPCA9555.cpp
+    machine.init(&outputs, pcaOutputPinNumbers, 100);                                      // mach.h
+  } else Serial << "\r\n*** Section outputs (PCA9555) NOT detected! ***";
 
   if (UDP.init())                           // Eth_UDP.h
     LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::ETH_READY);
@@ -105,9 +53,6 @@ void setup()
 
 void loop()
 {
-  MACHusage.timeIn();
-  machine.watchdogCheck();                 // machine.h, run machine class for v4.x to suppress unprocessed PGN messages, also reduces #ifdefs
-  MACHusage.timeOut();
 
   checkForPGNs();                           // zPGN.ino, check for AgIO or SerialESP32 Sending PGNs
   PGNusage.timeOut();
@@ -141,12 +86,11 @@ void loop()
   if (imuPandaSyncTrigger && imuPandaSyncTimer >= 40) {
     prepImuPandaData();
     imuPandaSyncTrigger = false;       // wait for next GGA update before resetting imuDelayTimer again
-    //Serial.println();
   }
 
 
 
-  // **** "Right" Dual or Single GPS1 (position) ****
+  // ******************* "Right" Dual or Single GPS1 (position) *******************
   GPS1usage.timeIn();
   int16_t gps1Available = SerialGPS->available();
   if (gps1Available)    // "if" is very crucial here, using "while" causes BNO overflow
@@ -174,7 +118,7 @@ void loop()
   GPS1usage.timeOut();
 
 
-  // **** "Left" Dual GPS2 (heading) ****
+  // ******************* "Left" Dual GPS2 (heading) *******************
   GPS2usage.timeIn();
   int16_t gps2Available = SerialGPS2->available();
   if (gps2Available)
@@ -199,7 +143,7 @@ void loop()
   GPS2usage.timeOut();
 
 
-  // **** For DUAL mode ****
+  // ******************* For DUAL mode *******************
   if (ubxParser.relPosNedReady && ggaReady) {   // if in Dual mode, and both GGA & relposNED are ready
       buildPandaOrPaogi(PAOGI);                 // build a PAOGI msg
       ubxParser.relPosNedReady = false;         // reset for next relposned trigger
@@ -228,7 +172,7 @@ void loop()
 
 
   // *************************************************************************************************
-  // ************************************* other update routines *************************************
+  // ************************************* UPDATE OTHER STUFF *************************************
   // *************************************************************************************************
 
 
@@ -248,7 +192,11 @@ void loop()
   LEDSusage.timeIn();
   LEDs.updateLoop();                  // LEDS.h
   LEDSusage.timeOut();
-  
+
+  MACHusage.timeIn();
+  machine.watchdogCheck();            // machine.h, run machine class for v4.x to suppress unprocessed PGN messages, also reduces #ifdefs
+  MACHusage.timeOut();
+
   checkUSBSerial();                   // debug.ino
   speedPulse.update();                // misc.h
 
@@ -260,6 +208,7 @@ void loop()
   LOOPusage.timeIn();
   testCounter++;
   LOOPusage.timeOut();
+
 } // end of loop()
 
 

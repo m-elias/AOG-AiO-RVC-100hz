@@ -65,7 +65,7 @@ HardwareSerial* SerialESP32 = &Serial2; // ESP32
 const int32_t baudGPS = 460800;
 const int32_t baudRTK = 115200;     // most are using Xbee radios with default of 115200, *webconfig*
 const int32_t baudRS232 = 57600;
-const int32_t baudESP32 = 115200;
+const int32_t baudESP32 = 460800;
 
 #else
 There has been a PCB/hardware selection error, only select one HWxxx.h file

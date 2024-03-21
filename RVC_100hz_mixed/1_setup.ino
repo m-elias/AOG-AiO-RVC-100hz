@@ -7,6 +7,13 @@ void setCpuFrequency(uint32_t _freq)
 
 void serialSetup()
 {
+  #ifdef AIOv50a
+    pinMode(PIEZO1, OUTPUT);
+    pinMode(PIEZO2, OUTPUT);
+    digitalWrite(PIEZO1, HIGH);
+    digitalWrite(PIEZO2, HIGH);
+  #endif
+
   // setup GPS serial ports here
   SerialGPS->begin(baudGPS);
   SerialGPS->addMemoryForRead(GPSrxbuffer, buffer_size);

@@ -12,20 +12,20 @@ void checkUSBSerial()
       relTtrStats.resetAll();
       bnoStats.resetAll();
     }
-    else if (usbRead == 'n')
+    else if (usbRead == 'n')         // output realtime GPS update data
     {
       nmeaDebug = !nmeaDebug;
     }
-    else if (usbRead == 'c')
+    else if (usbRead == 'c')        // output cpu usage stats
     {
       printCpuUsages = !printCpuUsages;
     }
-    else if (usbRead == 's')
+    else if (usbRead == 's')        // output GPS, BNO update freq & buffer stats
     {
       printStats = !printStats;
     }
     #ifdef AIOv50a
-    else if (usbRead == 'm' && Serial.available() > 0)
+    else if (usbRead == 'm' && Serial.available() > 0)    // set machine debug level
     {
       usbRead = Serial.read();
       if (usbRead >= '0' && usbRead <= '5') {
@@ -34,7 +34,7 @@ void checkUSBSerial()
       Serial.print((String)"\r\nMachine debugLevel: " + machine.debugLevel);
     }
     #endif
-    else if (usbRead == 'g' && Serial.available() > 0)
+    else if (usbRead == 'g' && Serial.available() > 0)    // temporarily set GPS fix state according to standard GGA fix numbers (see LEDS.h, setGpsLED())
     {
       usbRead = Serial.read();
       if (usbRead >= '0' && usbRead <= '5') {
@@ -57,18 +57,20 @@ void printTelem()
 
   if (printCpuUsages)
   {
+    // just hammering testCounter++ in the main loop uses some CPU time
+    // baselineProcUsage gets that value, which is used to offset the other usage checks that are hammered in the main loop (or at the same freq)
     uint32_t baselineProcUsage = LOOPusage.reportAve();
-    uint32_t dacReport = DACusage.reportAve();
-    uint32_t esp32Report = ESP32usage.reportAve();
+    uint32_t dacReport = DACusage.reportAve();          // subracted from AS cpu usage below
+
     Serial.print("\r\n\nLoop   cpu: "); printCpuPercent(baselineProcUsage);
     Serial.print(" "); Serial.print(testCounter / bufferStatsTimer); Serial.print("kHz"); // up to 400k hits/s
+
     Serial.print("\r\nBNO_R  cpu: "); printCpuPercent(cpuUsageArray[0]->reportAve(baselineProcUsage));
     Serial.print("\r\nGPS1   cpu: "); printCpuPercent(GPS1usage.reportAve(baselineProcUsage));
     Serial.print("\r\nGPS2   cpu: "); printCpuPercent(GPS2usage.reportAve(baselineProcUsage));
-    //Serial.print("\r\nRadio  cpu: "); printCpuPercent(RTKusage.reportAve(baselineProcUsage));
-    Serial.print("\r\nPGN    cpu: "); printCpuPercent(PGNusage.reportAve());   // uses a timed update, virtually no extra time penalty
-    Serial.print("\r\nAS     cpu: "); printCpuPercent(ASusage.reportAve() - dacReport);
-    Serial.print("\r\nNTRIP  cpu: "); printCpuPercent(NTRIPusage.reportAve());  // uses a timed update, virtually no extra time penalty
+    Serial.print("\r\nPGN    cpu: "); printCpuPercent(PGNusage.reportAve());              // uses a timed update, virtually no extra time penalty
+    Serial.print("\r\nAS     cpu: "); printCpuPercent(ASusage.reportAve() - dacReport);   // dac update loop is inside AS update loop (don't want to double count CPU time)
+    Serial.print("\r\nNTRIP  cpu: "); printCpuPercent(NTRIPusage.reportAve());            // uses a timed update, virtually no extra time penalty
     Serial.print("\r\nIMU_H  cpu: "); printCpuPercent(IMU_Husage.reportAve());
     Serial.print("\r\nNMEA_P cpu: "); printCpuPercent(NMEA_Pusage.reportAve());
     Serial.print("\r\nUBX_P  cpu: "); printCpuPercent(UBX_Pusage.reportAve());

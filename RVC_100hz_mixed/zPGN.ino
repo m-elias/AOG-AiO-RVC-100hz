@@ -34,12 +34,13 @@ void checkForPGNs()
         UDP.SendUdpByte(incomingBytes, incomingIndex - 2, UDP.broadcastIP, UDP.portAgIO_9999);
 
         //pass data to USB for debug
-        Serial.print("\r\nE32-s->T41-e:9999->AgIO ");
+        /*Serial.print("\r\nE32-s->T41-e:9999->AgIO ");
         for (byte i = 0; i < incomingIndex - 2; i++) {
           Serial.print(incomingBytes[i]);
           Serial.print(" ");
         }
         Serial.print((String)" (" + SerialESP32->available() + ")");
+        */
       } else {
         Serial.print("\r\n\nCR/LF detected but [0]/[1] bytes != 128/129\r\n");
       }
@@ -70,10 +71,10 @@ void checkForPGNs()
     ESP32usage.timeIn();
     SerialESP32->write(udpData, len);
     SerialESP32->println();   // to signal end of PGN
-    Serial.print("\r\nAgIO-e:8888->T41-s->E32 ");
+    /*Serial.print("\r\nAgIO-e:8888->T41-s->E32 ");
     for (uint8_t i = 0; i < len; i++) {
       Serial.print(udpData[i]); Serial.print(" ");
-    }
+    }*/
     ESP32usage.timeOut();
   //}
 
