@@ -1,13 +1,15 @@
 /*
 
 Started Feb 2024 - Matt Elias
+Updated Mar 2024
 
 Used Ace repo code and adapted for AiO v4.x/5.0a RVC 100hz
 - Started with code from Teensy "Nav" Ace module https://github.com/farmerbriantee/Ace/tree/master/Hardware/Ace
 - Added code bits from old AIO v4 I2C firmware https://github.com/AgHardware/Boards/tree/main/Boards/TeensyModules/AIO%20Micro%20v4/Firmware/Autosteer_gps_teensy_v4
 - Much many new original code written for performance monitoring, LED control, section control etc
 
-Single
+
+Single Operation Logic
 - Save BNO reading 60ms before next GGA/GNS (40ms after last GGA, comes from F9P pole swing test)
 	- roll/heading will be ready for PANDA later
 	- if no BNO, prep vars with 0xFFFF heading, 0 roll/yaw/pitch
@@ -15,7 +17,7 @@ Single
 	- build PANDA msg and send out
 	- Otherwise if useDual, wait for relposned in main loop()
 
-Dual
+Dual Operation Logic
 - if relposned arrives
 	- set useDual for duration of runtime
 - Each time new GGA/GNS & relposned arrive
@@ -24,8 +26,10 @@ Dual
 			- if carrsoln is not full RTK "wind down" dual roll by x0.9 each GPS update
 	- Send paogi
 
+
 Machine/Section outputs
 - only supported by v5.0a
+
 
 
 To-do
