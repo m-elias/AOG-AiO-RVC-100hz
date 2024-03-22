@@ -35,7 +35,7 @@ AsyncUDP UDPforModules;                // UDP object to send/receive PGNs
 uint16_t udpListenPort = 9999;         // UDP port to listen for Module replies
 uint16_t udpSendPort = 8888;           // UDP port to send to Modules listening
 
-HardwareSerial SerialTeensy(1);
+HardwareSerial SerialTeensy(1);        // Use Serial1 to avoid Serial0's debug/boot output msgs
 byte SerialTeensyRX = D7;  // ESP RX pin connected to Teensy TX pin, D7 is Serial0 default, we'll remap to Serial1 to avoid extra Serial0 debug msgs
 byte SerialTeensyTX = D6;  // ESP TX pin connected to Teensy RX pin, D6 is Serial0 default, we'll remap to Serial1 to avoid extra Serial0 debug msgs
 
