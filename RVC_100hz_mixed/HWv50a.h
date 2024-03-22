@@ -1,4 +1,3 @@
-#include "HardwareSerial.h"
 //
 // connection plan:
 // Teensy Serial 5 RX (21) to F9P Position receiver TX1 (Position data)

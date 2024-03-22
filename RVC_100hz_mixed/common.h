@@ -1,3 +1,4 @@
+#include "HardwareSerial.h"
 #include "elapsedMillis.h"
 #include <stdint.h>
 #include <Streaming.h>
