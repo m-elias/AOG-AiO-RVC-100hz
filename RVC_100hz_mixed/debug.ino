@@ -15,14 +15,17 @@ void checkUSBSerial()
     else if (usbRead == 'n')         // output realtime GPS update data
     {
       nmeaDebug = !nmeaDebug;
+      Serial.print("\r\nSetting NMEA debug: "); Serial.print(nmeaDebug);
     }
     else if (usbRead == 'c')        // output cpu usage stats
     {
       printCpuUsages = !printCpuUsages;
+      Serial.print("\r\nSetting CPU usage debug: "); Serial.print(printCpuUsages);
     }
     else if (usbRead == 's')        // output GPS, BNO update freq & buffer stats
     {
       printStats = !printStats;
+      Serial.print("\r\nSetting Print Stats: "); Serial.print(printStats);
     }
     #ifdef AIOv50a
     else if (usbRead == 'm' && Serial.available() > 0)    // set machine debug level

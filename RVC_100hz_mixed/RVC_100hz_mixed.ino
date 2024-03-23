@@ -35,7 +35,7 @@ void setup()
   if (outputs.begin()) {
     Serial << "\r\nSection outputs (PCA9555) detected (8 channels, low side switching)";   // clsPCA9555.cpp
     machine.init(&outputs, pcaOutputPinNumbers, 100);                                      // mach.h
-  } else Serial << "\r\n*** Section outputs (PCA9555) NOT detected! ***";
+  }// else Serial << "\r\n*** Section outputs (PCA9555) NOT detected! ***";
 
   if (UDP.init())                           // Eth_UDP.h
     LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::ETH_READY);

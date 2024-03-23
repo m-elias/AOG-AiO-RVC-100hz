@@ -36,10 +36,12 @@ To-do
 - consolidate all EEPROM addrs in one place?
     - Ethernet, Autosteer, machine
 - test/fix autosteer watch dog timeout from lost comms
-- write piezo class
-- expand machine/PCA9555 to monitor output pins with input pins
+- write piezo class for v5.0a
+- expand machine/PCA9555 to monitor outputs with PCA's extra input pins
 - add analog PCB ID input
 - use 2nd Eth jack LED for something?
+- intelligently detect Eth link status?
+  - Ethernet.linkStatus doesn't work until after the correct Ethernet.begin has started
 
 - Testing !!!
   - pressure/current inputs should be scaled the same as old firmware, only bench tested by Matt

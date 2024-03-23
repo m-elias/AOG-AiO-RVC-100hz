@@ -139,10 +139,10 @@ public:
   // "proper" function
   //char msg[] = "AutoSteer Switch ON";
   //char msgTime = 2;
-  //UDP.SendUdpFreeForm(1, msg, strlen(msg), msgTime, UDP.broadcastIP, UDP.portAgIO_9999);
+  //UDP.SendUdpFreeForm(1, msg, strlen(msg), msgTime, UDP.broadcastIP, UDP.portAgIO_9999);  // timed popup
 
   //char msg[] = "Work switch";
-  //UDP.SendUdpFreeForm(2, msg, strlen(msg), 1, UDP.broadcastIP, UDP.portAgIO_9999);
+  //UDP.SendUdpFreeForm(2, msg, strlen(msg), 1, UDP.broadcastIP, UDP.portAgIO_9999);        // interactive "OK" popup
 
   void SendUdpFreeForm(uint8_t _type, char _msg[], uint8_t _len, char _seconds, IPAddress dip, uint16_t dport)
   {
