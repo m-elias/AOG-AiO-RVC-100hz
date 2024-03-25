@@ -500,31 +500,30 @@ void udpNMEA() {
 /*
 *  To receive RTCM sent via UDP from AgIO NTRIP client - listen on port 2233 RTCM
 */
-char RTCM_packetBuffer[buffer_size];
-uint32_t ntripUpdateTime, ntripCheckTime;
-
 void udpNtrip() {
   NTRIPusage.timeIn();
-
+  static uint32_t ntripUpdateTime, ntripCheckTime;
   // When ethernet is not running, return directly. parsePacket() will block when we don't
   if (UDP.isRunning) {
     if (millis() > ntripCheckTime) {  // limit update rate to save cpu time
     
       unsigned int packetLength = UDP.RTCM.parsePacket(); // this uses most of the cpu time in this function unless SerialGPS has low baud
-      ntripCheckTime = millis() + 10;
+      ntripCheckTime = millis();                          // make sure we wait at least 1ms before checking again to avoid excessive cpu usage
 
       if (packetLength > 0) {
-        //Serial.print("\r\nNTRIP "); Serial.print(millis() - ntripUpdateTime); Serial.print(" len:"); Serial.print(packetLength);
+        Serial.print("\r\nNTRIP "); Serial.print(millis() - ntripUpdateTime); Serial.print(" len:"); Serial.print(packetLength);
+        char RTCM_packetBuffer[buffer_size];
         UDP.RTCM.read(RTCM_packetBuffer, buffer_size);
         SerialGPS->write(RTCM_packetBuffer, buffer_size);
         LEDs.queueBlueFlash(LED_ID::GPS);
 
         // up to 256 byte packets are sent from AgIO and most NTRIP RTCM updates are larger so there's usually two packets per update
-        if (packetLength < buffer_size){    // if buffer was not full, then end of NTRIP packet, can wait 800ms until we start checking again
+        // this doesn't seem necessary, the above 1ms update limit already reduces cpu usage enough
+        /*if (packetLength < buffer_size){    // if buffer was not full, then end of NTRIP packet, can wait 800ms until we start checking again
           ntripCheckTime = millis() + 800;  // most base stations send updates every 1000ms
-        }
+        }*/
           
-        ntripUpdateTime = millis();
+        ntripUpdateTime = millis();   // only used in Serial debug above, AgIO always delays sequential ntrip packets by about 52-70ms
       }
     }
   }
