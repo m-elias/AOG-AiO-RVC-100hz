@@ -234,7 +234,8 @@ void buildPandaOrPaogi(bool _panda)    // only called by GGA_Handler (above)
     else Serial.write(nmea);   // if Eth is !connected, send USB GPS data
 }
 
-void buildNMEA(double lat, double lon)
+// work in progress
+/*void buildNMEA(double lat, double lon)
 {
   Serial.print("\r\nCorrection position back from AOG delay: ");
   Serial.print(aogGpsToAutoSteerLoopTimer);
@@ -245,7 +246,7 @@ void buildNMEA(double lat, double lon)
   cSentence += "," + ((int)lat).ToString("D2");
   double Mins = (double)(lat - (int)lat) * 60.0;
   cSentence += Mins.ToString("N7");
-  cSentence += NS;*/
+  cSentence += NS;
 
   strcpy(nmea, "$GGA,");
   strcat(nmea, GGA.fixTime); strcat(nmea, ",");     // field 1
@@ -255,7 +256,7 @@ void buildNMEA(double lat, double lon)
   strcat(nmea, latNS); strcat(nmea, ",");
 
   strcat(nmea, GGA.longitude); strcat(nmea, ",");
-  
+
   strcat(nmea, lonEW); strcat(nmea, ",");       // 5
   strcat(nmea, GGA.fixQuality); strcat(nmea, ",");
   strcat(nmea, GGA.numSats); strcat(nmea, ",");
@@ -288,7 +289,7 @@ void buildNMEA(double lat, double lon)
   strcat(nmea, "\r\n");
 
   // sendNMEA(); 
-}
+}*/
 
 void CalculateChecksum(void)
 {

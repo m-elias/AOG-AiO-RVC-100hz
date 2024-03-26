@@ -86,7 +86,7 @@ void checkForPGNs()
 
   if (udpData[3] == 100 && len == 22)  // 0x64 (100) - Corrected Position
   {
-    printPgnAnnoucement(udpData[3], (char*)"Corrected Position", len);
+    //printPgnAnnoucement(udpData[3], (char*)"Corrected Position", len);
 
     union {           // both variables in the union share the same memory space
       byte array[8];  // fill "array" from an 8 byte array converted in AOG from the "double" precision number we wanted to send
@@ -98,12 +98,12 @@ void checkForPGNs()
       lon.array[i] = udpData[i+5];
       lat.array[i] = udpData[i+13];
     }
-    Serial.print("\r\n");
+    /*Serial.print("\r\n");
     Serial.print(lat.number, 13);
     Serial.print(" ");
-    Serial.print(lon.number, 13);
+    Serial.print(lon.number, 13);*/
 
-    buildNMEA(lat.number, lon.number);
+    //buildNMEA(lat.number, lon.number);
 
     return;                    // no other processing needed
   }
