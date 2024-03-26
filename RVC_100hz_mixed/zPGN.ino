@@ -511,7 +511,7 @@ void udpNtrip() {
       ntripCheckTime = millis();                          // make sure we wait at least 1ms before checking again to avoid excessive cpu usage
 
       if (packetLength > 0) {
-        Serial.print("\r\nNTRIP "); Serial.print(millis() - ntripUpdateTime); Serial.print(" len:"); Serial.print(packetLength);
+        //Serial.print("\r\nNTRIP "); Serial.print(millis() - ntripUpdateTime); Serial.print(" len:"); Serial.print(packetLength);
         char RTCM_packetBuffer[buffer_size];
         UDP.RTCM.read(RTCM_packetBuffer, buffer_size);
         SerialGPS->write(RTCM_packetBuffer, buffer_size);
