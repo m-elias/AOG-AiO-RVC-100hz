@@ -251,15 +251,8 @@ void autoSteerUpdate() {
       if (encoderType == 1)                     // single input
       {
         pulseCount = encoder.readCount();
-        //kickoutInput = digitalRead(KICKOUT_D_PIN);
-        //kickoutInput = analogRead(KICKOUT_A_PIN) > ANALOG_TRIG_THRES ? HIGH : LOW;
-        //if (kickoutInput != lastEnc){
         if (pulseCount != lastEnc){
-          //if (kickoutInput == LOW) {
-            //pulseCount++;
-            Serial << "\r\npulseCount:" << pulseCount << " " << encoder.readPosition();
-          //}
-          //lastEnc = kickoutInput;
+          //Serial << "\r\npulseCount:" << pulseCount << " " << encoder.readPosition();
           lastEnc = pulseCount;
         }
       }
@@ -271,7 +264,6 @@ void autoSteerUpdate() {
           lastEnc = pulseCount;
         }
       }
-      //Serial << "\r\n" << kickoutInput;
       if (pulseCount >= steerConfig.PulseCountMax) {
         steerState = 0;  // reset values like it turned off
         prevSteerReading = !steerState;
@@ -281,17 +273,14 @@ void autoSteerUpdate() {
     // Pressure sensor?
     if (steerConfig.PressureSensor) {
       sensorSample = (float)analogRead(KICKOUT_A_PIN); // >> 4);    // to scale 12 bit down to 8 bit
-      Serial << "\r\n" << sensorSample;
-      sensorSample *= 0.0625;
-      Serial << " " << sensorSample;
-      // always sends numbers to visualize in AoG
-      /*if (steerState == 0) {                                    // if autoSteer is OFF
-        sensorSample = 0;                                         // set sensor numbers to 0
-        sensorReading = 0;
-      }*/
+      //Serial << "\r\n" << sensorSample;
+      sensorSample *= 0.15;                          // for 5v sensor, scale down to try matching old AIO
+      //sensorSample *= 0.0625;                      // for 12v sensor
+      //Serial << " " << sensorSample;
+
       sensorSample = min(sensorSample, 255);                      // limit to 1 byte (0-255)
       sensorReading = sensorReading * 0.8 + sensorSample * 0.2;   // filter 
-      Serial << " " << sensorSample << " max:" << steerConfig.PulseCountMax;
+      //Serial << " " << sensorSample << " max:" << steerConfig.PulseCountMax;
 
       if (sensorReading >= steerConfig.PulseCountMax) {           // if reading exceeds kickout setpoint
         steerState = 0;                                           // turn OFF autoSteer
@@ -302,13 +291,18 @@ void autoSteerUpdate() {
     // Current sensor?
     if (steerConfig.CurrentSensor) {
       sensorSample = (float)analogRead(CURRENT_PIN);
-      Serial << "\r\n" << sensorSample;
-      //sensorSample = (abs(3100 - sensorSample)) * 0.0625;    // 3100 is like old firmware, 3150 is center (zero current) value on Matt's v4.0 Micro
-      //sensorSample = abs((sensorSample - ???)) * 0.0625;       // for v5.0a ACS711, output is not inverted
-      sensorSample = abs((sensorSample - 240)) * 0.0625;       // for v5.0a DRV8701, output is not inverted
-      Serial << " " << sensorSample;
+      //Serial << "\r\n" << sensorSample;
+
+      #ifdef AIOv50a
+      //sensorSample = abs((sensorSample - ???)) * 0.0625;       // for v5.0a ACS711 (untested), output is not inverted
+      sensorSample = abs(sensorSample - 240) * 0.0625;     // for v5.0a DRV8701, output is not inverted
+      #else
+      sensorSample = abs(3100 - sensorSample) * 0.0625;    // 3100 is like old firmware, 3150 is center (zero current) value on Matt's v4.0 Micro
+      #endif
+
+      //Serial << " " << sensorSample;
       sensorReading = sensorReading * 0.7 + sensorSample * 0.3;
-      Serial << " " << sensorReading << " max:" << steerConfig.PulseCountMax;
+      //Serial << " " << sensorReading << " max:" << steerConfig.PulseCountMax;
       if (sensorReading >= steerConfig.PulseCountMax) {
         steerState = 0;                                   // turn OFF autoSteer
         prevSteerReading = !steerState;
