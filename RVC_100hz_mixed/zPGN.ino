@@ -49,7 +49,7 @@ void checkForPGNs()
     }
   }
   ESP32usage.timeOut();
-  #endif
+  #endif  // AIOv50a
 
 
   PGNusage.timeIn();
@@ -70,7 +70,7 @@ void checkForPGNs()
   bool pgnMatched = false;
 
   #ifdef AIOv50a
-  //if (udpData[3] != 100) {
+  if (udpData[3] != 100) {
     ESP32usage.timeIn();
     SerialESP32->write(udpData, len);
     SerialESP32->println();   // to signal end of PGN
@@ -79,14 +79,32 @@ void checkForPGNs()
       Serial.print(udpData[i]); Serial.print(" ");
     }*/
     ESP32usage.timeOut();
-  //}
+  }
   #endif
 
   // changed to multiple IF statements instead of IF ELSE so that AgIO Hello and Scan Request PGNs can be pickedup by other object/classes (ie machine)
 
   if (udpData[3] == 100 && len == 22)  // 0x64 (100) - Corrected Position
   {
-    //printPgnAnnoucement(udpData[3], (char*)"Corrected Position", len);
+    printPgnAnnoucement(udpData[3], (char*)"Corrected Position", len);
+
+    union {           // both variables in the union share the same memory space
+      byte array[8];  // fill "array" from an 8 byte array converted in AOG from the "double" precision number we wanted to send
+      double number;  // and the double "number" has the original "double" precision number from AOG
+    } lat, lon;
+
+    for (byte i = 0; i < 8; i++)
+    {
+      lon.array[i] = udpData[i+5];
+      lat.array[i] = udpData[i+13];
+    }
+    Serial.print("\r\n");
+    Serial.print(lat.number, 13);
+    Serial.print(" ");
+    Serial.print(lon.number, 13);
+
+    buildNMEA(lat.number, lon.number);
+
     return;                    // no other processing needed
   }
 
@@ -470,7 +488,7 @@ void checkForPGNs()
 
 void printPgnAnnoucement(uint8_t _pgnNum, char* _pgnName, uint8_t _len)
 {
-  Serial.print("\r\n0x"); Serial.print(_pgnNum, HEX);
+  Serial.print("\r\n\n0x"); Serial.print(_pgnNum, HEX);
   Serial.print(" ("); Serial.print(_pgnNum); Serial.print(") - ");
   Serial.print(_pgnName); Serial.print(", "); Serial.print(_len); Serial.print(" bytes ");
   Serial.print(millis());
@@ -502,7 +520,7 @@ void udpNMEA() {
 */
 void udpNtrip() {
   NTRIPusage.timeIn();
-  static uint32_t ntripUpdateTime, ntripCheckTime;
+  static uint32_t ntripCheckTime;//, ntripUpdateTime;
   // When ethernet is not running, return directly. parsePacket() will block when we don't
   if (UDP.isRunning) {
     if (millis() > ntripCheckTime) {  // limit update rate to save cpu time
@@ -523,9 +541,10 @@ void udpNtrip() {
           ntripCheckTime = millis() + 800;  // most base stations send updates every 1000ms
         }*/
           
-        ntripUpdateTime = millis();   // only used in Serial debug above, AgIO always delays sequential ntrip packets by about 52-70ms
+        //ntripUpdateTime = millis();   // only used in Serial debug above, AgIO always delays sequential ntrip packets by about 52-70ms
       }
     }
   }
   NTRIPusage.timeOut();
 }
+

@@ -234,6 +234,62 @@ void buildPandaOrPaogi(bool _panda)    // only called by GGA_Handler (above)
     else Serial.write(nmea);   // if Eth is !connected, send USB GPS data
 }
 
+void buildNMEA(double lat, double lon)
+{
+  Serial.print("\r\nCorrection position back from AOG delay: ");
+  Serial.print(aogGpsToAutoSteerLoopTimer);
+
+  char latNS[3] = ",N";
+  if (lat < 0) NS = ",S";
+  lat = abs(lat);
+  cSentence += "," + ((int)lat).ToString("D2");
+  double Mins = (double)(lat - (int)lat) * 60.0;
+  cSentence += Mins.ToString("N7");
+  cSentence += NS;*/
+
+  strcpy(nmea, "$GGA,");
+  strcat(nmea, GGA.fixTime); strcat(nmea, ",");     // field 1
+
+  strcat(nmea, GGA.latitude); strcat(nmea, ",");
+
+  strcat(nmea, latNS); strcat(nmea, ",");
+
+  strcat(nmea, GGA.longitude); strcat(nmea, ",");
+  
+  strcat(nmea, lonEW); strcat(nmea, ",");       // 5
+  strcat(nmea, GGA.fixQuality); strcat(nmea, ",");
+  strcat(nmea, GGA.numSats); strcat(nmea, ",");
+  strcat(nmea, GGA.HDOP); strcat(nmea, ",");
+  strcat(nmea, GGA.altitude); strcat(nmea, ",");    // 9
+  strcat(nmea, GGA.ageDGPS); strcat(nmea, ",");
+  strcat(nmea, VTG.speedKnots); strcat(nmea, ",");
+
+  if (_panda) {   // use BNO values
+    strcat(nmea, IMU.heading); strcat(nmea, ",");
+    strcat(nmea, IMU.roll); strcat(nmea, ",");      // 13
+    strcat(nmea, IMU.pitch); strcat(nmea, ",");
+    strcat(nmea, IMU.yawRate);
+  }
+  else {          // use Dual values
+    // replace these with Dual baseline calcs
+    char temp[6];
+    itoa(ubxParser.ubxData.baseRelH, temp, 10);
+    strcat(nmea, temp); strcat(nmea, ",");          // 12
+
+    itoa(ubxParser.ubxData.baseRelRoll, temp, 10);
+    strcat(nmea, temp); strcat(nmea, ",");          // 13
+
+    strcat(nmea, ""); strcat(nmea, ",");            // blank pitch
+    strcat(nmea, "");                               // blank yaw rate
+  }
+
+  strcat(nmea, "*");
+  CalculateChecksum();
+  strcat(nmea, "\r\n");
+
+  // sendNMEA(); 
+}
+
 void CalculateChecksum(void)
 {
   int16_t sum = 0;
