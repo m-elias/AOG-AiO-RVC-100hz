@@ -27,7 +27,7 @@
 #define Hardware_H
 
 #define AIOv4x
-const char inoVersion[] = "RVC 100hz AiO v4.x pre-alpha - " __DATE__;
+const char inoVersion[] = "RVC 100hz AiO v4.x alpha - " __DATE__;
 
 // ********* IO Defines *********
 const uint8_t WAS_SENSOR_PIN = A0;      // WAS input
@@ -44,8 +44,8 @@ SpeedPulse speedPulse(SPEEDPULSE_PIN);     // misc.h
 #define STEER_PIN        32
 #define WORK_PIN         34
 #define KICKOUT_D_PIN    37     // REMOTE input
-#define CURRENT_PIN     A17     // ACS input
-#define KICKOUT_A_PIN   A10     // Pressure input
+#define CURRENT_PIN     A17     // ACS CURRENT input from Cytron module
+#define KICKOUT_A_PIN   A10     // PRESSURE input
 
 // ********* Serial Assignments *********
 #define SerialRTK Serial3               // RTK radio

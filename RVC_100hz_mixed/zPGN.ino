@@ -142,16 +142,16 @@ void checkForPGNs()
       UDP_Susage.timeOut();
     }
 
-    /*#ifdef MACHINE_H
+    #ifdef MACHINE_H
       if (machine.isInit) {
         uint8_t helloFromMachine[] = { 0x80, 0x81, 123, 123, 5, 0, 0, 0, 0, 0, 71 };
-        //helloFromMachine[5] = relayLo;
-        //helloFromMachine[6] = relayHi;
+        helloFromMachine[5] = B10101010;  // should be changed to read actual machine output states
+        helloFromMachine[6] = B01010101;
         UDP_Susage.timeIn();
         UDP.SendUdpByte(helloFromMachine, sizeof(helloFromMachine), UDP.broadcastIP, UDP.portAgIO_9999);
         UDP_Susage.timeOut();
       }
-    #endif*/
+    #endif
         
     pgnMatched = true;
     //return;         // no return, allow machine object to process machine reply below
@@ -454,28 +454,13 @@ void checkForPGNs()
     PGNusage.timeOut();
     MACHusage.timeIn();
     //IPAddress ipDest = UDP.broadcastIP;
-    uint8_t machineReplyData[] = { 0x80, 0x81, 123, 0, 0, 0, 0, 0, 0, 0, 0, 0, 23 };  // long enough for machine scan reply len 13, AgIO Hello reply len 11
+    //uint8_t machineReplyData[] = { 0x80, 0x81, 123, 0, 0, 0, 0, 0, 0, 0, 0, 0, 23 };  // long enough for machine scan reply len 13, AgIO Hello reply len 11
     //uint8_t machineReplyData[] = { 0x80, 0x81, 123, 203, 7, UDP.myIP[0], UDP.myIP[1], UDP.myIP[2], UDP.myIP[3], rem_ip[0], rem_ip[1], rem_ip[2], 23 };
-    uint8_t machineReplyLen = 0;    // set default len of 0, which means there's no reply data to send
+    //uint8_t machineReplyLen = 0;    // set default len of 0, which means there's no reply data to send
 
-    if (machine.parsePGN(udpData, len, machineReplyData, &machineReplyLen))//, &ipDest))    // look for Machine PGNs
+    if (machine.parsePGN(udpData, len)) //, machineReplyData, &machineReplyLen))//, &ipDest))    // look for Machine PGNs
     {
       pgnMatched = true;
-      if (machineReplyLen > 0)
-      {
-        /*Serial.print("\r\nReply len "); Serial.print(machineReplyLen); Serial.print(" >");
-        for (byte i = 0; i < machineReplyLen; i++) {
-          Serial.print(machineReplyData[i]); Serial.print(" ");
-        }*/
-        UDP.SendUdpByte(machineReplyData, machineReplyLen, UDP.broadcastIP, UDP.portAgIO_9999);
-        //Serial << "\r\nChecking machine PGNs";
-        // 0xC8 (200) - Hello from AgIO
-        // 0xE5 (229) - 64 Section Data
-        // 0xEB (235) - Section Dimensions
-        // 0xEC (236) - Machine Pin Config
-        // 0xEE (238) - Machine Config
-        // 0xEF (239) - Machine Data
-      }
     }
     MACHusage.timeOut();
     PGNusage.timeIn();

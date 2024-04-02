@@ -32,7 +32,7 @@ void setup()
   parserSetup();                            // setup.ino
   BNO.begin(SerialIMU);                     // BNO_RVC.cpp
 
-  // v5 only, v4 fails outputs.begin so machine is also not init'd
+  // v5 has machine outputs, v4 fails outputs.begin so machine is also not init'd
   if (outputs.begin()) {                    // clsPCA9555.cpp
     Serial.print("\r\nSection outputs (PCA9555) detected (8 channels, low side switching)");
     machine.init(&outputs, pcaOutputPinNumbers, 100); // mach.h
@@ -77,9 +77,8 @@ void loop()
 
   BNOusage.timeIn();
   if (BNO.read()) {                         // there should be new data every 10ms (100hz)
-    //Serial.print("\r\nBNO");
     bnoStats.incHzCount();
-    bnoStats.update(1);
+    bnoStats.update(1);                     // 1 dummy value
   }
   BNOusage.timeOut();
 
@@ -153,8 +152,8 @@ void loop()
 
   // if either GGA or relposNED are late, don't use the old msgs, print warning only once per cycle
   if (ubxParser.useDual) {
-    if ((ggaReady ^ ubxParser.relPosNedReady)) {    // true only if they are different from each other (XOR)
-      if (imuPandaSyncTimer > 15 && ubxParser.relPosTimer > 15) {
+    if ((ggaReady ^ ubxParser.relPosNedReady)) {                    // true only if they are different from each other (XOR)
+      if (imuPandaSyncTimer > 15 && ubxParser.relPosTimer > 15) {   // if either msg is > 15ms late
 
         Serial.print("\r\n**************************************************"); Serial.print(millis());
         if (ggaReady) {

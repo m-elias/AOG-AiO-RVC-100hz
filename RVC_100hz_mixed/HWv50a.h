@@ -27,7 +27,7 @@
 #define Hardware_H
 
 #define AIOv50a
-const char inoVersion[] = "RVC 100hz AiO v5.0a pre-alpha - " __DATE__;
+const char inoVersion[] = "RVC 100hz AiO v5.0a alpha - " __DATE__;
 
 // ********* IO Defines *********
 const uint8_t WAS_SENSOR_PIN = A15;     // WAS input
@@ -47,9 +47,9 @@ const uint8_t PIEZO2 = 36;
 // Switches/Sensors
 #define STEER_PIN         2
 #define WORK_PIN        A17
-#define KICKOUT_D_PIN     3
-#define CURRENT_PIN     A13
-#define KICKOUT_A_PIN   A12
+#define KICKOUT_D_PIN     3     // REMOTE
+#define CURRENT_PIN     A13     // CURRENT sense from on board DRV8701
+#define KICKOUT_A_PIN   A12     // PRESSURE
 
 // ********* Serial Assignments *********
 #define SerialRTK Serial3               // RTK radio
