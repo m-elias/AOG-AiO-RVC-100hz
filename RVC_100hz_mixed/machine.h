@@ -1,4 +1,3 @@
-#include "IPAddress.h"
 #include <stdint.h>
 /*
   My attempt at putting the Machine/Section control code all into a class
@@ -17,12 +16,15 @@
     - maybe split up machine functions and sections into seperate classes or seperate output groups
     - support 64 section only init/functions (no other machine controls)
     - split Arduino pin inversion from PCA pin inversion or add setting to either match or invert PCA from Arduino pins
+    
 */
 
 #ifndef MACHINE_H
 #define MACHINE_H
 
 #include "EEPROM.h"
+#include "IPAddress.h"
+#include <stdint.h>
 #include "elapsedMillis.h"
 #ifdef CLSPCA9555_H_
   #include "clsPCA9555.h"
@@ -303,11 +305,11 @@ public:
 #ifdef CLSPCA9555_H_
     if (pcaOutputs != NULL)
     {
-      //if (debugLevel > 3) Serial.print("\r\nPCA outputs ");
+      Serial.print("\r\nPCA outputs ");
       for (uint8_t i = 1; i <= 8; i++) {       // AiO v5.0a has 8 PCA9555 outputs
         if (config.pinFunction[i] > 0) {
           pcaOutputs->digitalWrite(pcaOutputPinNumbers[i - 1], !(states.functions[config.pinFunction[i]] == config.isPinActiveHigh));   // NXOR
-          //if (debugLevel > 3) Serial.print(i); Serial.print(":"); Serial.print(!(states.functions[config.pinFunction[i]] == config.isPinActiveHigh)); Serial.print(" ");
+          Serial.print(i); Serial.print(":"); Serial.print(!(states.functions[config.pinFunction[i]] == config.isPinActiveHigh)); Serial.print(" ");
         }
       }
     }
@@ -332,66 +334,14 @@ public:
   // ***************************************************************************************************************************************************
   // ****************************************************** PGN PARSING ********************************************************************************
   // ***************************************************************************************************************************************************
-  bool parsePGN(uint8_t* pgnData, uint8_t pgnDataLen, uint8_t* rtnByteArray, uint8_t* rtnByteLen)//, IPAddress* rtnDestIP)
+  bool parsePGN(uint8_t *pgnData, uint8_t len)
   {
-    if (pgnDataLen < 5) return false;
+    if (len < 5) return false;
     // should check CRC here too???
     if (pgnData[0] != 0x80 || pgnData[1] != 0x81 || pgnData[2] != 0x7F) return false;    // skip the rest if the first three bytes are NOT AoG headers
 
 
-
-    if (pgnData[3] == 200 && pgnDataLen == 9)  // 0xC8 (200) - Hello from AgIO
-    {
-      if (isInit)
-      {
-        *rtnByteLen = 11;       // set length of return byte array
-        rtnByteArray[3] = 123;  // change relevant bytes of return array
-        rtnByteArray[4] = 5;
-        rtnByteArray[5] = (states.sections[8] << 7) | (states.sections[7] << 6) | (states.sections[6] << 5) | (states.sections[5] << 4) | (states.sections[4] << 3) | (states.sections[3] << 2) | (states.sections[2] << 1) | states.sections[1];
-        rtnByteArray[6] = (states.sections[16] << 7) | (states.sections[15] << 6) | (states.sections[14] << 5) | (states.sections[13] << 4) | (states.sections[12] << 3) | (states.sections[11] << 2) | (states.sections[10] << 1) | states.sections[9];
-        rtnByteArray[7] = 0;
-        rtnByteArray[8] = 0;
-        rtnByteArray[9] = 0;
-
-        uint8_t CK_A = 0;
-        for (uint8_t i = 2; i < 10; i++) {  // AgIO Hello reply is 11 long -1 to skip CRC
-          CK_A = (CK_A + rtnByteArray[i]);
-        }
-        rtnByteArray[10] = CK_A;
-
-        // for reference
-        //uint8_t helloFromMachine[] = { 0x80, 0x81, 123, 123, 5, 0, 0, 0, 0, 0, 71 };
-        //helloFromMachine[5] = relayLo;
-        //helloFromMachine[6] = relayHi;
-      }
-      return true;
-    } // 0xC8 (200) - Hello from AgIO
-
-    // taken care of in zPGN.ino as it already has all the info
-    /*if (pgnData[3] == 202 && pgnDataLen == 9)       // 0xCA (202) - Scan Request
-    {
-      //Serial.print("\r\n"); Serial.print(*rtnDestIP);
-      if (isInit)
-      {
-        *rtnDestIP = { 255, 255, 255, 255 };
-        *rtnByteLen = 13;       // set length of return byte array
-
-        CK_A = 0;
-        for (uint8_t i = 2; i < sizeof(scanReplyMachine) - 1; i++) {
-          CK_A = (CK_A + scanReplyMachine[i]);
-        }
-        scanReplyMachine[sizeof(scanReplyMachine) - 1] = CK_A;*/
-        
-        
-        /*uint8_t scanReplyMachine[] = { 0x80, 0x81, 123, 203, 7,
-                                UDP.myIP[0], UDP.myIP[1], UDP.myIP[2], UDP.myIP[3],
-                                rem_ip[0], rem_ip[1], rem_ip[2], 23 };
-      }
-      return true;
-    } // 0xCA (202) - Scan Request*/
-
-
-    else if (pgnData[3] == 229 && pgnDataLen == 16)             // 0xE5 (229) - 64 Section Data, len: 16
+    if (pgnData[3] == 229 && len == 16)                    // 0xE5 (229) - 64 Section Data, len: 16
     {                                                      // use this instead of relayLo/Hi from other PGNs because it works for zones/groups too
       
       if (debugLevel > 3) { Serial.print("\r\n0x"); Serial.print(pgnData[3], HEX); Serial.print(" ("); Serial.print(pgnData[3]); Serial.print(") - "); }
@@ -413,7 +363,7 @@ public:
     }
 
 
-    else if (pgnData[3] == 235 && pgnDataLen == 39)               // 0xEB (235) - Section Dimensions, len: 39
+    else if (pgnData[3] == 235 && len == 39)               // 0xEB (235) - Section Dimensions, len: 39
     {
       if (debugLevel > 2) { Serial.print("\r\n0x"); Serial.print(pgnData[3], HEX); Serial.print(" ("); Serial.print(pgnData[3]); Serial.print(") - "); }
       if (debugLevel > 2) Serial.print("Section Dimensions");
@@ -425,11 +375,11 @@ public:
     }
 
 
-    else if (pgnData[3] == 236 && pgnDataLen == 30)               // 0xEC (236) - Machine Pin Config, len: 30
+    else if (pgnData[3] == 236 && len == 30)               // 0xEC (236) - Machine Pin Config, len: 30
     {
       if (debugLevel > 2) { Serial.print("\r\n0x"); Serial.print(pgnData[3], HEX); Serial.print(" ("); Serial.print(pgnData[3]); Serial.print(") - "); }
       if (debugLevel > 2) Serial.print("Machine Pin Config");
-      for (uint8_t i = 5; i < min(pgnDataLen - 1, uint8_t(sizeof(config.pinFunction) + 5)); i++) {
+      for (uint8_t i = 5; i < min(len - 1, uint8_t(sizeof(config.pinFunction) + 5)); i++) {
         config.pinFunction[i - 4] = pgnData[i];
       }
       if (debugLevel > 2) printPinConfig();
@@ -441,7 +391,7 @@ public:
     }
 
 
-    else if (pgnData[3] == 238 && pgnDataLen == 14)                // 0xEE (238) - Machine Config, len: 14
+    else if (pgnData[3] == 238 && len == 14)                // 0xEE (238) - Machine Config, len: 14
     {
       if (debugLevel > 2) { Serial.print("\r\n0x"); Serial.print(pgnData[3], HEX); Serial.print(" ("); Serial.print(pgnData[3]); Serial.print(") - "); }
       if (debugLevel > 2) Serial.print("Machine Config");
@@ -471,7 +421,7 @@ public:
     }
 
 
-    else if (pgnData[3] == 239 && pgnDataLen == 14)                // 0xEF (239) - Machine Data, len: 14
+    else if (pgnData[3] == 239 && len == 14)                // 0xEF (239) - Machine Data, len: 14
     {
       if (debugLevel > 3) { Serial.print("\r\n0x"); Serial.print(pgnData[3], HEX); Serial.print(" ("); Serial.print(pgnData[3]); Serial.print(") - "); }
       if (debugLevel > 3) Serial.print("Machine Data");
