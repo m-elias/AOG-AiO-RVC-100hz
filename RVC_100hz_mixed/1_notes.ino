@@ -29,6 +29,8 @@ Dual Operation Logic
 
 Machine/Section outputs
 - only supported by v5.0a
+- uses Wire1 (I2C1) to connect to PCA9555
+  - v4.x uses Wire1 to connect to ADS1115
 
 
 

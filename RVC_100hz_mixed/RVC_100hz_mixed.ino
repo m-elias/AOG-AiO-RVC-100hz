@@ -32,10 +32,11 @@ void setup()
   parserSetup();                            // setup.ino
   BNO.begin(SerialIMU);                     // BNO_RVC.cpp
 
-  if (outputs.begin()) {
-    Serial << "\r\nSection outputs (PCA9555) detected (8 channels, low side switching)";   // clsPCA9555.cpp
-    machine.init(&outputs, pcaOutputPinNumbers, 100);                                      // mach.h
-  }// else Serial << "\r\n*** Section outputs (PCA9555) NOT detected! ***";
+  // v5 only, v4 fails outputs.begin so machine is also not init'd
+  if (outputs.begin()) {                    // clsPCA9555.cpp
+    Serial.print("\r\nSection outputs (PCA9555) detected (8 channels, low side switching)");
+    machine.init(&outputs, pcaOutputPinNumbers, 100); // mach.h
+  }
 
   if (UDP.init())                           // Eth_UDP.h
     LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::ETH_READY);
