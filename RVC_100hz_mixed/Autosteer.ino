@@ -425,6 +425,7 @@ void autoSteerUpdate() {
       }
 
       motorDrive();  //out to motors the pwm value
+
       LEDs.set(LED_ID::STEER, STEER_STATE::AUTOSTEER_READY);
 
       //Serial.print("\r\n\n*** Autosteer watchdog triggered - Autosteer disabled! ***\r\n");

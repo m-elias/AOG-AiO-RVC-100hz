@@ -10,8 +10,8 @@ void serialSetup()
   #ifdef AIOv50a
     pinMode(PIEZO1, OUTPUT);
     pinMode(PIEZO2, OUTPUT);
-    digitalWrite(PIEZO1, HIGH);
-    digitalWrite(PIEZO2, HIGH);
+    digitalWrite(PIEZO1, LOW);
+    digitalWrite(PIEZO2, LOW);
   #endif
 
   // setup GPS serial ports here
