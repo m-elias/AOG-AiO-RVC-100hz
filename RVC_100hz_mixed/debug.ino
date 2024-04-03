@@ -44,6 +44,14 @@ void checkUSBSerial()
         LEDs.setGpsLED(usbRead - '0', true);
       }
     }
+    else if (usbRead == 'l' && Serial.available() > 0)    // set RGB brightness
+    {
+      usbRead = Serial.read();
+      if (usbRead >= '0' && usbRead <= '5') {
+        LEDs.setBrightness((usbRead - '0') * 50);
+        Serial.print("\r\nSetting RGB brightness: "); Serial.print((usbRead - '0') * 50);
+      }
+    }
   }
 }
 
