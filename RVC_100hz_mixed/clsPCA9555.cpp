@@ -74,10 +74,10 @@ bool PCA9555::begin() {
       return false;
     }else{
       Wire1.setClock(400000);
-      /*for (uint8_t i = 0; i < 8; i++){    
-        pinMode(outputPins[i], OUTPUT);   // set in machine.h
-        pinMode(inputPins[i], INPUT);
-      }*/
+      //for (uint8_t i = 0; i < 8; i++){    
+        //pinMode(outputPins[i], OUTPUT);   // set in machine.h
+        //pinMode(inputPins[i], INPUT);
+      //}
       enabled = true;
       return true;
     }

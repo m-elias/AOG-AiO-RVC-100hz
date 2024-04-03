@@ -67,7 +67,8 @@ private:
 
 #ifdef CLSPCA9555_H_
   PCA9555* pcaOutputs = NULL;
-  uint8_t* pcaOutputPinNumbers;                  // the AiO v5.0a uses 8 PCA9555 IO for outputs
+  const uint8_t* pcaOutputPinNumbers;             // the AiO v5.0a uses 8 PCA9555 IO for outputs
+  const uint8_t* pcaInputPinNumbers;              // the AiO v5.0a uses 8 PCA9555 IO for input (detecting output fuse failure)
 #endif
 
   struct States {
@@ -143,17 +144,19 @@ public:
 
 #ifdef CLSPCA9555_H_
   // init function for PCA9555 IO expander pins (AiO v5.0a)
-  void init(PCA9555* _pcaOutputs, uint8_t* _outputPins, int16_t _eeAddr = -1, const uint8_t _eeSize = 33)
+  void init(PCA9555* _pcaOutputs, const uint8_t* _outputPins, const uint8_t* _inputPins, int16_t _eeAddr = -1, const uint8_t _eeSize = 33)
   {
     pcaOutputs = _pcaOutputs;
     eeAddr = _eeAddr;
     loadFromEeprom();
 
     pcaOutputPinNumbers = _outputPins;
+    pcaInputPinNumbers = _inputPins;
 
     for (uint8_t i = 0; i < 8; i++){
-      //pcaOutputPinNumbers[i+1] = _outputPins[i];
-      //pcaOutputs->pinMode(pcaOutputPinNumbers[i], OUTPUT);                         // calling digitalWrite already sets the pins to OUTPUT
+      //Serial.print("\r\nPin "); Serial.print(i); Serial.print(": "); Serial.print(pcaOutputPinNumbers[i]);
+      pcaOutputs->pinMode(pcaInputPinNumbers[i], INPUT);      // it's important to set INPUT pinMode for the input pins
+      //pcaOutputs->pinMode(pcaOutputPinNumbers[i], OUTPUT);  // seperate OUTPUT pinMode is not needed, set by digitalWrite
       pcaOutputs->digitalWrite(pcaOutputPinNumbers[i], config.isPinActiveHigh);      // PCA9555 outputs on AiO v5.0a are inverted from other test LEDs
     }
     isInit = true;
