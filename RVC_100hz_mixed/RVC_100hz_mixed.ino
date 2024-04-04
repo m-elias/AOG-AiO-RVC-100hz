@@ -17,8 +17,8 @@ const uint8_t encoderType = 1;  // 1 - single input
                                 // 3 - variable duty cycle, for future updates
 
 #include "common.h"
-//#include "JD_DAC.h"   // experimental JD 2 track DAC steering & SCV/remote hyd control
-//JD_DAC jdDac(Wire1, 0x60);
+#include "JD_DAC.h"   // experimental JD 2 track DAC steering & SCV/remote hyd control
+JD_DAC jdDac(Wire1, 0x60);
 
 void setup()
 {
@@ -151,9 +151,9 @@ void loop()
     }
 
   // if either GGA or relposNED are late, don't use the old msgs, print warning only once per cycle
-  if (ubxParser.useDual) {
+  /*if (ubxParser.useDual) {
     if ((ggaReady ^ ubxParser.relPosNedReady)) {                    // true only if they are different from each other (XOR)
-      if (imuPandaSyncTimer > 15 && ubxParser.relPosTimer > 15) {   // if either msg is > 15ms late
+      if (imuPandaSyncTimer > 90 || ubxParser.relPosTimer > 90) {   // if either msg is > 15ms late
 
         Serial.print("\r\n**************************************************"); Serial.print(millis());
         if (ggaReady) {
@@ -168,8 +168,28 @@ void loop()
         ubxParser.relPosNedReady = false;
       }
     }
-  }
+  }*/
+  if (ubxParser.useDual) {
+    if (ggaReady) {         
+      if (ubxParser.relPosTimer > 180) {
+        Serial.print("\r\n**************************************************"); Serial.print(millis());
+        Serial.print("\r\n*** relposNED was missed, late or low quality! ***");
+        Serial.print("\r\n**************************************************\r\n");
+        //Serial.print("\r\n****************** carrSoln:  "); Serial.print(ubxParser.ubxData.carrSoln); Serial.print(" ******************");
+        ggaReady = false;
+        ubxParser.relPosTimer -= 100;
+      }
+    }
 
+    else if (ubxParser.relPosNedReady) {
+      if (imuPandaSyncTimer > 180) {
+        Serial.print("\r\n**************************************************"); Serial.print(millis());
+        Serial.print("\r\n************* GGA was missed or late! ************");
+        Serial.print("\r\n**************************************************\r\n");
+        ubxParser.relPosNedReady = false;
+      }
+    }
+  }
 
   // *************************************************************************************************
   // ************************************* UPDATE OTHER STUFF *************************************
