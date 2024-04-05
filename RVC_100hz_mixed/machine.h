@@ -156,7 +156,7 @@ public:
     for (uint8_t i = 0; i < 8; i++){
       //Serial.print("\r\nPin "); Serial.print(i); Serial.print(": "); Serial.print(pcaOutputPinNumbers[i]);
       pcaOutputs->pinMode(pcaInputPinNumbers[i], INPUT);      // it's important to set INPUT pinMode for the input pins
-      //pcaOutputs->pinMode(pcaOutputPinNumbers[i], OUTPUT);  // seperate OUTPUT pinMode is not needed, set by digitalWrite
+      //pcaOutputs->pinMode(pcaOutputPinNumbers[i], OUTPUT);  // OUTPUT pinMode is not needed, set by digitalWrite
       pcaOutputs->digitalWrite(pcaOutputPinNumbers[i], config.isPinActiveHigh);      // PCA9555 outputs on AiO v5.0a are inverted from other test LEDs
     }
     isInit = true;
@@ -308,11 +308,11 @@ public:
 #ifdef CLSPCA9555_H_
     if (pcaOutputs != NULL)
     {
-      Serial.print("\r\nPCA outputs ");
+      //Serial.print("\r\nPCA outputs ");
       for (uint8_t i = 1; i <= 8; i++) {       // AiO v5.0a has 8 PCA9555 outputs
         if (config.pinFunction[i] > 0) {
           pcaOutputs->digitalWrite(pcaOutputPinNumbers[i - 1], !(states.functions[config.pinFunction[i]] == config.isPinActiveHigh));   // NXOR
-          Serial.print(i); Serial.print(":"); Serial.print(!(states.functions[config.pinFunction[i]] == config.isPinActiveHigh)); Serial.print(" ");
+          //Serial.print(i); Serial.print(":"); Serial.print(!(states.functions[config.pinFunction[i]] == config.isPinActiveHigh)); Serial.print(" ");
         }
       }
     }

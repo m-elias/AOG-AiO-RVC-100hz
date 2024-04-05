@@ -77,6 +77,7 @@ elapsedMillis gpsLostTimer;
 elapsedMillis LEDTimer;
 elapsedMillis imuPandaSyncTimer;
 bool ggaReady, imuPandaSyncTrigger;
+bool ggaTimeout, relposnedTimeout;
 bool SerialGPSactive, SerialGPS2active;
 uint32_t dualTime;
 

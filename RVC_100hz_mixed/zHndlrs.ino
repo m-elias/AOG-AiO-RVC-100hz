@@ -147,7 +147,8 @@ void GGA_GNS_PostProcess()                // called by either GGA or GNS handler
 
   if (!ubxParser.useDual) {               // if not using Dual 
     buildPandaOrPaogi(PANDA);             // build the PANDA sentence right away
-  }                                       // otherwise wait until relposned arrives in main loop()
+    ggaReady = false;
+  }                                       // otherwise wait in main loop() until relposned arrives
 }
 
 void GGA_Handler() // Rec'd GGA

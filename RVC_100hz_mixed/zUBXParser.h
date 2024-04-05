@@ -23,7 +23,7 @@ private:
   char chkb;
   int count;
   char payload[1000];
-  uint32_t prevMsgTime, startMsgTime;
+  uint32_t prevRelposnedMsgTime, prevPvtMsgTime, startMsgTime;
 
   void addchk(int b) {
     this->chka = (this->chka + b) & 0xFF;
@@ -147,13 +147,12 @@ private:
 
     ubxData.baseRelFlags = relPosFlags;
 
-    //Serial.print(millis()); Serial.print(" handle_NAV_RELPOSNED "); Serial.println((micros() - prevMsgTime) / 1000);
-    Serial.print("\r\n"); Serial.print(millis());// Serial.print(" "); Serial.print(iTOW);
-    Serial.print(" handle_NAV_RELPOSNED "); Serial.print((micros() - prevMsgTime) / 1000);
+    Serial.print("\r\n"); Serial.print(millis()); Serial.print(" handle_NAV_REL "); Serial.print(millis() - prevRelposnedMsgTime);
     Serial.print("  "); Serial.print((float)ubxData.iTOW / 1000.0, 1);
-    msgPeriod = (micros() - prevMsgTime) / 1000;
-    prevMsgTime = micros();
+    msgPeriod = millis() - prevRelposnedMsgTime;
+    prevRelposnedMsgTime = millis();
     relPosTimer = 0;
+    relPosNedRcvd = true;
     prepDualData();
   }
 
@@ -183,8 +182,10 @@ private:
     ubxData.lat = (float)lat * 0.0000001;
     ubxData.lon = (float)lon * 0.0000001;
     ubxData.alt = (float)height * 0.001;
-    Serial.print("\r\n"); Serial.print(millis()); Serial.print(" handle_NAV_PVT ");// Serial.print((micros() - prevMsgTime) / 1000);
-    //prevMsgTime = micros();
+    Serial.print("\r\n"); Serial.print(millis()); Serial.print(" handle_NAV_PVT "); Serial.print(millis() - prevPvtMsgTime);
+    Serial.print("  "); Serial.print((float)iTOW / 1000.0, 1);
+    prevPvtMsgTime = millis();
+    pvtTimer = 0;
   }
 
   void reportUnhandled(char msgid) {
@@ -228,7 +229,7 @@ private:
       useDual = true;             // set true for the rest of runtime
       // set GPS mode LEDs to dual
     } else {
-      Serial.print("\r\n*** carrSoln: "); Serial.print(ubxData.carrSoln); Serial.print(" ***");
+      Serial.print("\r\n    carrSoln: "); Serial.print(ubxData.carrSoln);// Serial.print(" ***");
       ubxData.baseRelRoll *= 0.9;     // "level off" dual roll
       // set GPS mode LEDs to !dual
       relPosNedReady = false;         // don't send paogi
@@ -251,9 +252,9 @@ public:
   };
   UBX_Data ubxData;
 
-  bool relPosNedReady, useDual;
+  bool relPosNedReady, useDual, relPosNedRcvd;
   uint32_t msgPeriod, msgReadTime;
-  elapsedMillis relPosTimer;
+  elapsedMillis relPosTimer, pvtTimer;
 
   /**
           * Constructs a UBX parser. 

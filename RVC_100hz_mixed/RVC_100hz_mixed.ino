@@ -147,6 +147,7 @@ void loop()
   if (ubxParser.relPosNedReady && ggaReady) {   // if in Dual mode, and both GGA & relposNED are ready
       buildPandaOrPaogi(PAOGI);                 // build a PAOGI msg
       ubxParser.relPosNedReady = false;         // reset for next relposned trigger
+      ubxParser.relPosNedRcvd = false;
       ggaReady = false;
     }
 
@@ -169,27 +170,20 @@ void loop()
       }
     }
   }*/
-  if (ubxParser.useDual) {
-    if (ggaReady) {         
-      if (ubxParser.relPosTimer > 180) {
-        Serial.print("\r\n**************************************************"); Serial.print(millis());
-        Serial.print("\r\n*** relposNED was missed, late or low quality! ***");
-        Serial.print("\r\n**************************************************\r\n");
-        //Serial.print("\r\n****************** carrSoln:  "); Serial.print(ubxParser.ubxData.carrSoln); Serial.print(" ******************");
-        ggaReady = false;
-        ubxParser.relPosTimer -= 100;
-      }
-    }
-
-    else if (ubxParser.relPosNedReady) {
-      if (imuPandaSyncTimer > 180) {
-        Serial.print("\r\n**************************************************"); Serial.print(millis());
-        Serial.print("\r\n************* GGA was missed or late! ************");
-        Serial.print("\r\n**************************************************\r\n");
-        ubxParser.relPosNedReady = false;
-      }
-    }
+  if (imuPandaSyncTimer > 120) {
+    imuPandaSyncTimer -= 100;
+    Serial.print("\r\n*** GGA/GNS was missed or late! ***");
   }
+
+  if (ubxParser.relPosTimer > 120) {
+    ubxParser.relPosTimer -= 100;
+    Serial.print("\r\n*** relposNED was missed or late! ***");
+  }
+
+  /*if (ubxParser.pvtTimer > 120) {
+    ubxParser.pvtTimer -= 100;
+    Serial.print("\r\n*** PVT was missed or late! ***");
+  }*/
 
   // *************************************************************************************************
   // ************************************* UPDATE OTHER STUFF *************************************
@@ -199,11 +193,9 @@ void loop()
   // this is only for dual stats monitoring
   if (dualTime != ubxParser.ubxData.iTOW)
   {
-    //itowVsHandleTime = micros();
     gps2Stats.incHzCount();
     relJitterStats.update(ubxParser.msgPeriod);
     relTtrStats.update(ubxParser.msgReadTime);
-    //Serial.print(millis()); Serial.print(" New relposned update "); Serial.println(ubxParser.ubxData.iTOW - dualTime);
     dualTime = ubxParser.ubxData.iTOW;
   }
   
