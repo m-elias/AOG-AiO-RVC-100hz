@@ -124,6 +124,7 @@ extern "C" uint32_t set_arm_clock(uint32_t frequency);  // required prototype
 bool useDual = false;
 bool dualReadyGGA = false;
 bool dualReadyRelPos = false;
+bool extraCRLF;
 
 // booleans to see if we are using CMPS or BNO08x
 bool useCMPS = false;
@@ -148,6 +149,7 @@ double baseline = 0;
 double rollDual = 0;
 double relPosD = 0;
 double heading = 0;
+uint32_t iTOW;
 
 byte ackPacket[72] = { 0xB5, 0x62, 0x01, 0x3C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
@@ -210,8 +212,8 @@ struct ubxPacket {
 
 // Setup procedure ------------------------
 void setup() {
-  delay(500);                //Small delay so serial can monitor start up
-  set_arm_clock(150000000);  //Set CPU speed to 150mhz
+  delay(500);  //Small delay so serial can monitor start up
+  //set_arm_clock(150000000);  //Set CPU speed to 150mhz
   Serial.print("CPU speed set to: ");
   Serial.println(F_CPU_ACTUAL);
 
@@ -536,19 +538,24 @@ void loop() {
     dualReadyRelPos = false;
   }
 
+  if (ggaTimer > 50 && extraCRLF) {
+    Serial.print("\r\n");
+    extraCRLF = false;
+  }
+
   if (ggaTimer > 120) {
     ggaTimer -= 100;
-    Serial.print("\r\n*** GGA/GNS was missed or late! ***");
+    Serial.print("\r\n                             *** GGA was missed or late! ***\r\n");
   }
 
   if (relposnedTimer > 120) {
     relposnedTimer -= 100;
-    Serial.print("\r\n*** relposNED was missed or late! ***");
+    Serial.print("\r\n                              *** relposNED was missed or late! ***\r\n");
   }
 
   /*if (ubxParser.pvtTimer > 120) {
     ubxParser.pvtTimer -= 100;
-    Serial.print("\r\n*** PVT was missed or late! ***");
+    Serial.print("\r\n                              *** PVT was missed or late! ***");
   }*/
 
 
@@ -569,7 +576,7 @@ void loop() {
       } else {
         // Reset the counter, becaues the start sequence was broken
         relposnedByteCount = 0;
-        Serial.print("\r\n\n*** relposnedByteCount reset! ***\r\n\n");
+        Serial.print("\r\n\n*** relposnedByteCount reset! ***\r\n");
         //while(SerialGPS2->available()) SerialGPS2->read();
       }
     }
@@ -578,7 +585,12 @@ void loop() {
   // Check the message when the buffer is full
   if (relposnedByteCount > 71) {
     if (calcChecksum()) {
-      Serial.print("\r\nRelPos Message Received "); Serial.println(relposnedTimer);
+      Serial.print("\r\n"); Serial.print(millis());
+      Serial.print(" (");  Serial.print(SerialGPS2->available()); Serial.print(")");
+      Serial.print("REL update ");
+      Serial.print(relposnedTimer);
+      Serial.print(" ");
+      Serial.print((float)iTOW / 1000.0, 2);
       relposnedTimer = 0;
       //digitalWrite(GPSRED_LED, LOW);   //Turn red GPS LED OFF (we are now in dual mode so green LED)
       useDual = true;

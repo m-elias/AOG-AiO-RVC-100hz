@@ -17,8 +17,8 @@ const uint8_t encoderType = 1;  // 1 - single input
                                 // 3 - variable duty cycle, for future updates
 
 #include "common.h"
-#include "JD_DAC.h"   // experimental JD 2 track DAC steering & SCV/remote hyd control
-JD_DAC jdDac(Wire1, 0x60);
+//#include "JD_DAC.h"   // experimental JD 2 track DAC steering & SCV/remote hyd control
+//JD_DAC jdDac(Wire1, 0x60);
 
 void setup()
 {
@@ -27,7 +27,7 @@ void setup()
   Serial.print(inoVersion);
   LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::PWR_ON);
 
-  setCpuFrequency(150 * 1000000);           // Set CPU speed, default is 600mhz, 150mhz still seems fast enough, setup.ino
+  setCpuFrequency(600 * 1000000);           // Set CPU speed, default is 600mhz, 150mhz still seems fast enough, setup.ino
   serialSetup();                            // setup.ino
   parserSetup();                            // setup.ino
   BNO.begin(SerialIMU);                     // BNO_RVC.cpp
@@ -144,45 +144,46 @@ void loop()
 
 
   // ******************* For DUAL mode *******************
-  if (ubxParser.relPosNedReady && ggaReady) {   // if in Dual mode, and both GGA & relposNED are ready
+  if (ubxParser.relPosNedReady && ggaReady) {   // if both GGA & relposNED are ready
       buildPandaOrPaogi(PAOGI);                 // build a PAOGI msg
       ubxParser.relPosNedReady = false;         // reset for next relposned trigger
       ubxParser.relPosNedRcvd = false;
       ggaReady = false;
+      Serial.print("GPS("); Serial.print(SerialGPS->available());
+      Serial.print(") GPS2("); Serial.print(SerialGPS2->available()); Serial.print(")\r\n");
     }
 
-  // if either GGA or relposNED are late, don't use the old msgs, print warning only once per cycle
-  /*if (ubxParser.useDual) {
-    if ((ggaReady ^ ubxParser.relPosNedReady)) {                    // true only if they are different from each other (XOR)
-      if (imuPandaSyncTimer > 90 || ubxParser.relPosTimer > 90) {   // if either msg is > 15ms late
+  if (imuPandaSyncTimer > 50 && extraCRLF) {
+    Serial.print("\r\n");
+    extraCRLF = false;
+  }
 
-        Serial.print("\r\n**************************************************"); Serial.print(millis());
-        if (ggaReady) {
-          Serial.print("\r\n*** relposNED was missed, late or low quality! ***");
-          //Serial.print("\r\n****************** carrSoln:  "); Serial.print(ubxParser.ubxData.carrSoln); Serial.print(" ******************");
-        }
-        
-        if (ubxParser.relPosNedReady) Serial.print("\r\n************* GGA was missed or late! ************");
-
-        Serial.print("\r\n**************************************************\r\n");
-        ggaReady = false;
-        ubxParser.relPosNedReady = false;
-      }
-    }
-  }*/
-  if (imuPandaSyncTimer > 120) {
+  if (imuPandaSyncTimer > 150) {
     imuPandaSyncTimer -= 100;
-    Serial.print("\r\n*** GGA/GNS was missed or late! ***");
+    Serial.print("\r\n\n"); Serial.print(millis()); Serial.print(" "); Serial.print(SerialGPS->available());
+    Serial.print("                 *** GGA was missed or late! ***\r\n");
+    ggaReady = false;
+    ubxParser.relPosNedReady = false;
+    Serial.print("\r\nGPS("); Serial.print(SerialGPS->available());
+    Serial.print(") GPS2("); Serial.print(SerialGPS2->available()); Serial.print(")");
   }
 
-  if (ubxParser.relPosTimer > 120) {
+  if (ubxParser.relPosTimer > 150) {
     ubxParser.relPosTimer -= 100;
-    Serial.print("\r\n*** relposNED was missed or late! ***");
+    Serial.print("\r\n\n"); Serial.print(millis()); Serial.print(" "); Serial.print(SerialGPS2->available());
+    Serial.print("                   *** relposNED was missed or late! ***\r\n");
+    ggaReady = false;
+    ubxParser.relPosNedReady = false;
+    Serial.print("\r\nGPS("); Serial.print(SerialGPS->available());
+    Serial.print(") GPS2("); Serial.print(SerialGPS2->available()); Serial.print(")");
   }
 
-  /*if (ubxParser.pvtTimer > 120) {
+  /*if (ubxParser.pvtTimer > 150) {
     ubxParser.pvtTimer -= 100;
-    Serial.print("\r\n*** PVT was missed or late! ***");
+    Serial.print("\r\n\n"); Serial.print(millis()); Serial.print(" "); Serial.print(SerialGPS2->available());
+    Serial.print("                 *** PVT was missed or late! ***\r\n");
+    Serial.print("\r\nGPS("); Serial.print(SerialGPS->available());
+    Serial.print(") GPS2("); Serial.print(SerialGPS2->available()); Serial.print(")");
   }*/
 
   // *************************************************************************************************

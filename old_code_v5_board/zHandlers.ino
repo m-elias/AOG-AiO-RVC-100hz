@@ -71,8 +71,14 @@ void GGA_Handler() //Rec'd GGA
 
     blink = !blink;
     GGA_Available = true;
-    Serial.print("\r\nGGA Received "); Serial.println(ggaTimer);
+    Serial.print("\r\n"); Serial.print(millis());
+    Serial.print(" (");  Serial.print(SerialGPS->available()); Serial.print(")");
+    Serial.print("GGA update "); Serial.print(ggaTimer);
+    Serial.print(" "); Serial.print(fixTime);
+    Serial.print(" "); Serial.print(numSats);
+    Serial.print(" "); Serial.print(HDOP);
     ggaTimer = 0;
+    extraCRLF = true;
 
     if (useDual)
     {
@@ -281,7 +287,7 @@ void imuHandler()
 }
 
 void BuildNmea(void)
-{
+{ 
     strcpy(nmea, "");
 
     if (useDual) strcat(nmea, "$PAOGI,");
@@ -346,7 +352,9 @@ void BuildNmea(void)
 
     if (!passThroughGPS && !passThroughGPS2)
     {
+        Serial.print("\r\n"); Serial.print(millis()); Serial.print(" ");
         SerialAOG.write(nmea);  //Always send USB GPS data
+        extraCRLF = false;
     }
 
     if (Ethernet_running)   //If ethernet running send the GPS there

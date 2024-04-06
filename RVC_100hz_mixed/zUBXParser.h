@@ -43,6 +43,10 @@ private:
       //RELPOSNED
       case 0x3C:
         {
+          uint32_t iT = (int32_t)this->payload[4] + ((int32_t)this->payload[5] << 8)
+              + ((int32_t)this->payload[6] << 16) + ((int32_t)this->payload[7] << 24);
+          Serial.print("                    "); Serial.print((float)iT / 1000.0, 2);
+
           unsigned long iTOW   = (unsigned long)this->unpack_int32(4);
           long relPosN         = this->unpack_int32(8);
           long relPosE         = this->unpack_int32(12);
@@ -147,12 +151,14 @@ private:
 
     ubxData.baseRelFlags = relPosFlags;
 
-    Serial.print("\r\n"); Serial.print(millis()); Serial.print(" handle_NAV_REL "); Serial.print(millis() - prevRelposnedMsgTime);
-    Serial.print("  "); Serial.print((float)ubxData.iTOW / 1000.0, 1);
+    Serial.print("\r\n"); Serial.print(millis());
+    Serial.print(" REL update "); Serial.print(millis() - prevRelposnedMsgTime);
+    Serial.print(" "); Serial.print((float)ubxData.iTOW / 1000.0, 2);
     msgPeriod = millis() - prevRelposnedMsgTime;
     prevRelposnedMsgTime = millis();
     relPosTimer = 0;
     relPosNedRcvd = true;
+    useDual = true;             // set true for the rest of runtime
     prepDualData();
   }
 
@@ -182,8 +188,8 @@ private:
     ubxData.lat = (float)lat * 0.0000001;
     ubxData.lon = (float)lon * 0.0000001;
     ubxData.alt = (float)height * 0.001;
-    Serial.print("\r\n"); Serial.print(millis()); Serial.print(" handle_NAV_PVT "); Serial.print(millis() - prevPvtMsgTime);
-    Serial.print("  "); Serial.print((float)iTOW / 1000.0, 1);
+    Serial.print("\r\n"); Serial.print(millis()); Serial.print(" PVT update "); Serial.print(millis() - prevPvtMsgTime);
+    Serial.print(" "); Serial.print((float)iTOW / 1000.0, 2);
     prevPvtMsgTime = millis();
     pvtTimer = 0;
   }
@@ -226,13 +232,13 @@ private:
       if (ubxData.baseRelL == 0) ubxData.baseRelL += 0.01;    // to prevent 0 division error
       ubxData.baseRelRoll = (asin(ubxData.baseRelD / ubxData.baseRelL)) * -RAD_TO_DEG;
       relPosNedReady = true;      // RelPos ready is true so PAOGI will send when the GGA is also ready
-      useDual = true;             // set true for the rest of runtime
+      //useDual = true;             // set true for the rest of runtime
       // set GPS mode LEDs to dual
     } else {
-      Serial.print("\r\n    carrSoln: "); Serial.print(ubxData.carrSoln);// Serial.print(" ***");
+      Serial.print("    carrSoln: "); Serial.print(ubxData.carrSoln);
       ubxData.baseRelRoll *= 0.9;     // "level off" dual roll
       // set GPS mode LEDs to !dual
-      relPosNedReady = false;         // don't send paogi
+      relPosNedReady = true;         // don't send paogi
     }
 
   }
@@ -266,7 +272,7 @@ public:
     this->msglen = -1;
     this->chka = -1;
     this->chkb = -1;
-    this->count = 0;
+    this->count = -1;
   }
 
   /**
@@ -275,10 +281,12 @@ public:
           * @param b the byte
           */
   void parse(int b) {
-    if (b == 0xB5) {
-
+    if (b == 0xB5 && this->count < 0) {
+      Serial.print(" cnt:"); Serial.print(this->count);
       this->state = GOT_SYNC1;
       startMsgTime = micros();
+      Serial.print("\r\n"); Serial.print(millis());
+      Serial.print(" ubx 0xB5");
     }
 
     else if (b == 0x62 && this->state == GOT_SYNC1) {
@@ -286,6 +294,7 @@ public:
       this->state = GOT_SYNC2;
       this->chka = 0;
       this->chkb = 0;
+      Serial.print(" 0x62");
     }
 
     else if (this->state == GOT_SYNC2) {
@@ -293,6 +302,7 @@ public:
       this->state = GOT_CLASS;
       this->msgclass = b;
       this->addchk(b);
+      Serial.print(" "); Serial.print(b,HEX);
     }
 
     else if (this->state == GOT_CLASS) {
@@ -300,6 +310,7 @@ public:
       this->state = GOT_ID;
       this->msgid = b;
       this->addchk(b);
+      Serial.print(" "); Serial.print(b,HEX);
     }
 
     else if (this->state == GOT_ID) {
@@ -307,6 +318,7 @@ public:
       this->state = GOT_LENGTH1;
       this->msglen = b;
       this->addchk(b);
+      Serial.print(" L1");
     }
 
     else if (this->state == GOT_LENGTH1) {
@@ -315,6 +327,7 @@ public:
       this->msglen += (b << 8);
       this->count = 0;
       this->addchk(b);
+      Serial.print(" L2");
     }
 
     else if (this->state == GOT_LENGTH2) {
@@ -331,17 +344,28 @@ public:
 
     else if (this->state == GOT_PAYLOAD) {
 
-      this->state = (b == this->chka) ? GOT_CHKA : GOT_NONE;
+      if (b == this->chka) {
+        this->state = GOT_CHKA;
+        Serial.print(" cA");
+       } else {
+        this->state = GOT_NONE;
+        this->count = -1;
+        Serial.print("\r\n"); Serial.print(millis());
+        Serial.print(" ubx crcA failed");
+       }
     }
 
     else if (this->state == GOT_CHKA) {
 
       if (b == this->chkb) {
+        Serial.print(" cB");
         this->dispatchMessage();
-      }
-
-      else {
+        this->count = -1;
+      } else {
         this->state = GOT_NONE;
+        this->count = -1;
+        Serial.print("\r\n"); Serial.print(millis());
+        Serial.print(" ubx crcB failed");
       }
     }
   }

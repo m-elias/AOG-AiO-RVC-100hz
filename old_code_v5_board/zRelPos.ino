@@ -1,10 +1,12 @@
-
 void relPosDecode() {
 
     int carrSoln;
     bool gnssFixOk, diffSoln, relPosValid;
     //bool refPosHeadingValid, relPosNormalized, isMoving, refPosMiss, refObsMiss;
 
+    iTOW = (int32_t)ackPacket[10] + ((int32_t)ackPacket[11] << 8)
+        + ((int32_t)ackPacket[12] << 16) + ((int32_t)ackPacket[13] << 24);
+    
     heading = (int32_t)ackPacket[30] + ((int32_t)ackPacket[31] << 8)
         + ((int32_t)ackPacket[32] << 16) + ((int32_t)ackPacket[33] << 24);
     heading *= 0.0001;
@@ -41,6 +43,12 @@ void relPosDecode() {
     //refPosHeadingValid = flags & (256);
     //relPosNormalized = flags & (512);
 
+
+    Serial.print(" gixOk: "); Serial.print(gnssFixOk);
+    Serial.print(" dfSoln: "); Serial.print(diffSoln);
+    Serial.print(" valid: "); Serial.print(relPosValid);
+    Serial.print(" crSoln: "); Serial.print(carrSoln);
+
     //must be all ok
     if (!gnssFixOk || !diffSoln || !relPosValid) return;
 
@@ -56,7 +64,7 @@ void relPosDecode() {
     {
         rollDual *= 0.9;
         //digitalWrite(GPSGREEN_LED, blink);  //Flash the green GPS LED
-        dualReadyRelPos = false;   //RelPos ready is true so PAOGI will send when the GGA is also ready
+        dualReadyRelPos = true;   //RelPos ready is true so PAOGI will send when the GGA is also ready
     }
 
     //if (carrSoln == 2)

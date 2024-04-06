@@ -65,7 +65,7 @@ const uint8_t pcaInputPinNumbers[]  = { 14, 13, 11, 10, 2, 3, 4, 5 };   // all 8
 
 #include "zNMEA.h"
 NMEAParser<3> nmeaParser;                               // A parser is declared with 3 handlers at most
-bool nmeaDebug = 0;
+bool nmeaDebug = 1, extraCRLF;
 
 #include "zUBXParser.h"
 UBX_Parser ubxParser;

@@ -16,13 +16,15 @@ struct GGA_DATA {
   char HDOP[5];
   char altitude[12];
   char ageDGPS[10];
-}; GGA_DATA GGA;
+};
+GGA_DATA GGA;
 
 // VTG
 struct VTG_DATA {
   char heading[12];
   char speedKnots[10];
-}; VTG_DATA VTG;
+};
+VTG_DATA VTG;
 
 // IMU
 struct IMU_DATA {
@@ -30,7 +32,8 @@ struct IMU_DATA {
   char roll[6];
   char pitch[6];
   char yawRate[6];
-}; IMU_DATA IMU;
+};
+IMU_DATA IMU;
 
 //uint32_t nmeaPgnSendTime, nmeaPgnMaxPeriod, nmeaPgnAvePeriod, nmeaPgnMinPeriod = 99999;
 //uint8_t nmeaCount;
@@ -42,33 +45,33 @@ void errorHandler() {
   if (!startup) Serial.print("\r\n*** Unexpected characters in NMEA parser ***");
 }
 
-void prepImuPandaData()    // run after GGA update + 40ms (timing for PANDA), for next GGA 
+void prepImuPandaData()  // run after GGA update + 40ms (timing for PANDA), for next GGA
 {
   if (BNO.isActive) {
     double angVel;
-    itoa(BNO.rvcData.yawX10, IMU.heading, 10);    // format IMU data for Panda Sentence - Heading
+    itoa(BNO.rvcData.yawX10, IMU.heading, 10);  // format IMU data for Panda Sentence - Heading
 
     if (BNO.isSwapXY) {
-        itoa(BNO.rvcData.pitchX10, IMU.roll, 10);   // the pitch x10
-        itoa(BNO.rvcData.rollX10, IMU.pitch, 10);   // the roll x10
+      itoa(BNO.rvcData.pitchX10, IMU.roll, 10);  // the pitch x10
+      itoa(BNO.rvcData.rollX10, IMU.pitch, 10);  // the roll x10
     } else {
-        itoa(BNO.rvcData.pitchX10, IMU.pitch, 10);  // the pitch x10
-        itoa(BNO.rvcData.rollX10, IMU.roll, 10);    // the roll x10
+      itoa(BNO.rvcData.pitchX10, IMU.pitch, 10);  // the pitch x10
+      itoa(BNO.rvcData.rollX10, IMU.roll, 10);    // the roll x10
     }
 
     //Serial.print(BNO.angCounter);
     //Serial.print(", ");
     //Serial.print(BNO.rvcData.angVel);
     //Serial.print(", ");
-    
+
     // YawRate
     if (BNO.angCounter > 0) {
-        angVel = ((double)BNO.rvcData.angVel) / (double)BNO.angCounter;
-        angVel *= 10.0;
-        BNO.angCounter = 0;
-        BNO.rvcData.angVel = (int16_t)angVel;
+      angVel = ((double)BNO.rvcData.angVel) / (double)BNO.angCounter;
+      angVel *= 10.0;
+      BNO.angCounter = 0;
+      BNO.rvcData.angVel = (int16_t)angVel;
     } else {
-        BNO.rvcData.angVel = 0;
+      BNO.rvcData.angVel = 0;
     }
 
     itoa(BNO.rvcData.angVel, IMU.yawRate, 10);
@@ -76,8 +79,7 @@ void prepImuPandaData()    // run after GGA update + 40ms (timing for PANDA), fo
 
     //digitalWrite(GPS_RED_LED, 0);
     //digitalWrite(GPS_GRN_LED, 0);
-  }
-  else    // No BNO in RVC mode or its disconnected, set IMU PANDA components to signal AOG that there's no IMU
+  } else  // No BNO in RVC mode or its disconnected, set IMU PANDA components to signal AOG that there's no IMU
   {
     itoa(65535, IMU.heading, 10);
     IMU.roll[0] = 0;
@@ -86,153 +88,185 @@ void prepImuPandaData()    // run after GGA update + 40ms (timing for PANDA), fo
   }
 }
 
-void GNS_Handler() // Rec'd GNS
+void GNS_Handler()  // Rec'd GNS
 {
-    NMEA_Pusage.timeIn();
-    
-    nmeaParser.getArg(0, GGA.fixTime);      // fix time
-    nmeaParser.getArg(1, GGA.latitude);     // latitude
-    nmeaParser.getArg(2, GGA.latNS);
-    nmeaParser.getArg(3, GGA.longitude);    // longitude
-    nmeaParser.getArg(4, GGA.lonEW);
-    
-    char temp[4];
-    nmeaParser.getArg(5, temp);
-    switch (temp[0]) {
-      case 'A':
-        itoa(1, GGA.fixQuality, 10);  // 1: autonomous, no correction
-        break;
-      case 'D':
-        itoa(2, GGA.fixQuality, 10);  // 2: differential (WAAS)
-        break;
-      case 'F':
-        itoa(5, GGA.fixQuality, 10);  // 5: FLOAT
-        break;
-      case 'R':
-        itoa(4, GGA.fixQuality, 10);  // 4: RTK FIX
-        break;
-      case 'E':
-        itoa(6, GGA.fixQuality, 10);  // 6: Dead reckoning
-        break;
-      case 'S':
-        itoa(4, GGA.fixQuality, 10);  // ?: Simulator
-        break;
-      case 'N': default:
-        itoa(0, GGA.fixQuality, 10);  // 0: fix not valid
-        break;
-    }
+  NMEA_Pusage.timeIn();
 
-    nmeaParser.getArg(6, GGA.numSats);      // satellite #
-    nmeaParser.getArg(7, GGA.HDOP);         // HDOP
-    nmeaParser.getArg(8, GGA.altitude);     // altitude
-    nmeaParser.getArg(10, GGA.ageDGPS);     // time of last DGPS update
+  nmeaParser.getArg(0, GGA.fixTime);   // fix time
+  nmeaParser.getArg(1, GGA.latitude);  // latitude
+  nmeaParser.getArg(2, GGA.latNS);
+  nmeaParser.getArg(3, GGA.longitude);  // longitude
+  nmeaParser.getArg(4, GGA.lonEW);
 
-    if (nmeaDebug) Serial.print((String)"\r\n" + millis() + " GNS update ");
-    if (nmeaDebug) Serial.print(GGA.fixTime);
-    GGA_GNS_PostProcess();
-    LEDs.toggleTeensyLED();
-    gpsLostTimer = 0;                       // Used for GGA timeout (LED's ETC) 
+  char temp[4];
+  nmeaParser.getArg(5, temp);
+  switch (temp[0]) {
+    case 'A':
+      itoa(1, GGA.fixQuality, 10);  // 1: autonomous, no correction
+      break;
+    case 'D':
+      itoa(2, GGA.fixQuality, 10);  // 2: differential (WAAS)
+      break;
+    case 'F':
+      itoa(5, GGA.fixQuality, 10);  // 5: FLOAT
+      break;
+    case 'R':
+      itoa(4, GGA.fixQuality, 10);  // 4: RTK FIX
+      break;
+    case 'E':
+      itoa(6, GGA.fixQuality, 10);  // 6: Dead reckoning
+      break;
+    case 'S':
+      itoa(4, GGA.fixQuality, 10);  // ?: Simulator
+      break;
+    case 'N':
+    default:
+      itoa(0, GGA.fixQuality, 10);  // 0: fix not valid
+      break;
+  }
+
+  nmeaParser.getArg(6, GGA.numSats);   // satellite #
+  nmeaParser.getArg(7, GGA.HDOP);      // HDOP
+  nmeaParser.getArg(8, GGA.altitude);  // altitude
+  nmeaParser.getArg(10, GGA.ageDGPS);  // time of last DGPS update
+
+  if (nmeaDebug) {
+    Serial.print("\r\n"); Serial.print(millis());
+    Serial.print(" GNS update ");
+    Serial.print(imuPandaSyncTimer); Serial.print(" ");
+    Serial.print(GGA.fixTime);
+  }
+  GGA_GNS_PostProcess();
+  LEDs.toggleTeensyLED();
+  gpsLostTimer = 0;  // Used for GGA timeout (LED's ETC)
 }
 
-void GGA_GNS_PostProcess()                // called by either GGA or GNS handler
+void GGA_GNS_PostProcess()  // called by either GGA or GNS handler
 {
-  ggaReady = true;                        // we have new GGA or GNS sentence
-  imuPandaSyncTimer = 0;                  // reset imu timer
+  ggaReady = true;  // we have new GGA or GNS sentence
+  /*Serial.print("\r\n"); Serial.print(millis());
+  Serial.print(" GGA Received ");
+  Serial.print(imuPandaSyncTimer);*/
+  imuPandaSyncTimer = 0;  // reset imu timer
   imuPandaSyncTrigger = true;
+  extraCRLF = true;
   startup = true;
   gps1Stats.incHzCount();
   LEDs.setGpsLED(atoi(GGA.fixQuality));
   aogGpsToAutoSteerLoopTimer = 0;
   //aogGpsToAutoSteerLoopTimerEnabled = 1;  // uncomment to print "AIO GPS->AOG->Steer Data back to AIO" delay
 
-  if (!ubxParser.useDual) {               // if not using Dual 
-    buildPandaOrPaogi(PANDA);             // build the PANDA sentence right away
+  if (!ubxParser.useDual) {    // if not using Dual
+    buildPandaOrPaogi(PANDA);  // build the PANDA sentence right away
     ggaReady = false;
-  }                                       // otherwise wait in main loop() until relposned arrives
+  }  // otherwise wait in main loop() until relposned arrives
 }
 
-void GGA_Handler() // Rec'd GGA
+void GGA_Handler()  // Rec'd GGA
 {
-    NMEA_Pusage.timeIn();
-    
-    nmeaParser.getArg(0, GGA.fixTime);      // fix time
-    nmeaParser.getArg(1, GGA.latitude);     // latitude
-    nmeaParser.getArg(2, GGA.latNS);
-    nmeaParser.getArg(3, GGA.longitude);    // longitude
-    nmeaParser.getArg(4, GGA.lonEW);
-    nmeaParser.getArg(5, GGA.fixQuality);   // fix quality
-    nmeaParser.getArg(6, GGA.numSats);      // satellite #
-    nmeaParser.getArg(7, GGA.HDOP);         // HDOP
-    nmeaParser.getArg(8, GGA.altitude);     // altitude
-    nmeaParser.getArg(12, GGA.ageDGPS);     // time of last DGPS update
+  NMEA_Pusage.timeIn();
 
-    if (nmeaDebug) Serial.print((String)"\r\n" + millis() + " GGA update ");
-    if (nmeaDebug) Serial.print(GGA.fixTime);
-    GGA_GNS_PostProcess();
-    LEDs.toggleTeensyLED();
-    gpsLostTimer = 0;                       // Used for GGA timeout (LED's ETC) 
+  nmeaParser.getArg(0, GGA.fixTime);   // fix time
+  nmeaParser.getArg(1, GGA.latitude);  // latitude
+  nmeaParser.getArg(2, GGA.latNS);
+  nmeaParser.getArg(3, GGA.longitude);  // longitude
+  nmeaParser.getArg(4, GGA.lonEW);
+  nmeaParser.getArg(5, GGA.fixQuality);  // fix quality
+  nmeaParser.getArg(6, GGA.numSats);     // satellite #
+  nmeaParser.getArg(7, GGA.HDOP);        // HDOP
+  nmeaParser.getArg(8, GGA.altitude);    // altitude
+  nmeaParser.getArg(12, GGA.ageDGPS);    // time of last DGPS update
+
+  if (nmeaDebug) {
+    Serial.print("\r\n"); Serial.print(millis());
+    Serial.print(" GGA update ");
+    Serial.print(imuPandaSyncTimer); Serial.print(" ");
+    Serial.print(GGA.fixTime);
+  }
+  GGA_GNS_PostProcess();
+  LEDs.toggleTeensyLED();
+  gpsLostTimer = 0;  // Used for GGA timeout (LED's ETC)
 }
 
-void VTG_Handler()
-{
-  nmeaParser.getArg(0, VTG.heading);        // vtg heading
-  nmeaParser.getArg(4, VTG.speedKnots);     // vtg Speed knots
+void VTG_Handler() {
+  nmeaParser.getArg(0, VTG.heading);     // vtg heading
+  nmeaParser.getArg(4, VTG.speedKnots);  // vtg Speed knots
 }
 
-void buildPandaOrPaogi(bool _panda)    // only called by GGA_Handler (above)
+void buildPandaOrPaogi(bool _panda)  // only called by GGA_Handler (above)
 {
-    //strcpy(nmea, "");
+  if (_panda) strcpy(nmea, "$PANDA,");
+  else strcpy(nmea, "$PAOGI,");
 
-    if (_panda) strcpy(nmea, "$PANDA,");
-    else strcpy(nmea, "$PAOGI,");
+  strcat(nmea, GGA.fixTime);
+  strcat(nmea, ",");  // field 1
+  strcat(nmea, GGA.latitude);
+  strcat(nmea, ",");
+  strcat(nmea, GGA.latNS);
+  strcat(nmea, ",");
+  strcat(nmea, GGA.longitude);
+  strcat(nmea, ",");
+  strcat(nmea, GGA.lonEW);
+  strcat(nmea, ",");  // 5
+  strcat(nmea, GGA.fixQuality);
+  strcat(nmea, ",");
+  strcat(nmea, GGA.numSats);
+  strcat(nmea, ",");
+  strcat(nmea, GGA.HDOP);
+  strcat(nmea, ",");
+  strcat(nmea, GGA.altitude);
+  strcat(nmea, ",");  // 9
+  strcat(nmea, GGA.ageDGPS);
+  strcat(nmea, ",");
+  strcat(nmea, VTG.speedKnots);
+  strcat(nmea, ",");
 
-    strcat(nmea, GGA.fixTime); strcat(nmea, ",");     // field 1
-    strcat(nmea, GGA.latitude); strcat(nmea, ",");
-    strcat(nmea, GGA.latNS); strcat(nmea, ",");
-    strcat(nmea, GGA.longitude); strcat(nmea, ",");
-    strcat(nmea, GGA.lonEW); strcat(nmea, ",");       // 5
-    strcat(nmea, GGA.fixQuality); strcat(nmea, ",");
-    strcat(nmea, GGA.numSats); strcat(nmea, ",");
-    strcat(nmea, GGA.HDOP); strcat(nmea, ",");
-    strcat(nmea, GGA.altitude); strcat(nmea, ",");    // 9
-    strcat(nmea, GGA.ageDGPS); strcat(nmea, ",");
-    strcat(nmea, VTG.speedKnots); strcat(nmea, ",");
+  if (_panda) {  // use BNO values
+    strcat(nmea, IMU.heading);
+    strcat(nmea, ",");
+    strcat(nmea, IMU.roll);
+    strcat(nmea, ",");  // 13
+    strcat(nmea, IMU.pitch);
+    strcat(nmea, ",");
+    strcat(nmea, IMU.yawRate);
+  } else {  // use Dual values
+    // replace these with Dual baseline calcs
+    char temp[6];
+    itoa(ubxParser.ubxData.baseRelH, temp, 10);
+    strcat(nmea, temp);
+    strcat(nmea, ",");  // 12
 
-    if (_panda) {   // use BNO values
-      strcat(nmea, IMU.heading); strcat(nmea, ",");
-      strcat(nmea, IMU.roll); strcat(nmea, ",");      // 13
-      strcat(nmea, IMU.pitch); strcat(nmea, ",");
-      strcat(nmea, IMU.yawRate);
-    }
-    else {          // use Dual values
-      // replace these with Dual baseline calcs
-      char temp[6];
-      itoa(ubxParser.ubxData.baseRelH, temp, 10);
-      strcat(nmea, temp); strcat(nmea, ",");          // 12
+    itoa(ubxParser.ubxData.baseRelRoll, temp, 10);
+    strcat(nmea, temp);
+    strcat(nmea, ",");  // 13
 
-      itoa(ubxParser.ubxData.baseRelRoll, temp, 10);
-      strcat(nmea, temp); strcat(nmea, ",");          // 13
+    strcat(nmea, "");
+    strcat(nmea, ",");  // blank pitch
+    strcat(nmea, "");   // blank yaw rate
+  }
 
-      strcat(nmea, ""); strcat(nmea, ",");            // blank pitch
-      strcat(nmea, "");                               // blank yaw rate
-    }
+  strcat(nmea, "*");
+  CalculateChecksum();
+  strcat(nmea, "\r\n");
+  NMEA_Pusage.timeOut();
 
-    strcat(nmea, "*");
-    CalculateChecksum();
-    strcat(nmea, "\r\n");
-    NMEA_Pusage.timeOut();
+  if (nmeaDebug) {
+    Serial.print("\r\n"); Serial.print(millis()); Serial.print(" ");
+    Serial.write(nmea);
+    extraCRLF = false;
+  }
 
-    if (nmeaDebug) { Serial.print("\r\n"); Serial.print(millis()); Serial.print(" "); }// Serial.print(GGA.fixTime); Serial.print(" ");
-    if (nmeaDebug) Serial.write(nmea);
-
-    if (UDP.isRunning)        //If ethernet running send the GPS there
-    {
-      //send char stream
-      UDP_Susage.timeIn();
-      UDP.SendUdpChar(nmea, strlen(nmea), UDP.broadcastIP, UDP.portAgIO_9999);
-      UDP_Susage.timeOut();
-    }
-    else Serial.write(nmea);   // if Eth is !connected, send USB GPS data
+  if (UDP.isRunning)  //If ethernet running send the GPS there
+  {
+    //send char stream
+    UDP_Susage.timeIn();
+    UDP.SendUdpChar(nmea, strlen(nmea), UDP.broadcastIP, UDP.portAgIO_9999);
+    UDP_Susage.timeOut();
+  }
+  else if (!nmeaDebug)
+  {
+    Serial.write(nmea);  // if Eth is !connected, send USB GPS data
+  }
 }
 
 // work in progress
@@ -292,24 +326,21 @@ void buildPandaOrPaogi(bool _panda)    // only called by GGA_Handler (above)
   // sendNMEA(); 
 }*/
 
-void CalculateChecksum(void)
-{
+void CalculateChecksum(void) {
   int16_t sum = 0;
   int16_t inx = 0;
   char tmp;
 
   // The checksum calc starts after '$' and ends before '*'
-  for (inx = 1; inx < 200; inx++)
-  {
+  for (inx = 1; inx < 200; inx++) {
     tmp = nmea[inx];
 
     // * Indicates end of data and start of checksum
-    if (tmp == '*')
-    {
+    if (tmp == '*') {
       break;
     }
 
-    sum ^= tmp;    // Build checksum
+    sum ^= tmp;  // Build checksum
   }
 
   byte chk = (sum >> 4);
@@ -408,4 +439,3 @@ void CalculateChecksum(void)
     010.2,K      Ground speed, Kilometers per hour
      48          Checksum
 */
-
