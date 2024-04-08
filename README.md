@@ -6,6 +6,7 @@
 # 100hz RVC firmware for All-In-One v4.x & v5.0a
 ### *** alpha testing stage ***
 *** currently testing/debugging missing GPS sentences/msgs ***
+
 A Teensy 4.1 (w/Eth) firmware for the AIO PCB to run the BNO IMU and Autosteer control loop at 100hz.
 
 Currently it supports both I2C ads1115 (like previous firmwares) and the MCP module (subject to change if field testing shows one or the other doesn’t work well). The MCP module uses a MCP6002 opamp to buffer (protect) the Teensy's analog input eliminating the need to use the slow I2C ads1115. Bench tests show that putting the ads1115 into "continous convert" mode & a faster sampling speed largely mitigates its I2C speed penalties.
