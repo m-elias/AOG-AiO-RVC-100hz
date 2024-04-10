@@ -64,7 +64,7 @@
 #define ADS1115_REG_CONFIG_PGA_0_512V   (0x0800)  // +/-0.512V range = Gain 8
 #define ADS1115_REG_CONFIG_PGA_0_256V   (0x0A00)  // +/-0.256V range = Gain 16
 
-//Single Shot or Continuous Mode.  Cont mode is not used in this program but is preserved here for posterity
+//Single Shot or Continuous Mode
 #define ADS1115_REG_CONFIG_MODE_CONTIN  (0x0000)  // Continuous conversion mode
 #define ADS1115_REG_CONFIG_MODE_SINGLE  (0x0100)  // Power-down single-shot mode (default)
 
@@ -98,7 +98,7 @@ class ADS1115_lite
     void	setMux(uint16_t mux); //Sets Sets protected property and immediatly returns
     void	setSampleRate(uint8_t rate); //Sets Sets protected property and immediatly returns: sample rate
 
-    void	triggerConversion(void); //Triggers a single conversion with currently configured settings in protected variables.  Immediately returns
+    void	triggerConversion(bool _continuous); //Triggers a single conversion with currently configured settings in protected variables.  Immediately returns
     bool	isConversionDone(); //Polls ADS1115 for the conversion done register.  Returns 1 if conversion is finished, 0 if in the middle of conversion.
     int16_t	getConversion(); //Polls ADS1115 for the conversion done register.  Waits until it is finished and returns value.
 

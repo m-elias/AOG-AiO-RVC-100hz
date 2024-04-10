@@ -43,9 +43,9 @@ private:
       //RELPOSNED
       case 0x3C:
         {
-          uint32_t iT = (int32_t)this->payload[4] + ((int32_t)this->payload[5] << 8)
+          /*uint32_t iT = (int32_t)this->payload[4] + ((int32_t)this->payload[5] << 8)
               + ((int32_t)this->payload[6] << 16) + ((int32_t)this->payload[7] << 24);
-          Serial.print("                    "); Serial.print((float)iT / 1000.0, 2);
+          Serial.print("                    "); Serial.print((float)iT / 1000.0, 2);*/
 
           unsigned long iTOW   = (unsigned long)this->unpack_int32(4);
           long relPosN         = this->unpack_int32(8);
@@ -151,9 +151,12 @@ private:
 
     ubxData.baseRelFlags = relPosFlags;
 
-    Serial.print("\r\n"); Serial.print(millis());
-    Serial.print(" REL update "); Serial.print(millis() - prevRelposnedMsgTime);
-    Serial.print(" "); Serial.print((float)ubxData.iTOW / 1000.0, 2);
+    if (debug) {
+      Serial.print("\r\n"); Serial.print(millis());
+      Serial.printf(" REL update (%i)", relMissed);
+      Serial.print(millis() - prevRelposnedMsgTime);
+      Serial.print(" "); Serial.print((ubxData.iTOW % 1000) / 10);
+    }
     msgPeriod = millis() - prevRelposnedMsgTime;
     prevRelposnedMsgTime = millis();
     relPosTimer = 0;
@@ -188,8 +191,10 @@ private:
     ubxData.lat = (float)lat * 0.0000001;
     ubxData.lon = (float)lon * 0.0000001;
     ubxData.alt = (float)height * 0.001;
-    Serial.print("\r\n"); Serial.print(millis()); Serial.print(" PVT update "); Serial.print(millis() - prevPvtMsgTime);
-    Serial.print(" "); Serial.print((float)iTOW / 1000.0, 2);
+    if (debug) {
+      Serial.print("\r\n"); Serial.print(millis()); Serial.print(" PVT update "); Serial.print(millis() - prevPvtMsgTime);
+      Serial.print(" "); Serial.print((float)iTOW / 1000.0, 2);
+    }
     prevPvtMsgTime = millis();
     pvtTimer = 0;
   }
@@ -232,13 +237,12 @@ private:
       if (ubxData.baseRelL == 0) ubxData.baseRelL += 0.01;    // to prevent 0 division error
       ubxData.baseRelRoll = (asin(ubxData.baseRelD / ubxData.baseRelL)) * -RAD_TO_DEG;
       relPosNedReady = true;      // RelPos ready is true so PAOGI will send when the GGA is also ready
-      //useDual = true;             // set true for the rest of runtime
-      // set GPS mode LEDs to dual
+      useDual = true;             // set true for the rest of runtime
     } else {
+      if (!debug) Serial.print("\r\n");
       Serial.print("    carrSoln: "); Serial.print(ubxData.carrSoln);
       ubxData.baseRelRoll *= 0.9;     // "level off" dual roll
-      // set GPS mode LEDs to !dual
-      relPosNedReady = true;         // don't send paogi
+      relPosNedReady = true;         
     }
 
   }
@@ -258,9 +262,10 @@ public:
   };
   UBX_Data ubxData;
 
-  bool relPosNedReady, useDual, relPosNedRcvd;
+  bool relPosNedReady, useDual, relPosNedRcvd, debug;
   uint32_t msgPeriod, msgReadTime;
   elapsedMillis relPosTimer, pvtTimer;
+  uint16_t relMissed;
 
   /**
           * Constructs a UBX parser. 
@@ -282,11 +287,10 @@ public:
           */
   void parse(int b) {
     if (b == 0xB5 && this->count < 0) {
-      Serial.print(" cnt:"); Serial.print(this->count);
+      //Serial.print(" cnt:"); Serial.print(this->count);
       this->state = GOT_SYNC1;
       startMsgTime = micros();
-      Serial.print("\r\n"); Serial.print(millis());
-      Serial.print(" ubx 0xB5");
+      if (debug) { Serial.print("\r\n"); Serial.print(millis()); Serial.print(" ubx 0xB5"); }
     }
 
     else if (b == 0x62 && this->state == GOT_SYNC1) {
@@ -294,7 +298,7 @@ public:
       this->state = GOT_SYNC2;
       this->chka = 0;
       this->chkb = 0;
-      Serial.print(" 0x62");
+      if (debug) Serial.print(" 0x62");
     }
 
     else if (this->state == GOT_SYNC2) {
@@ -302,7 +306,7 @@ public:
       this->state = GOT_CLASS;
       this->msgclass = b;
       this->addchk(b);
-      Serial.print(" "); Serial.print(b,HEX);
+      if (debug) { Serial.print(" "); Serial.print(b,HEX); }
     }
 
     else if (this->state == GOT_CLASS) {
@@ -310,7 +314,7 @@ public:
       this->state = GOT_ID;
       this->msgid = b;
       this->addchk(b);
-      Serial.print(" "); Serial.print(b,HEX);
+      if (debug) { Serial.print(" "); Serial.print(b,HEX); }
     }
 
     else if (this->state == GOT_ID) {
@@ -318,7 +322,7 @@ public:
       this->state = GOT_LENGTH1;
       this->msglen = b;
       this->addchk(b);
-      Serial.print(" L1");
+      if (debug) Serial.print(" L1");
     }
 
     else if (this->state == GOT_LENGTH1) {
@@ -327,7 +331,7 @@ public:
       this->msglen += (b << 8);
       this->count = 0;
       this->addchk(b);
-      Serial.print(" L2");
+      if (debug) Serial.print(" L2");
     }
 
     else if (this->state == GOT_LENGTH2) {
@@ -335,6 +339,7 @@ public:
       this->addchk(b);
       this->payload[this->count] = b;
       this->count += 1;
+      if (debug) { Serial.print(" "); Serial.print(b); }
 
       if (this->count == this->msglen) {
 
@@ -346,7 +351,7 @@ public:
 
       if (b == this->chka) {
         this->state = GOT_CHKA;
-        Serial.print(" cA");
+        if (debug) Serial.print(" cA");
        } else {
         this->state = GOT_NONE;
         this->count = -1;
@@ -358,7 +363,7 @@ public:
     else if (this->state == GOT_CHKA) {
 
       if (b == this->chkb) {
-        Serial.print(" cB");
+        if (debug) Serial.print(" cB");
         this->dispatchMessage();
         this->count = -1;
       } else {
@@ -368,5 +373,9 @@ public:
         Serial.print(" ubx crcB failed");
       }
     }
+  }
+
+  void clearCount() {
+    this->count = -1;
   }
 };

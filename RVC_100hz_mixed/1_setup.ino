@@ -37,10 +37,6 @@ void serialSetup()
     SerialESP32->addMemoryForRead(ESP32rxbuffer, buffer_size);
     SerialESP32->addMemoryForWrite(ESP32txbuffer, buffer_size);
   #endif
-
-  #ifdef JD_DAC_H
-    jdDac.setDebugStream(&Serial);
-  #endif
 }
 
 void parserSetup()

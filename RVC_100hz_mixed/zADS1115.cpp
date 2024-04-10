@@ -95,7 +95,7 @@ void ADS1115_lite::setSampleRate(uint8_t rate) {
 		Trigger Conversion to Read later
 */
 /**************************************************************************/
-void ADS1115_lite::triggerConversion() {
+void ADS1115_lite::triggerConversion(bool _continuous = false) {
 
   //Bits 0 through 4 deal with the comparator function.  The combined default value for these bits is 0x0003
   uint16_t config = 0x0003; // Disable the comparator (default val)
@@ -104,8 +104,8 @@ void ADS1115_lite::triggerConversion() {
   config |= _rate;
 
   // OR in the mode bit 8
-  //config |= ADS1115_REG_CONFIG_MODE_SINGLE; // Single-shot mode (default)
-  config |= ADS1115_REG_CONFIG_MODE_CONTIN;   // Continuous conversion mode
+  if (_continuous) config |= ADS1115_REG_CONFIG_MODE_CONTIN;   // Continuous conversion mode
+  else             config |= ADS1115_REG_CONFIG_MODE_SINGLE;   // Single-shot mode (default)
 
   // OR in the PGA/voltage range bits 9 through 11
   config |= _gain;

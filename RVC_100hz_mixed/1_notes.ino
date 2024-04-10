@@ -35,6 +35,7 @@ Machine/Section outputs
 
 
 To-do
+- set ADS1115 single/dual according to config struct setting (saved in eeprom)
 - consolidate all EEPROM addrs in one place?
     - Ethernet, Autosteer, machine
 - test/fix autosteer watch dog timeout from lost comms

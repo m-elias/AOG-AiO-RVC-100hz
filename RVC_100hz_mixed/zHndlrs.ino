@@ -132,13 +132,14 @@ void GNS_Handler()  // Rec'd GNS
 
   if (nmeaDebug) {
     Serial.print("\r\n"); Serial.print(millis());
-    Serial.print(" GNS update ");
+    Serial.printf(" GNS update (%i)", ggaMissed);
     Serial.print(imuPandaSyncTimer); Serial.print(" ");
-    Serial.print(GGA.fixTime);
+    Serial.print(atoi(&GGA.fixTime[strlen(GGA.fixTime)-2]));
   }
   GGA_GNS_PostProcess();
   LEDs.toggleTeensyLED();
-  gpsLostTimer = 0;  // Used for GGA timeout (LED's ETC)
+  //gpsLostTimer = 0;  // Used for GGA timeout (LED's ETC)
+  NMEA_Pusage.timeOut();
 }
 
 void GGA_GNS_PostProcess()  // called by either GGA or GNS handler
@@ -157,7 +158,7 @@ void GGA_GNS_PostProcess()  // called by either GGA or GNS handler
   //aogGpsToAutoSteerLoopTimerEnabled = 1;  // uncomment to print "AIO GPS->AOG->Steer Data back to AIO" delay
 
   if (!ubxParser.useDual) {    // if not using Dual
-    buildPandaOrPaogi(PANDA);  // build the PANDA sentence right away
+    buildPandaOrPaogi(PANDA_SINGLE);  // build the PANDA sentence right away
     ggaReady = false;
   }  // otherwise wait in main loop() until relposned arrives
 }
@@ -179,13 +180,14 @@ void GGA_Handler()  // Rec'd GGA
 
   if (nmeaDebug) {
     Serial.print("\r\n"); Serial.print(millis());
-    Serial.print(" GGA update ");
+    Serial.printf(" GGA update (%i)", ggaMissed);
     Serial.print(imuPandaSyncTimer); Serial.print(" ");
-    Serial.print(GGA.fixTime);
+    Serial.print(atoi(&GGA.fixTime[strlen(GGA.fixTime)-2]));
   }
   GGA_GNS_PostProcess();
   LEDs.toggleTeensyLED();
-  gpsLostTimer = 0;  // Used for GGA timeout (LED's ETC)
+  //gpsLostTimer = 0;  // Used for GGA timeout (LED's ETC)
+  NMEA_Pusage.timeOut();
 }
 
 void VTG_Handler() {
@@ -248,7 +250,7 @@ void buildPandaOrPaogi(bool _panda)  // only called by GGA_Handler (above)
   strcat(nmea, "*");
   CalculateChecksum();
   strcat(nmea, "\r\n");
-  NMEA_Pusage.timeOut();
+  
 
   if (nmeaDebug) {
     Serial.print("\r\n"); Serial.print(millis()); Serial.print(" ");

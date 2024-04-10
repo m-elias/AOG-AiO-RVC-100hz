@@ -7,6 +7,7 @@
 class HighLowHzStats {
 public:
   bool isActive;
+  bool startupReset;
 
   HighLowHzStats(void) {}
   ~HighLowHzStats(void) {}
@@ -91,7 +92,6 @@ public:
 private:
   int32_t hzCountShort, hzCountLong, lowNumShort = 9999, highNumShort, lowNumLong = 9999, highNumLong;
   uint32_t timerShort, timerLong;
-  bool startupReset;
 
 };
 

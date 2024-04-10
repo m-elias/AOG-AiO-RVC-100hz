@@ -302,17 +302,34 @@ void checkForPGNs()
     steerSettings.Kp = ((float)udpData[5]);    // read Kp from AgOpenGPS
     steerSettings.highPWM = udpData[6];        // read high pwm
     steerSettings.lowPWM = (float)udpData[7];  // read lowPWM from AgOpenGPS
-    steerSettings.minPWM = udpData[8];         //read the minimum amount of PWM for instant on
+    steerSettings.minPWM = udpData[8];         // read the minimum amount of PWM for instant on
 
     float temp = (float)steerSettings.minPWM * 1.2;
     steerSettings.lowPWM = (byte)temp;
 
-    steerSettings.steerSensorCounts = udpData[9];   //sent as setting displayed in AOG
-    steerSettings.wasOffset = (udpData[10]);        //read was zero offset Lo
-    steerSettings.wasOffset |= (udpData[11] << 8);  //read was zero offset Hi
+    steerSettings.steerSensorCounts = udpData[9];   // sent as setting displayed in AOG
+    
+    //steerSettings.wasOffset = (udpData[10]);        // read was zero offset Lo
+    //steerSettings.wasOffset |= (udpData[11] << 8);  // read was zero offset Hi
+    int16_t newWasOffset = (udpData[10]);        // read was zero offset Lo
+    newWasOffset        |= (udpData[11] << 8);   // read was zero offset Hi
+
+    #ifdef JD_DAC_H
+      if (newWasOffset != steerSettings.wasOffset) {
+        jdDac.centerDac();
+      }
+    #endif
+
+    steerSettings.wasOffset = newWasOffset;
     steerSettings.AckermanFix = (float)udpData[12] * 0.01;
 
-    //Serial << "\r\nwasOffset: " << steerSettings.wasOffset;
+    Serial.print("\r\n Kp "); Serial.print(steerSettings.Kp);
+    Serial.print("\r\n highPWM "); Serial.print(steerSettings.highPWM);
+    Serial.print("\r\n lowPWM "); Serial.print(steerSettings.lowPWM);
+    Serial.print("\r\n minPWM "); Serial.print(steerSettings.minPWM);
+    Serial.print("\r\n steerSensorCounts "); Serial.print(steerSettings.steerSensorCounts);
+    Serial.print("\r\n wasOffset "); Serial.print(steerSettings.wasOffset);
+    Serial.print("\r\n AckermanFix "); Serial.print(steerSettings.AckermanFix);
 
     EEPROM.put(10, steerSettings);
     steerSettingsInit();  // Re-Init steer settings
@@ -384,7 +401,7 @@ void checkForPGNs()
     PGN_253[10] = 8888 >> 8;
 
     PGN_253[11] = switchByte;
-    PGN_253[12] = (uint8_t)pwmDrive;
+    PGN_253[12] = (uint8_t)abs(pwmDisplay);
 
     //checksum
     int16_t CK_A = 0;

@@ -26,7 +26,7 @@ public:
 
 	void update() {
 
-    if (!ready && initRetryTimer > 2000){
+    if (!isInit && initRetryTimer > 2000){
       initRetryTimer = 0;
       Serial.println("\r\n\nAttempting JD DAC init");
       if (init()){
@@ -46,7 +46,7 @@ public:
         //ch4Output();
         //Serial.print(" "); Serial.println(millis()-time1);
       /*} else {
-        ready = 0;
+        isInit = 0;
         i2cPort->end();
       }*/
     }
@@ -76,7 +76,7 @@ public:
 	}
 
 	bool init() {
-    ready = false;
+    isInit = false;
 		debugPrint("-checking for Adafruit MCP4728 @ addr 0x");
 		debugPrint(dacAddr, HEX);
 		dac.setAddr(dacAddr);
@@ -92,68 +92,79 @@ public:
 		}
 		debugPrint("\r\n--MCP4728 found!");
 		debugPrint("\r\n--MCP pre init\r\n");
-		printStatus();
+		/*printStatus();
 
 		// set live modes, Live modes are loaded from EE right after saving to EE below but only if EE is updated
 		dac.selectVref(MCP4728::VREF::VDD, MCP4728::VREF::VDD, MCP4728::VREF::VDD, MCP4728::VREF::VDD);
-		dac.selectPowerDown(DEFAULT_PWR_DOWN, DEFAULT_PWR_DOWN, DEFAULT_PWR_DOWN, MCP4728::PWR_DOWN::NORMAL);
 		dac.selectGain(MCP4728::GAIN::X1, MCP4728::GAIN::X1, MCP4728::GAIN::X1, MCP4728::GAIN::X1);
-
+		dac.selectPowerDown(DEFAULT_PWR_DOWN, DEFAULT_PWR_DOWN, DEFAULT_PWR_DOWN, MCP4728::PWR_DOWN::NORMAL);
+*/
 		printStatus();
 
 		// check/set EE modes
 		// could use single EE write to all channel instead of multiple to save some time but after the first time, shouldn't need it again
-		for (int i = 0; i < 3; ++i) {
-			if (dac.getPowerDown(i, true) != 3) {  //DEFAULT_PWR_DOWN = MCP4728::PWR_DOWN::GND_500KOHM = 3
-				debugPrint("\r\nSetting DAC EE["); debugPrint(i); debugPrint("]: "); debugPrint(dac.writeSingleChEepromModes(i, MCP4728::VREF::VDD, MCP4728::GAIN::X1, MCP4728::PWR_DOWN::GND_500KOHM));
-				delay(50);  // necessary to wait for EE to finish as not using RDY IO
-			}
+    debugPrint("\r\nSetting DAC defaults\r\n");
+		
+    // write defaults to steering channels #0-2 and read steering center values from EE
+    for (int i = 0; i < 3; ++i) {
+      dac.writeSingleChEepromModes(i, MCP4728::VREF::VDD, MCP4728::GAIN::X1, MCP4728::PWR_DOWN::GND_500KOHM);
+  		delay(50);  // necessary to wait for EE to finish as not using RDY IO
+      steeringWheelSensorCenter[i] = dac.getDACData(i, true);
 		}
-    if (dac.getPowerDown(3, true) != 0) {  //MCP4728::PWR_DOWN::NORMAL = 0
-      debugPrint("\r\nSetting DAC EE[3]: "); debugPrint(dac.writeSingleChEepromModes(3, MCP4728::VREF::VDD, MCP4728::GAIN::X1, MCP4728::PWR_DOWN::NORMAL));
-      delay(50);  // necessary to wait for EE to finish as not using RDY IO
-    }
+
+    // write defaults to SCV/remote control channel #3
+    dac.analogWrite(3, 2047, true);
+    dac.writeSingleChEepromModes(3, MCP4728::VREF::VDD, MCP4728::GAIN::X1, MCP4728::PWR_DOWN::NORMAL);
+    delay(50);  // necessary to wait for EE to finish as not using RDY IO
+
+
 		printStatus();
 		debugPrint("\r\n--MCP post init");
 
 		debugPrint("\r\n-testing for JD_DAC ADS1115 @ addr 0x49 (addr line pulled to VDD)");
 		if (dac_ads.testConnection()) {
-			debugPrint("\r\n--DAC ADS1115 Connecton OK");
+			debugPrint("\r\n--DAC ADS1115 Connection GOOD");
 		} else {
-			debugPrint("\r\n--DAC ADS1115 Connecton FAILED!\r\n");
+			debugPrint("\r\n--DAC ADS1115 Connection FAILED!\r\n");
 			return false;
 		}
 
-		dac_ads.setSampleRate(ADS1115_REG_CONFIG_DR_860SPS); // 128 samples per second, default
+		dac_ads.setSampleRate(ADS1115_REG_CONFIG_DR_860SPS); // 860 samples per second
 		dac_ads.setGain(ADS1115_REG_CONFIG_PGA_6_144V);      // for 6.144V input, JD SWS don't output higher then 4.1 V but DAC can output 5V
-		dac_ads.setMux(ADS1115_REG_CONFIG_MUX_SINGLE_0);	 // single ended inputs
-		dac_ads.triggerConversion();
+		dac_ads.setMux(ADS1115_REG_CONFIG_MUX_SINGLE_0);	   // single ended inputs
+		dac_ads.triggerConversion(true);
 		lastAdsUpdateTime = millis();
 		adsIndex = 0;
 		debugPrint("\r\n");
-		ready = true;
+		isInit = true;
 		return true;
 	}
 
-	uint8_t steerOutput(int16_t _tractorPWM) {	// pwmDrive +-(minPWM - Max Limit)
+	int16_t steerOutput(int16_t _tractorPWM) {	// pwmDrive +-(minPWM - Max Limit)
 		if (steerOutputEnabled) {
-			output = map(_tractorPWM, 0, 254, 2047, 3554);		// 0/2047 is center, 254/3554 is one extreme
-			outputInvt = map(_tractorPWM, 0, 254, 2047, 542);		// 0/2047 is center, 254/542 is the other extreme
-			/*debugPrint("\r\n_pwmDrive: ");
+      // 0/2047 is center, 254/3554 is one extreme (old values for #0/1)
+      // 0/2047 is center, 254/542 is the other extreme (old values for inverted #2)
+
+      uint16_t output0, output1, output2invt;
+			output0 = map(_tractorPWM, 0, 254, steeringWheelSensorCenter[0], 3554);
+      output1 = map(_tractorPWM, 0, 254, steeringWheelSensorCenter[1], 3554);
+			output2invt = map(_tractorPWM, 0, 254, steeringWheelSensorCenter[2], 542);
+
+			dac.analogWrite(output0, output1, output2invt);	// set all 3 channels, then do single i2c write loop
+
+      debugPrint("\r\n_pwmDrive: ");
 			debugPrint(_tractorPWM);
 			debugPrint(" -> ");
-			debugPrint(output);
-			debugPrint(" -> ");
-			debugPrint(outputInvt);*/
-			//dac.analogWrite(0, output);
-			//dac.analogWrite(1, output);
-			//dac.analogWrite(MCP4728::DAC_CH::C, outputInvt);
-			//dac.analogWrite(MCP4728::DAC_CH::D, outputInvt); // ch D may get used for remote hyd
-			dac.analogWrite(output, output, outputInvt);	// set all 3 channels, then do single i2c write loop
+			debugPrint(output0);
+			debugPrint(":");
+			debugPrint(output1);
+			debugPrint(":");
+			debugPrint(output2invt);
 
-      return output / 16;
+      //return output0 << 4;
     }
-   return 128;
+
+   return _tractorPWM;
   }
 
 	void ch4Output(int16_t _toolPWM) {
@@ -175,11 +186,12 @@ public:
 	}
 
 	void steerEnable(bool _enable) {
-    if (ready) {
+    if (isInit) {
   		if (_enable != steerOutputEnabled) {
   			if (_enable) {
   				debugPrint("\r\nSteer DAC output enabled");
   			} else {
+          // set steering outputs to hiZ output, tool steer output left as is
   				dac.selectPowerDown(DEFAULT_PWR_DOWN, DEFAULT_PWR_DOWN, DEFAULT_PWR_DOWN, MCP4728::PWR_DOWN(dac.getPowerDown(3)));
   				debugPrint("\r\nSteer DAC output disabled");
   			}
@@ -188,8 +200,8 @@ public:
 		}
 	}
 
-  void toolSteerEnable(bool _enable) {
-    if (ready){
+  void ch4Enable(bool _enable) {
+    if (isInit){
       if (_enable != ch4Enabled) {
         if (_enable) {
           debugPrint("\r\nDAC Ch4 tool steer output enabled");
@@ -203,20 +215,52 @@ public:
   }
 
   int16_t getWAS(){
-    if (ready) return steeringWheelSensor[0]; // stored ch 0 reading
+    if (isInit) return steeringWheelSensor[0]; // stored ch 0 reading
     else return 13600; // center value
   }
 
+  void centerDac(){
+    Serial.print("\r\n"); Serial.print(millis());
+    for (byte i = 0; i < NUM_SWS - 1; i++){
+      Serial.printf(" %i:%i ", i, steeringWheelSensorCenter[i]);
+    }
+
+    // SWS #0 is already continuously read, so only need to read #1-2
+    dac_ads.setMux(ADS1115_REG_CONFIG_MUX_SINGLE_1);
+    dac_ads.triggerConversion(false);
+    while (!dac_ads.isConversionDone());
+    steeringWheelSensorCenter[1] = (int)((float)dac_ads.getConversion() / 6.49);
+    dac.analogWrite(1, steeringWheelSensorCenter[1], true);
+
+    dac_ads.setMux(ADS1115_REG_CONFIG_MUX_SINGLE_2);
+    dac_ads.triggerConversion(false);
+    while (!dac_ads.isConversionDone());
+    steeringWheelSensorCenter[2] = (int)((float)dac_ads.getConversion() / 6.49);
+    dac.analogWrite(2, steeringWheelSensorCenter[2], true);
+
+    dac_ads.setMux(ADS1115_REG_CONFIG_MUX_SINGLE_0);  // set ADS back to reading #0 continuously
+    dac_ads.triggerConversion(true);
+    steeringWheelSensorCenter[0] = (int)((float)steeringWheelSensor[0] / 6.49); // copy previously saved #0 value
+    dac.analogWrite(0, steeringWheelSensorCenter[0], true);
+
+    Serial.print("\r\n"); Serial.print(millis());
+    for (byte i = 0; i < NUM_SWS - 1; i++){
+      Serial.printf(" %i:%i ", i, steeringWheelSensorCenter[i]);
+    }
+
+  }
+/*
 	bool updateAdsReadings4chSeq(){
-		// 32-33 ms per channel @ 32SPS, 96-97 ms to update 3 analog channels
-		// 9-10 ms per channel @ 128SPS, 36-37 ms to update 4 analog channels
 		if (dac_ads.isConversionDone()) {	// isConvDone only takes a split uS to return false so hammer away
-			//currentAdsUpdateTime = millis();
-			//debugPrint("\r\n"); debugPrint(currentAdsUpdateTime); debugPrint(" "); debugPrint(currentAdsUpdateTime - lastAdsUpdateTime);
-			//lastAdsUpdateTime = currentAdsUpdateTime;
+			currentAdsUpdateTime = millis();
+			debugPrint("\r\n"); debugPrint(currentAdsUpdateTime); debugPrint(" "); debugPrint(currentAdsUpdateTime - lastAdsUpdateTime);
+			lastAdsUpdateTime = currentAdsUpdateTime;
 
 			steeringWheelSensor[adsIndex] = dac_ads.getConversion();// +adsOffset[adsIndex];
-			if (steeringWheelSensor[adsIndex] > 60000) steeringWheelSensor[adsIndex] = 0;
+			if (steeringWheelSensor[adsIndex] > 60000) {
+        Serial.print("\r\n*** "); Serial.print(adsIndex); Serial.print(" too high "); Serial.print(steeringWheelSensor[adsIndex]);
+        steeringWheelSensor[adsIndex] = 0;
+      }
 
 			if (adsIndex == NUM_SWS - 1) {
 				dac_ads.setMux(ADS1115_REG_CONFIG_MUX_SINGLE_0);
@@ -230,7 +274,7 @@ public:
 			else if (adsIndex == 2) {
 				dac_ads.setMux(ADS1115_REG_CONFIG_MUX_SINGLE_3);
 			}
-			dac_ads.triggerConversion();
+			dac_ads.triggerConversion(false);
 
 			adsIndex++;
 			if (adsIndex == NUM_SWS) {
@@ -241,7 +285,7 @@ public:
 		}
 
 		return false;
-	}
+	}*/
 
   bool updateAdsReadingCh0(){
     // 32-33 ms per channel @ 32SPS, 96-97 ms to update 3 analog channels
@@ -258,7 +302,7 @@ public:
         steeringWheelSensor[0] = dac_ads.getConversion();// +adsOffset[adsIndex];
         if (steeringWheelSensor[0] > 60000) steeringWheelSensor[0] = 0;
   
-        dac_ads.triggerConversion();
+        dac_ads.triggerConversion(true);
         return true;
       /*} else {
         Serial.print("\r\nconversion !done");
@@ -267,7 +311,7 @@ public:
     } else {
       //Serial.print("\r\nadsIndex = "); Serial.print(adsIndex); Serial.print(", changing to 0");
       dac_ads.setMux(ADS1115_REG_CONFIG_MUX_SINGLE_0);
-      dac_ads.triggerConversion();
+      dac_ads.triggerConversion(true);
       adsIndex = 0;
     }
     return false;
@@ -336,14 +380,12 @@ public:
 private:
 	Stream* stream = NULL;
   elapsedMillis initRetryTimer = -2000;
-	bool ready = false;
+	bool isInit = false;
 	bool steerOutputEnabled = 0;
 	bool ch4Enabled = 0;
 	//uint16_t left_center_right_DAC[3] = { 3512, 2019, 501 };
 	//uint16_t left_center_right_ADS[3] = { 22812, 13150, 3501 };
 	//uint8_t outputIndex = 0;
-	uint16_t output;
-	uint16_t outputInvt;
 	const static uint8_t NUM_SWS = 4;
 	uint16_t steeringWheelSensor[NUM_SWS];
 	uint16_t steeringWheelSensorCenter[NUM_SWS];

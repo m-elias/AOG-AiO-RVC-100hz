@@ -15,7 +15,7 @@ const uint8_t PWM_Frequency = 2;
 const float LOW_HIGH_DEGREES = 3.0;    //How many degrees before decreasing Max PWM
 
 bool testBothWasSensors = false;
-bool adcDebug = false;
+bool adcDebug = true;
 bool useInternalADC = false;
 bool useExternalADS = false;
 
@@ -48,8 +48,8 @@ float steerAngleActual = 0, steerAngleSetPoint = 0, steerAngleError = 0;
 int16_t steeringPosition = 0;  // from steering sensor (WAS)
 
 //pwm variables
-int16_t pwmDrive = 0; //, pwmDisplay = 0;
-float pValue = 0, errorAbs = 0, highLowPerDeg = 0;
+int16_t pwmDrive = 0, pwmDisplay = 0;
+float highLowPerDeg = 0;
 
 //Steer switch button  ***********************************************************************************************************
 uint8_t steerReading, prevSteerReading = 1; //currentState = 0
@@ -294,10 +294,10 @@ void autoSteerUpdate() {
       //Serial << "\r\n" << sensorSample;
 
       #ifdef AIOv50a
-      //sensorSample = abs((sensorSample - ???)) * 0.0625;       // for v5.0a ACS711 (untested), output is not inverted
-      sensorSample = abs(sensorSample - 240) * 0.0625;     // for v5.0a DRV8701, output is not inverted
+        //sensorSample = abs((sensorSample - ???)) * 0.0625;       // for v5.0a ACS711 (untested), output is not inverted
+        sensorSample = abs(sensorSample - 240) * 0.0625;     // for v5.0a DRV8701, output is not inverted
       #else
-      sensorSample = abs(3100 - sensorSample) * 0.0625;    // 3100 is like old firmware, 3150 is center (zero current) value on Matt's v4.0 Micro
+        sensorSample = abs(3100 - sensorSample) * 0.0625;    // 3100 is like old firmware, 3150 is center (zero current) value on Matt's v4.0 Micro
       #endif
 
       //Serial << " " << sensorSample;
@@ -310,9 +310,9 @@ void autoSteerUpdate() {
     }
 
     #ifdef AIOv50a
-    uint8_t read = analogRead(WORK_PIN) > ANALOG_TRIG_THRES ? HIGH : LOW;           // read work input
+      uint8_t read = analogRead(WORK_PIN) > ANALOG_TRIG_THRES ? HIGH : LOW;           // read work input
     #else
-    uint8_t read = digitalRead(WORK_PIN);
+      uint8_t read = digitalRead(WORK_PIN);
     #endif
     if (read != workInput) {
       Serial.printf("\r\nWORK input: %s", (read == 1 ? "OFF" : "ON"));
@@ -331,29 +331,33 @@ void autoSteerUpdate() {
     // ***************************** READ WAS *****************************
     //useExternalADS = true;
     
-    if (adcDebug) Serial.printf("\r\n%6i", millis());
-    if (useInternalADC || testBothWasSensors)
-    {
-      steeringPosition = int(float(teensyADC->adc1->analogRead(WAS_SENSOR_PIN)) * 3.23);
-      if (adcDebug) Serial.printf(" Teensy ADC(x3.23):%5i", steeringPosition);
-    }
-    int16_t temp = steeringPosition;
-    if (useExternalADS || testBothWasSensors)
-    {
-      steeringPosition = ads1115.getConversion();
-      steeringPosition = (steeringPosition >> 1);  //bit shift by 1  0 to 13610 is 0 to 5v
-      if (adcDebug) Serial.printf(" ADS1115:%5i", steeringPosition);
-    }
-    if (testBothWasSensors && adcDebug)
-    {
-      Serial.printf("  %.2f", float(steeringPosition) / float(temp));
-    }
-    #ifdef JD_DAC_H
+    #ifndef JD_DAC_H
+      if (adcDebug) Serial.printf("\r\n%6i", millis());
+      if (useInternalADC || testBothWasSensors)
+      {
+        steeringPosition = int(float(teensyADC->adc1->analogRead(WAS_SENSOR_PIN)) * 3.23);
+        if (adcDebug) Serial.printf(" Teensy ADC(x3.23):%5i", steeringPosition);
+      }
+      int16_t temp = steeringPosition;
+      if (useExternalADS || testBothWasSensors)
+      {
+        steeringPosition = ads1115.getConversion();
+        steeringPosition = (steeringPosition >> 1);  //bit shift by 1  0 to 13610 is 0 to 5v
+        if (adcDebug) Serial.printf(" ADS1115:%5i", steeringPosition);
+      }
+      if (testBothWasSensors && adcDebug)
+      {
+        Serial.printf("  %.2f", float(steeringPosition) / float(temp));
+      }
+    #else
       DACusage.timeIn();
       jdDac.update();
-      steeringPosition = (jdDac.getWAS() >> 1);  // read JD SWS instead to display on AoG
+      static int16_t oldSteer;
+      int16_t newDacSteering = (jdDac.getWAS() >> 1);  // read JD SWS instead to display on AoG
+      if (adcDebug && (newDacSteering > oldSteer +10 || newDacSteering < oldSteer -10)) Serial.printf("\r\n%6i  DAC_ADS-ch0(/2):%5i", millis(), newDacSteering);
+      steeringPosition = newDacSteering;
+      oldSteer = steeringPosition;
       DACusage.timeOut();
-      if (adcDebug) Serial.printf("  DAC_ADS(ch0):%5i", steeringPosition);
     #endif
 
     // DETERMINE ACTUAL STEERING POSITION
@@ -368,13 +372,7 @@ void autoSteerUpdate() {
     }
 
     if (steerAngleActual < 0) steerAngleActual = (steerAngleActual * steerSettings.AckermanFix);  //Ackerman fix
-    
-    #ifdef JD_DAC_H
-      steerAngleError = steerAngleSetPoint; // use only set point for JD_DAC 2 track steering
-    #else
-      steerAngleError = steerAngleActual - steerAngleSetPoint;  //calculate the steering error
-    #endif
-
+    steerAngleError = steerAngleActual - steerAngleSetPoint;  //calculate the steering error
     //if (abs(steerAngleError)< steerSettings.lowPWM) steerAngleError = 0;
 
 
@@ -395,6 +393,7 @@ void autoSteerUpdate() {
       if (steerConfig.CytronDriver) {
         #ifdef JD_DAC_H
           jdDac.steerEnable(true);        // select IBT2 for JD DAC control
+          jdDac.ch4Enable(true);
         #else
           digitalWrite(SLEEP_PIN, steerConfig.IsRelayActiveHigh ? LOW : HIGH);
         #endif
@@ -417,6 +416,7 @@ void autoSteerUpdate() {
       if (steerConfig.CytronDriver) {
         #ifdef JD_DAC_H
           jdDac.steerEnable(false);
+          jdDac.ch4Enable(false);
         #else
           digitalWrite(SLEEP_PIN, steerConfig.IsRelayActiveHigh ? bool(!pwmDrive) : bool(pwmDrive));
         #endif
@@ -445,11 +445,6 @@ void autoSteerUpdate() {
     - 32uS to read Teensy ADC
   - ADS1115 set to continously sample as fast as possible
     - 485uS to retrieve ADS1115 value via I2C
-  sampleWAS() reads the correct sensor accordingly
-
-  to do:
-    set ADS1115 single/dual according to config struct setting (saved in eeprom)
-
 */
 void adcSetup() {
   Serial.print("\r\n- ADC check:");
@@ -496,7 +491,7 @@ void adcSetup() {
     ads1115.setSampleRate(ADS1115_REG_CONFIG_DR_860SPS);
     ads1115.setGain(ADS1115_REG_CONFIG_PGA_6_144V);
     ads1115.setMux(ADS1115_REG_CONFIG_MUX_SINGLE_0);  // ************set according to EEPROM (saved from PGN)*****************
-    ads1115.triggerConversion();                      // to start continous mode
+    ads1115.triggerConversion(true); // to start continous mode
   }
   else
   {

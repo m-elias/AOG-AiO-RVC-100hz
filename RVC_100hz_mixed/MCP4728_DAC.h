@@ -1,4 +1,9 @@
-// adapted/expanded from https://github.com/hideakitai/MCP4728
+/*
+adapted/expanded from https://github.com/hideakitai/MCP4728
+for AOG JD two track steering
+Matt Elias 2023
+
+*/
 
 #ifndef MCP4728_H
 #define MCP4728_H

@@ -239,6 +239,7 @@ void autosteerSetup() {
     Autosteer_running = false;  //Turn off auto steer if no ethernet (Maybe running T4.0)
                                 //    if(!Ethernet_running)Serial.println("Ethernet not available");
     Serial.println("Autosteer disabled, GPS only mode");
+    //Autosteer_running = true;
     return;
   }
 

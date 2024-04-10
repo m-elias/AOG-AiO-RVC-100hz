@@ -36,6 +36,12 @@ HighLowHzStats relJitterStats;
 HighLowHzStats relTtrStats;
 HighLowHzStats bnoStats;
 
+elapsedMillis bufferStatsTimer;
+uint32_t testCounter;
+bool printCpuUsages = false;
+bool printStats = false;
+uint16_t ggaMissed;
+
 //#include "reset.h"    // no on board buttons for reset
 //const uint8_t RESET_BTN = A14;          // A13 on Matt's v4.0 test board, A14 ununsed on v5.0a
 //RESET teensyReset(RESET_BTN, 2000, LED_BUILTIN);           // reset.h - btn IO, factory reset PERIOD (ms), led IO 
@@ -65,15 +71,15 @@ const uint8_t pcaInputPinNumbers[]  = { 14, 13, 11, 10, 2, 3, 4, 5 };   // all 8
 
 #include "zNMEA.h"
 NMEAParser<3> nmeaParser;                               // A parser is declared with 3 handlers at most
-bool nmeaDebug = 1, extraCRLF;
+bool nmeaDebug = 0, extraCRLF;
 
 #include "zUBXParser.h"
 UBX_Parser ubxParser;
 
-#define PANDA 1
-#define PAOGI 0
-bool startup = true;
-elapsedMillis gpsLostTimer;
+#define PANDA_SINGLE 1
+#define PAOGI_DUAL 0
+bool startup = false;
+//elapsedMillis gpsLostTimer;
 elapsedMillis LEDTimer;
 elapsedMillis imuPandaSyncTimer;
 bool ggaReady, imuPandaSyncTrigger;
@@ -96,10 +102,6 @@ uint8_t RTKrxbuffer[buffer_size];       // Extra RTK serial rx buffer
 
 extern "C" uint32_t set_arm_clock(uint32_t frequency);  // required prototype to set CPU speed
 
-elapsedMillis bufferStatsTimer = 3000;
-uint32_t testCounter;
-bool printCpuUsages = false;
-bool printStats = false;
 
 
 

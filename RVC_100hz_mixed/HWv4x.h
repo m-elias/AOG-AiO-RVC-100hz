@@ -52,10 +52,9 @@ SpeedPulse speedPulse(SPEEDPULSE_PIN);     // misc.h
 HardwareSerial* SerialIMU = &Serial5;   // IMU BNO-085 in RVC serial mode
 HardwareSerial* SerialGPS = &Serial7;   // Main postion receiver (GGA & VTG)
 HardwareSerial* SerialGPS2 = &Serial2;  // Dual heading receiver  (relposNED)
-HardwareSerial* SerialGPSTmp = NULL;
 
 const int32_t baudGPS = 460800;
-const int32_t baudRTK = 115200;     // most are using Xbee radios with default of 115200, *webconfig*
+const int32_t baudRTK = 115200;     // most are using Xbee radios with default of 115200
 
 #else
 There has been a PCB/hardware selection error, only select one HWxxx.h file

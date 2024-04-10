@@ -1,9 +1,14 @@
 void calcSteeringPID(void)
 {
-  pValue = steerSettings.Kp * steerAngleError;
+  #ifdef JD_DAC_H
+    float pValue = steerSettings.Kp * steerAngleSetPoint; // only use set point, not error for two track JD
+  #else
+    float pValue = steerSettings.Kp * steerAngleError;
+  #endif
+
   pwmDrive = (int16_t)pValue;
 
-  errorAbs = abs(steerAngleError);
+  float errorAbs = abs(steerAngleError);
   int16_t newMax = 0;
 
   if (errorAbs < LOW_HIGH_DEGREES) {
@@ -47,7 +52,8 @@ void motorDrive(void)
       // scale pwmDrive to DAC output
       // 0 PWM (no WAS change needed) = 2048 centered DAC output (4096 / 2 to get center voltage)
       DACusage.timeIn();
-      pwmDrive = jdDac.steerOutput(pwmDrive);
+      pwmDisplay = jdDac.steerOutput(pwmDrive);
+      jdDac.ch4Output(pwmDrive);
       DACusage.timeOut();
     #else    
       // Cytron Driver Dir + PWM Signal
@@ -60,6 +66,7 @@ void motorDrive(void)
       }
 
       analogWrite(PWM_PIN, pwmDrive);  //write out the 0 to 255 value
+      pwmDisplay = pwmDrive;
     #endif
   }
   else {
@@ -76,5 +83,6 @@ void motorDrive(void)
       analogWrite(PWM_PIN, 0);            //Turn off before other one on
       analogWrite(SLEEP_PIN, pwmDrive);
     }
+    pwmDisplay = pwmDrive;
   }
 }

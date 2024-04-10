@@ -15,6 +15,7 @@ void checkUSBSerial()
     else if (usbRead == 'n')         // output realtime GPS update data
     {
       nmeaDebug = !nmeaDebug;
+      ubxParser.debug = nmeaDebug;
       Serial.print("\r\nSetting NMEA debug: "); Serial.print(nmeaDebug);
     }
     else if (usbRead == 'c')        // output cpu usage stats
@@ -57,13 +58,18 @@ void checkUSBSerial()
 
 void printTelem()
 {
-  if (printStats)
+  if (printStats || !gps1Stats.startupReset)
   {
+    if (!gps1Stats.startupReset) {
+      ggaMissed = 0;
+      ubxParser.relMissed = 0;
+    }
     gps1Stats.printStatsReport((char*)"GPS1");
     gps2Stats.printStatsReport((char*)"GPS2");
     relJitterStats.printStatsReport((char*)"RELj");
     relTtrStats.printStatsReport((char*)"RELr");
     bnoStats.printStatsReport((char*)"BNO");
+    Serial.println();
   }
 
   if (printCpuUsages)

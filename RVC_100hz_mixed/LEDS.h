@@ -80,7 +80,7 @@ private:
   bool blinkNextLoop;
   
   bool blueFlashState, blueFlashEnabled;
-  uint16_t blueFlashPeriod = 50;
+  uint16_t blueFlashPeriod = 100;
   uint32_t blueFlashStartTime;
   uint32_t blueFlashStopTime;
 

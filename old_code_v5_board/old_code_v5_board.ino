@@ -26,7 +26,8 @@ HardwareSerial* SerialGPS2 = &Serial8;  //Dual heading receiver
 //HardwareSerial* SerialAOG = &Serial;
 
 const int32_t baudAOG = 115200;
-const int32_t baudGPS = 460800;
+const int32_t baudGPS = 921600;
+//const int32_t baudGPS = 460800;
 const int32_t baudRTK = 460800;  // most are using Xbee radios with default of 115200
 
 // Baudrates for detecting UBX receiver
