@@ -104,12 +104,12 @@ void loop()
     uint8_t gps1Read = SerialGPS->read();
     nmeaParser << gps1Read;
     
-    /*#ifdef AIOv50a
+    #ifdef AIOv50a
       GPS1usage.timeOut();
       RS232usage.timeIn();
       SerialRS232->write(gps1Read);
       RS232usage.timeOut();
-    #endif*/
+    #endif
 
     //Serial.write(gps1Read);
     //Serial.print((String)"\nSerialGPS update " + SerialGPS->available() + " " + millis() + " d:" + (char)gps1Read);
