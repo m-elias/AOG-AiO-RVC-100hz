@@ -1,3 +1,4 @@
+#include <stdint.h>
 #ifndef JD_DAC_H
 #define JD_DAC_H
 
@@ -219,9 +220,36 @@ public:
     else return 13600; // center value
   }
 
+  void readAllSWS(){
+    uint16_t readings[3];
+    uint16_t readingsConv[3];
+
+    // SWS #0 is already continuously read, so only need to read #1-2
+    dac_ads.setMux(ADS1115_REG_CONFIG_MUX_SINGLE_1);
+    dac_ads.triggerConversion(false);
+    while (!dac_ads.isConversionDone());
+    readings[1] = dac_ads.getConversion();
+    readingsConv[1] = (int)((float)readings[1] / adsToDacConvFactor);
+
+    dac_ads.setMux(ADS1115_REG_CONFIG_MUX_SINGLE_2);
+    dac_ads.triggerConversion(false);
+    while (!dac_ads.isConversionDone());
+    readings[2] = dac_ads.getConversion();
+    readingsConv[2] = (int)((float)readings[2] / adsToDacConvFactor);
+
+    dac_ads.setMux(ADS1115_REG_CONFIG_MUX_SINGLE_0);  // set ADS back to reading #0 continuously
+    dac_ads.triggerConversion(true);
+    readings[0] = steeringWheelSensor[0];
+    readingsConv[0] = (int)((float)readings[0] / adsToDacConvFactor);
+
+    Serial.print("\r\n"); Serial.print(millis());
+    for (byte i = 0; i < 3; i++){
+      Serial.printf(" %i:%i/%i ", i, readings[i], readingsConv[i]);
+    }
+  }
+
+
   void centerDac(){
-    //float factor = 6.49;
-    float factor = 5.875;  // 0:1852  1:1852  2:1851, 29 pwm -> 2046:2034:1697
     Serial.print("\r\n"); Serial.print(millis());
     for (byte i = 0; i < NUM_SWS - 1; i++){
       Serial.printf(" %i:%i ", i, steeringWheelSensorCenter[i]);
@@ -231,18 +259,18 @@ public:
     dac_ads.setMux(ADS1115_REG_CONFIG_MUX_SINGLE_1);
     dac_ads.triggerConversion(false);
     while (!dac_ads.isConversionDone());
-    steeringWheelSensorCenter[1] = (int)((float)dac_ads.getConversion() / factor);
+    steeringWheelSensorCenter[1] = (int)((float)dac_ads.getConversion() / adsToDacConvFactor);
     dac.analogWrite(1, steeringWheelSensorCenter[1], true);
 
     dac_ads.setMux(ADS1115_REG_CONFIG_MUX_SINGLE_2);
     dac_ads.triggerConversion(false);
     while (!dac_ads.isConversionDone());
-    steeringWheelSensorCenter[2] = (int)((float)dac_ads.getConversion() / factor);
+    steeringWheelSensorCenter[2] = (int)((float)dac_ads.getConversion() / adsToDacConvFactor);
     dac.analogWrite(2, steeringWheelSensorCenter[2], true);
 
     dac_ads.setMux(ADS1115_REG_CONFIG_MUX_SINGLE_0);  // set ADS back to reading #0 continuously
     dac_ads.triggerConversion(true);
-    steeringWheelSensorCenter[0] = (int)((float)steeringWheelSensor[0] / factor); // copy previously saved #0 value
+    steeringWheelSensorCenter[0] = (int)((float)steeringWheelSensor[0] / adsToDacConvFactor); // copy previously saved #0 value
     dac.analogWrite(0, steeringWheelSensorCenter[0], true);
 
     Serial.print("\r\n"); Serial.print(millis());
@@ -388,6 +416,8 @@ private:
 	//uint16_t left_center_right_DAC[3] = { 3512, 2019, 501 };
 	//uint16_t left_center_right_ADS[3] = { 22812, 13150, 3501 };
 	//uint8_t outputIndex = 0;
+  //float adsToDacConvFactor = 6.49;  // for bench testing
+  float adsToDacConvFactor = 5.875;  // for v5.0a 8320T
 	const static uint8_t NUM_SWS = 4;
 	uint16_t steeringWheelSensor[NUM_SWS];
 	uint16_t steeringWheelSensorCenter[NUM_SWS];

@@ -365,7 +365,9 @@ void checkForPGNs()
     //Bit 8,9    set point steer angle * 100 is sent
     steerAngleSetPoint = ((float)(udpData[8] | ((int8_t)udpData[9]) << 8)) * 0.01;  //high low bytes
 
-    // moved to 100hz AS loop for quicker reactions
+    //udpData[10] is XTE (cross track error)
+    //udpData[11 & 12] is section 1-16
+
     if ((bitRead(guidanceStatus, 0) == 0) || (steerState == 0)) { // || (gpsSpeed < 0.1)) {
       watchdogTimer = WATCHDOG_FORCE_VALUE;  //turn off steering motor
       //Serial.print(" OFF");

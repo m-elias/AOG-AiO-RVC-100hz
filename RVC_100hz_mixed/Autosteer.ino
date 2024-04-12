@@ -352,12 +352,15 @@ void autoSteerUpdate() {
     #else
       DACusage.timeIn();
       jdDac.update();
-      static int16_t oldSteer;
+      //static int16_t oldSteer;
       int16_t newDacSteering = (jdDac.getWAS() >> 1);  // read JD SWS instead to display on AoG
-      if (adcDebug && (newDacSteering > oldSteer +10 || newDacSteering < oldSteer -10)) Serial.printf("\r\n%6i  DAC_ADS-ch0(/2):%5i", millis(), newDacSteering);
+      //if (adcDebug && (newDacSteering > oldSteer +10 || newDacSteering < oldSteer -10)) Serial.printf("\r\n%6i  DAC_ADS-ch0(/2):%5i", millis(), newDacSteering);
+      if (adcDebug || (analogRead(WORK_PIN) > ANALOG_TRIG_THRES ? HIGH : LOW)) Serial.printf("\r\n%6i  DAC_ADS-ch0(/2):%5i", millis(), newDacSteering);
       steeringPosition = newDacSteering;
-      oldSteer = steeringPosition;
+      //oldSteer = steeringPosition;
       DACusage.timeOut();
+
+      if (!digitalRead(KICKOUT_D_PIN)) jdDac.readAllSWS();
     #endif
 
     // DETERMINE ACTUAL STEERING POSITION

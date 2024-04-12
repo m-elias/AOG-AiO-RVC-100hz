@@ -9,20 +9,21 @@ void calcSteeringPID(void)
   pwmDrive = (int16_t)pValue;
 
   float errorAbs = abs(steerAngleError);
-  int16_t newMax = 0;
+  int16_t newHighPWM = 0;
 
-  if (errorAbs < LOW_HIGH_DEGREES) {
-    newMax = (errorAbs * highLowPerDeg) + steerSettings.lowPWM;
+  // from 0-3 deg error, scale newHighPWM from lowPWM(minPWM*1.2)-highPWM
+  if (errorAbs < LOW_HIGH_DEGREES) {  
+    newHighPWM = (errorAbs * highLowPerDeg) + steerSettings.lowPWM;
   }
-  else newMax = steerSettings.highPWM;
+  else newHighPWM = steerSettings.highPWM;
 
   //add min throttle factor so no delay from motor resistance.
   if (pwmDrive < 0 ) pwmDrive -= steerSettings.minPWM;
   else if (pwmDrive > 0 ) pwmDrive += steerSettings.minPWM;
 
   //limit the pwm drive
-  if (pwmDrive > newMax) pwmDrive = newMax;
-  if (pwmDrive < -newMax) pwmDrive = -newMax;
+  if (pwmDrive > newHighPWM) pwmDrive = newHighPWM;
+  if (pwmDrive < -newHighPWM) pwmDrive = -newHighPWM;
 
   if (steerConfig.MotorDriveDirection) pwmDrive *= -1;
 
