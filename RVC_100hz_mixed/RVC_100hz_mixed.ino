@@ -102,6 +102,7 @@ void loop()
     gps1Stats.update(gps1Available);
 
     uint8_t gps1Read = SerialGPS->read();
+    if (nmeaDebug) Serial.write(gps1Read);
     nmeaParser << gps1Read;
     
     #ifdef AIOv50a

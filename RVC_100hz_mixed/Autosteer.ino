@@ -15,7 +15,7 @@ const uint8_t PWM_Frequency = 2;
 const float LOW_HIGH_DEGREES = 3.0;    //How many degrees before decreasing Max PWM
 
 bool testBothWasSensors = false;
-bool adcDebug = true;
+bool adcDebug = false;
 bool useInternalADC = false;
 bool useExternalADS = false;
 
@@ -355,7 +355,7 @@ void autoSteerUpdate() {
       //static int16_t oldSteer;
       int16_t newDacSteering = (jdDac.getWAS() >> 1);  // read JD SWS instead to display on AoG
       //if (adcDebug && (newDacSteering > oldSteer +10 || newDacSteering < oldSteer -10)) Serial.printf("\r\n%6i  DAC_ADS-ch0(/2):%5i", millis(), newDacSteering);
-      if (adcDebug || (analogRead(WORK_PIN) > ANALOG_TRIG_THRES ? HIGH : LOW)) Serial.printf("\r\n%6i  DAC_ADS-ch0(/2):%5i", millis(), newDacSteering);
+      if (adcDebug || (analogRead(WORK_PIN) > ANALOG_TRIG_THRES ? LOW : HIGH)) Serial.printf("\r\n%6i  DAC_ADS-ch0(/2):%5i", millis(), newDacSteering);
       steeringPosition = newDacSteering;
       //oldSteer = steeringPosition;
       DACusage.timeOut();

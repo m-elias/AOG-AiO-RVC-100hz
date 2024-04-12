@@ -153,7 +153,7 @@ public:
 
 			dac.analogWrite(output0, output1, output2invt);	// set all 3 channels, then do single i2c write loop
 
-      debugPrint("\r\n_pwmDrive: ");
+      debugPrint("\r\n_tractorPWM: ");
 			debugPrint(_tractorPWM);
 			debugPrint(" -> ");
 			debugPrint(output0);

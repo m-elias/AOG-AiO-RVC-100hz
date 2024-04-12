@@ -6,7 +6,16 @@ void calcSteeringPID(void)
     float pValue = steerSettings.Kp * steerAngleError;
   #endif
 
+  Serial.print("\r\n");
   pwmDrive = (int16_t)pValue;
+  Serial.print(" ");
+  Serial.print(pwmDrive);
+
+  //add min throttle factor so no delay from motor resistance.
+  if (pwmDrive < 0 ) pwmDrive -= steerSettings.minPWM;
+  else if (pwmDrive > 0 ) pwmDrive += steerSettings.minPWM;
+  Serial.print(" ");
+  Serial.print(pwmDrive);
 
   float errorAbs = abs(steerAngleError);
   int16_t newHighPWM = 0;
@@ -17,15 +26,16 @@ void calcSteeringPID(void)
   }
   else newHighPWM = steerSettings.highPWM;
 
-  //add min throttle factor so no delay from motor resistance.
-  if (pwmDrive < 0 ) pwmDrive -= steerSettings.minPWM;
-  else if (pwmDrive > 0 ) pwmDrive += steerSettings.minPWM;
-
   //limit the pwm drive
+  // causes oscillation in pwmDrive
   if (pwmDrive > newHighPWM) pwmDrive = newHighPWM;
   if (pwmDrive < -newHighPWM) pwmDrive = -newHighPWM;
+  Serial.print(" ");
+  Serial.print(pwmDrive);
 
   if (steerConfig.MotorDriveDirection) pwmDrive *= -1;
+  Serial.print(" ");
+  Serial.print(pwmDrive);
 
   if (steerConfig.IsDanfoss)  {
     // Danfoss: PWM 25% On = Left Position max  (below Valve=Center)
