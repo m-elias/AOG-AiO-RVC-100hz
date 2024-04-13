@@ -124,7 +124,7 @@ void checkForPGNs()
       helloFromAutoSteer[5] = (uint8_t)sa;
       helloFromAutoSteer[6] = sa >> 8;
 
-      uint16_t helloSteerPosition = steeringPosition - 6800;
+      uint16_t helloSteerPosition = steeringPosition; // - 6800; steeringPosition is already centered & offset in Autosteer.ino
       helloFromAutoSteer[7] = (uint8_t)helloSteerPosition;
       helloFromAutoSteer[8] = helloSteerPosition >> 8;
       helloFromAutoSteer[9] = switchByte;

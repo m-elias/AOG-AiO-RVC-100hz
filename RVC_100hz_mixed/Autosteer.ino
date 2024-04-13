@@ -360,7 +360,7 @@ void autoSteerUpdate() {
       //oldSteer = steeringPosition;
       DACusage.timeOut();
 
-      if (!digitalRead(KICKOUT_D_PIN)) jdDac.readAllSWS();
+      //if (!digitalRead(KICKOUT_D_PIN)) jdDac.readAllSWS();
     #endif
 
     // DETERMINE ACTUAL STEERING POSITION

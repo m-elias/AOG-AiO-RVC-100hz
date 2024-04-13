@@ -48,7 +48,6 @@ void errorHandler() {
 void prepImuPandaData()  // run after GGA update + 40ms (timing for PANDA), for next GGA
 {
   if (BNO.isActive) {
-    double angVel;
     itoa(BNO.rvcData.yawX10, IMU.heading, 10);  // format IMU data for Panda Sentence - Heading
 
     if (BNO.isSwapXY) {
@@ -65,6 +64,7 @@ void prepImuPandaData()  // run after GGA update + 40ms (timing for PANDA), for 
     //Serial.print(", ");
 
     // YawRate
+    double angVel;
     if (BNO.angCounter > 0) {
       angVel = ((double)BNO.rvcData.angVel) / (double)BNO.angCounter;
       angVel *= 10.0;
@@ -252,20 +252,17 @@ void buildPandaOrPaogi(bool _panda)  // only called by GGA_Handler (above)
     strcat(nmea, ",");
     strcat(nmea, IMU.yawRate);
   } else {  // use Dual values
-    // replace these with Dual baseline calcs
     char temp[6];
     dtostrf(ubxParser.ubxData.baseRelH, 4, 2, temp);
-    //itoa(ubxParser.ubxData.baseRelH, temp, 10);
-    strcat(nmea, temp);
-    strcat(nmea, ",");  // 12
+    strcat(nmea, temp);  // 12, heading
+    strcat(nmea, ",");
 
     dtostrf(ubxParser.ubxData.baseRelRoll, 4, 2, temp);
-    //itoa(ubxParser.ubxData.baseRelRoll, temp, 10);
-    strcat(nmea, temp);
-    strcat(nmea, ",");  // 13
+    strcat(nmea, temp);  // 13, roll
+    strcat(nmea, ",");
 
-    strcat(nmea, "");
-    strcat(nmea, ",");  // blank pitch
+    strcat(nmea, "");   // blank pitch
+    strcat(nmea, ",");
     strcat(nmea, "");   // blank yaw rate
   }
 
