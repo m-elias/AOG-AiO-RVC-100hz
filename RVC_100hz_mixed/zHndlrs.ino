@@ -254,11 +254,13 @@ void buildPandaOrPaogi(bool _panda)  // only called by GGA_Handler (above)
   } else {  // use Dual values
     // replace these with Dual baseline calcs
     char temp[6];
-    itoa(ubxParser.ubxData.baseRelH, temp, 10);
+    dtostrf(ubxParser.ubxData.baseRelH, 4, 2, temp);
+    //itoa(ubxParser.ubxData.baseRelH, temp, 10);
     strcat(nmea, temp);
     strcat(nmea, ",");  // 12
 
-    itoa(ubxParser.ubxData.baseRelRoll, temp, 10);
+    dtostrf(ubxParser.ubxData.baseRelRoll, 4, 2, temp);
+    //itoa(ubxParser.ubxData.baseRelRoll, temp, 10);
     strcat(nmea, temp);
     strcat(nmea, ",");  // 13
 

@@ -45,7 +45,7 @@ private:
         {
           /*uint32_t iT = (int32_t)this->payload[4] + ((int32_t)this->payload[5] << 8)
               + ((int32_t)this->payload[6] << 16) + ((int32_t)this->payload[7] << 24);
-          Serial.print("                    "); Serial.print((float)iT / 1000.0, 2);*/
+          Serial.print("                    "); Serial.print((double)iT / 1000.0, 2);*/
 
           unsigned long iTOW   = (unsigned long)this->unpack_int32(4);
           long relPosN         = this->unpack_int32(8);
@@ -137,14 +137,14 @@ private:
                             int  relPosHPL,
                             uint32_t relPosFlags) {
     ubxData.iTOW = iTOW;
-    ubxData.baseRelN   = (float)relPosN * 0.01;
-    ubxData.baseRelE   = (float)relPosE * 0.01;
-    ubxData.baseRelHPD = (float)relPosHPD * 0.01;
-    ubxData.baseRelD   = (float)relPosD + ubxData.baseRelHPD;
-    ubxData.baseRelHPL = (float)relPosHPL * 0.01;
-    ubxData.baseRelL   = (float)relPosL + ubxData.baseRelHPL;
+    ubxData.baseRelN   = (double)relPosN * 0.01;
+    ubxData.baseRelE   = (double)relPosE * 0.01;
+    ubxData.baseRelHPD = (double)relPosHPD * 0.01;
+    ubxData.baseRelD   = (double)relPosD + ubxData.baseRelHPD;
+    ubxData.baseRelHPL = (double)relPosHPL * 0.01;
+    ubxData.baseRelL   = (double)relPosL + ubxData.baseRelHPL;
 
-    ubxData.baseRelH = (float)relPosH * 0.0001 + 900;         // turn the heading 90.0 degrees
+    ubxData.baseRelH = (double)relPosH * 0.0001 + 900;         // turn the heading 90.0 degrees for dual ant in side-to-side (roll) setup
     if (ubxData.baseRelH >= 3600) ubxData.baseRelH -= 3600;
     if (ubxData.baseRelH < 0) ubxData.baseRelH += 3600;
     ubxData.baseRelH *= 0.1;
@@ -188,12 +188,12 @@ private:
                       signed long headMot,
                       signed long headVeh) {
     ubxData.numSats = (byte)numSV;
-    ubxData.lat = (float)lat * 0.0000001;
-    ubxData.lon = (float)lon * 0.0000001;
-    ubxData.alt = (float)height * 0.001;
+    ubxData.lat = (double)lat * 0.0000001;
+    ubxData.lon = (double)lon * 0.0000001;
+    ubxData.alt = (double)height * 0.001;
     if (debug) {
       Serial.print("\r\n"); Serial.print(millis()); Serial.print(" PVT update "); Serial.print(millis() - prevPvtMsgTime);
-      Serial.print(" "); Serial.print((float)iTOW / 1000.0, 2);
+      Serial.print(" "); Serial.print((double)iTOW / 1000.0, 2);
     }
     prevPvtMsgTime = millis();
     pvtTimer = 0;
@@ -250,14 +250,14 @@ private:
 public:
 
   struct UBX_Data {
-    float baseRelN, baseRelE, baseRelD;   // moving base NED in meters
-    float baseRelL, baseRelH;             // moving base length in meter, heading in degrees
-    float baseRelHPD, baseRelHPL;         // high precision component of D & L
+    double baseRelN, baseRelE, baseRelD;   // moving base NED in meters
+    double baseRelL, baseRelH;             // moving base length in meter, heading in degrees
+    double baseRelHPD, baseRelHPL;         // high precision component of D & L
     uint32_t iTOW;                        // time of week from relposned
     byte numSats;                         // number of Sats from PVT
-    float lat, lon, alt;                  // position from PVT
+    double lat, lon, alt;                  // position from PVT
     uint32_t baseRelFlags;                // moving base flags (gnssFixOk, diffSoln, relPosValid, carrSoln etc)
-    float baseRelRoll;                    // calc from D & L
+    double baseRelRoll;                    // calc from D & L
     int carrSoln;                         // from relposned
   };
   UBX_Data ubxData;
