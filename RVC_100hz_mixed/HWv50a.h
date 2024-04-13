@@ -63,7 +63,7 @@ HardwareSerial* SerialESP32 = &Serial2; // ESP32
 //const int32_t baudGPS = 460800;
 const int32_t baudGPS = 921600;
 const int32_t baudRTK = 460800;     // most are using Xbee radios with default of 115200
-const int32_t baudRS232 = 57600;
+const int32_t baudRS232 = 38400;
 const int32_t baudESP32 = 460800;
 
 #else
