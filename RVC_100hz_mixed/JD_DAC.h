@@ -146,6 +146,7 @@ public:
       // 0/2047 is center, 254/3554 is one extreme (old values for #0/1)
       // 0/2047 is center, 254/542 is the other extreme (old values for inverted #2)
 
+      // could use better mapping, maybe use SWS values from a cal proceedure?
       uint16_t output0, output1, output2invt;
 			output0 = map(_tractorPWM, 0, 254, steeringWheelSensorCenter[0], 3554);
       output1 = map(_tractorPWM, 0, 254, steeringWheelSensorCenter[1], 3554);

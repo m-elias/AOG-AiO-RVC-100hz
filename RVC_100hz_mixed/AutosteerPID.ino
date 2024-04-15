@@ -2,8 +2,10 @@ void calcSteeringPID(void)
 {
   #ifdef JD_DAC_H
     float pValue = steerSettings.Kp * steerAngleSetPoint; // only use set point, not error for two track JD
+    float errorAbs = abs(steerAngleSetPoint);
   #else
     float pValue = steerSettings.Kp * steerAngleError;
+    float errorAbs = abs(steerAngleError);
   #endif
 
   Serial.print("\r\n");
@@ -17,7 +19,6 @@ void calcSteeringPID(void)
   Serial.print(" ");
   Serial.print(pwmDrive);
 
-  float errorAbs = abs(steerAngleError);
   int16_t newHighPWM = 0;
 
   // from 0-3 deg error, scale newHighPWM from lowPWM(minPWM*1.2)-highPWM
