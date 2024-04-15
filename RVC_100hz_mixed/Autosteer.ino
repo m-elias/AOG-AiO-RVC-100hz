@@ -29,6 +29,7 @@ const uint16_t WATCHDOG_FORCE_VALUE = WATCHDOG_THRESHOLD + 2;  // Should be grea
 uint8_t watchdogTimer = WATCHDOG_FORCE_VALUE;
 uint8_t aog2Count = 0;
 bool autoSteerEnabled = false;
+float gpsSpeed;
 
 // Relays
 /*bool isRelayActiveHigh = true;
@@ -84,6 +85,7 @@ struct SteerConfigStruct {
   uint8_t PulseCountMax = 3;
   uint8_t IsDanfoss = 0;
   uint8_t IsUseY_Axis = 0;  //Set to 0 to use X Axis, 1 to use Y avis
+  uint8_t MinSpeed = 0;
 };
 SteerConfigStruct const defaultSteerConfig;  // 9 bytes
 struct SteerConfigStruct steerConfig = defaultSteerConfig;

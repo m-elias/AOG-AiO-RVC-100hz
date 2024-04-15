@@ -267,6 +267,7 @@ void checkForPGNs()
     if (bitRead(sett, 7)) steerConfig.ShaftEncoder = 1; else steerConfig.ShaftEncoder = 0;
 
     steerConfig.PulseCountMax = udpData[6];
+    steerConfig.MinSpeed = udpData[7];
 
     sett = udpData[8]; //setting1 - Danfoss valve etc
     if (bitRead(sett, 0)) steerConfig.IsDanfoss = 1; else steerConfig.IsDanfoss = 0;
@@ -287,6 +288,7 @@ void checkForPGNs()
     Serial.print("\r\nCurrentSensor "); Serial.print(steerConfig.CurrentSensor);
     Serial.print("\r\nIsUseY_Axis "); Serial.print(steerConfig.IsUseY_Axis);
     Serial.print("\r\nPulseCountMax "); Serial.print(steerConfig.PulseCountMax);
+    Serial.print("\r\nMinSpeed "); Serial.print(steerConfig.MinSpeed);
     Serial.println();
 
     EEPROM.put(40, steerConfig);            
@@ -354,7 +356,7 @@ void checkForPGNs()
     if (pgn254AveDelay == 0) pgn254AveDelay = pgn254Delay;
     else pgn254AveDelay = pgn254AveDelay * 0.99 + pgn254Delay * 0.01;
     Serial.printf("->PGN254 delay: %4iuS  %4i %4i %4i", pgn254Delay, pgn254MinDelay, pgn254AveDelay, pgn254MaxDelay);*/
-    float gpsSpeed = ((float)(udpData[5] | udpData[6] << 8)) * 0.1;   // speed data comes in as km/hr x10
+    gpsSpeed = ((float)(udpData[5] | udpData[6] << 8)) * 0.1;   // speed data comes in as km/hr x10
     //Serial << "\r\n speed:" << gpsSpeed << " "; Serial.print(udpData[5], BIN); Serial << " "; Serial.print(udpData[6], BIN);
     speedPulse.updateSpeed(gpsSpeed);
 
