@@ -257,8 +257,9 @@ void buildPandaOrPaogi(bool _panda)  // only called by GGA_Handler (above)
     strcat(nmea, temp);  // 12, heading
     strcat(nmea, ",");
 
-    dtostrf(ubxParser.ubxData.baseRelRoll, 4, 2, temp);
-    strcat(nmea, temp);  // 13, roll
+    char temp2[6];
+    dtostrf(ubxParser.ubxData.baseRelRoll, 4, 2, temp2);
+    strcat(nmea, temp2);  // 13, roll
     strcat(nmea, ",");
 
     strcat(nmea, "");   // blank pitch
@@ -330,11 +331,13 @@ void buildPandaOrPaogi(bool _panda)  // only called by GGA_Handler (above)
   else {          // use Dual values
     // replace these with Dual baseline calcs
     char temp[6];
-    itoa(ubxParser.ubxData.baseRelH, temp, 10);
-    strcat(nmea, temp); strcat(nmea, ",");          // 12
+    dtostrf(ubxParser.ubxData.baseRelH, 4, 2, temp);
+    strcat(nmea, temp);  // 12, heading
+    strcat(nmea, ",");
 
-    itoa(ubxParser.ubxData.baseRelRoll, temp, 10);
-    strcat(nmea, temp); strcat(nmea, ",");          // 13
+    dtostrf(ubxParser.ubxData.baseRelRoll, 4, 2, temp);
+    strcat(nmea, temp);  // 13, roll
+    strcat(nmea, ",");
 
     strcat(nmea, ""); strcat(nmea, ",");            // blank pitch
     strcat(nmea, "");                               // blank yaw rate

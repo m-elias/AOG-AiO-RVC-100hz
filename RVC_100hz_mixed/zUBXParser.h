@@ -162,7 +162,45 @@ private:
     relPosTimer = 0;
     relPosNedRcvd = true;
     useDual = true;             // set true for the rest of runtime
-    prepDualData();
+
+    
+    bool gnssFixOk = ubxData.baseRelFlags & 1;
+    bool diffSoln = ubxData.baseRelFlags & 2;
+    bool relPosValid = ubxData.baseRelFlags & 4;
+    ubxData.carrSoln = (ubxData.baseRelFlags & 24) >> 3;
+    /*bool isMoving = ubxData.baseRelFlags & (32);
+    bool refPosMiss = ubxData.baseRelFlags & (64);
+    bool refObsMiss = ubxData.baseRelFlags & (128);
+    bool refPosHeadingValid = ubxData.baseRelFlags & (256);
+    bool relPosNormalized = ubxData.baseRelFlags & (512);*/
+
+    /*Serial.print("\r\ngnssFixOk: "); Serial.print(gnssFixOk);
+    Serial.print("\r\ndiffSoln: "); Serial.print(diffSoln);
+    Serial.print("\r\nrelPosValid: "); Serial.print(relPosValid);
+    Serial.print("\r\ncarrSoln: "); Serial.print(ubxData.carrSoln);
+    Serial.print("\r\nisMoving: "); Serial.print(isMoving);
+    Serial.print("\r\nrefPosMiss: "); Serial.print(refPosMiss);
+    Serial.print("\r\nrefObsMiss: "); Serial.print(refObsMiss);
+    Serial.print("\r\nrefPosHeadingValid: "); Serial.print(refPosHeadingValid);
+    Serial.print("\r\nrelPosNormalized: "); Serial.print(relPosNormalized);*/
+
+    //must be all ok
+    if (!gnssFixOk) { Serial.print("\r\n*** gnssFixOk! "); Serial.print(gnssFixOk); Serial.print(" ***"); }
+    if (!diffSoln) { Serial.print("\r\n*** diffSoln! "); Serial.print(diffSoln); Serial.print(" ***"); }
+    if (!relPosValid) { Serial.print("\r\n*** relPosValid! "); Serial.print(relPosValid); Serial.print(" ***"); }
+    if (!gnssFixOk || !diffSoln || !relPosValid) return;
+
+    if (ubxData.carrSoln > 1) {        // 1 - float, 2 - full RTK
+      if (ubxData.baseRelL == 0) ubxData.baseRelL += 0.01;    // to prevent 0 division error
+      ubxData.baseRelRoll = (asin(ubxData.baseRelD / ubxData.baseRelL)) * -RAD_TO_DEG;
+      relPosNedReady = true;      // RelPos ready is true so PAOGI will send when the GGA is also ready
+      useDual = true;             // set true for the rest of runtime
+    } else {
+      if (!debug) Serial.print("\r\n");
+      Serial.print("    carrSoln: "); Serial.print(ubxData.carrSoln);
+      ubxData.baseRelRoll *= 0.9;     // "level off" dual roll
+      relPosNedReady = true;         
+    }
   }
 
   void handle_NAV_PVT(unsigned long iTOW,
@@ -206,47 +244,6 @@ private:
     Serial.print(msgclass & 0xFF, HEX);
   }
 
-  void prepDualData(){
-    bool gnssFixOk = ubxData.baseRelFlags & 1;
-    bool diffSoln = ubxData.baseRelFlags & 2;
-    bool relPosValid = ubxData.baseRelFlags & 4;
-    ubxData.carrSoln = (ubxData.baseRelFlags & 24) >> 3;
-    /*bool isMoving = ubxData.baseRelFlags & (32);
-    bool refPosMiss = ubxData.baseRelFlags & (64);
-    bool refObsMiss = ubxData.baseRelFlags & (128);
-    bool refPosHeadingValid = ubxData.baseRelFlags & (256);
-    bool relPosNormalized = ubxData.baseRelFlags & (512);*/
-
-    /*Serial.print("\r\ngnssFixOk: "); Serial.print(gnssFixOk);
-    Serial.print("\r\ndiffSoln: "); Serial.print(diffSoln);
-    Serial.print("\r\nrelPosValid: "); Serial.print(relPosValid);
-    Serial.print("\r\ncarrSoln: "); Serial.print(ubxData.carrSoln);
-    Serial.print("\r\nisMoving: "); Serial.print(isMoving);
-    Serial.print("\r\nrefPosMiss: "); Serial.print(refPosMiss);
-    Serial.print("\r\nrefObsMiss: "); Serial.print(refObsMiss);
-    Serial.print("\r\nrefPosHeadingValid: "); Serial.print(refPosHeadingValid);
-    Serial.print("\r\nrelPosNormalized: "); Serial.print(relPosNormalized);*/
-
-    //must be all ok
-    if (!gnssFixOk) { Serial.print("\r\n*** gnssFixOk! "); Serial.print(gnssFixOk); Serial.print(" ***"); }
-    if (!diffSoln) { Serial.print("\r\n*** diffSoln! "); Serial.print(diffSoln); Serial.print(" ***"); }
-    if (!relPosValid) { Serial.print("\r\n*** relPosValid! "); Serial.print(relPosValid); Serial.print(" ***"); }
-    if (!gnssFixOk || !diffSoln || !relPosValid) return;
-
-    if (ubxData.carrSoln > 1) {        // 1 - float, 2 - full RTK
-      if (ubxData.baseRelL == 0) ubxData.baseRelL += 0.01;    // to prevent 0 division error
-      ubxData.baseRelRoll = (asin(ubxData.baseRelD / ubxData.baseRelL)) * -RAD_TO_DEG;
-      relPosNedReady = true;      // RelPos ready is true so PAOGI will send when the GGA is also ready
-      useDual = true;             // set true for the rest of runtime
-    } else {
-      if (!debug) Serial.print("\r\n");
-      Serial.print("    carrSoln: "); Serial.print(ubxData.carrSoln);
-      ubxData.baseRelRoll *= 0.9;     // "level off" dual roll
-      relPosNedReady = true;         
-    }
-
-  }
-
 public:
 
   struct UBX_Data {
@@ -257,7 +254,7 @@ public:
     byte numSats;                         // number of Sats from PVT
     double lat, lon, alt;                  // position from PVT
     uint32_t baseRelFlags;                // moving base flags (gnssFixOk, diffSoln, relPosValid, carrSoln etc)
-    double baseRelRoll;                    // calc from D & L
+    double baseRelRoll;                    // calc from baseRelD & baseRelL
     int carrSoln;                         // from relposned
   };
   UBX_Data ubxData;
