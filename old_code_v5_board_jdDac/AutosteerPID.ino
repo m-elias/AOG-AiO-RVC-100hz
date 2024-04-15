@@ -62,10 +62,10 @@ void motorDrive(void)
   // Used with Cytron MD30C Driver
   // Steering Motor
   // Dir + PWM Signal
-  /*if (steerConfig.CytronDriver)
+  if (steerConfig.CytronDriver)
   {
     // Cytron MD30C Driver Dir + PWM Signal
-    if (pwmDrive >= 0)
+    /*if (pwmDrive >= 0)
     {
       bitSet(PORTD, 4);  //set the correct direction
     }
@@ -77,8 +77,8 @@ void motorDrive(void)
 
     //write out the 0 to 255 value
     analogWrite(PWM1_LPWM, pwmDrive);
-    pwmDisplay = pwmDrive;
-  }*/
+    pwmDisplay = pwmDrive;*/
+  }
   else
   {
     // IBT 2 Driver Dir1 connected to BOTH enables
