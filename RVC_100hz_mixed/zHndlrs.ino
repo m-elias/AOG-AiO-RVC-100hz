@@ -148,19 +148,19 @@ void GGA_GNS_PostProcess()  // called by either GGA or GNS handler
   double plat = atof(GGA.latitude);
   double plong = atof(GGA.longitude);
   double palt = atof(GGA.altitude);
-  if (plat != platold) {
+  if (plat >= platold + 0.00001 || plat <= platold - 0.00001) {
     Serial.print("\r\nlat "); Serial.print(plat, 5);
     Serial.print(">"); Serial.print(platold, 5);
     platold = plat;
   }
-  if (plong != plongold) {
+  if (plong >= plongold + 0.00001 || plong <= plongold - 0.00001) {
     Serial.print("\r\nlng "); Serial.print(plong, 5);
     Serial.print(">"); Serial.print(plongold, 5);
     plongold = plong;
   }
-  if (palt != paltold) {
-    Serial.print("\r\nalt "); Serial.print(palt, 5);
-    Serial.print(">"); Serial.print(paltold, 5);
+  if (palt >= paltold + 0.01 || palt <= paltold - 0.01) {
+    Serial.print("\r\nalt "); Serial.print(palt, 2);
+    Serial.print(">"); Serial.print(paltold, 2);
     paltold = palt;
   }
 

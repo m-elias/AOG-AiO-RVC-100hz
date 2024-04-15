@@ -144,7 +144,8 @@ private:
     ubxData.baseRelHPL = (double)relPosHPL * 0.01;
     ubxData.baseRelL   = (double)relPosL + ubxData.baseRelHPL;
 
-    ubxData.baseRelH = (double)relPosH * 0.0001 + 900;         // turn the heading 90.0 degrees for dual ant in side-to-side (roll) setup
+    ubxData.baseRelH = (double)relPosH * 0.0001 + 900;    // ubx default heading is Right ant -> Left ant
+                                                          // turn the heading +90.0 degrees for dual ant in side-to-side (roll) setup
     if (ubxData.baseRelH >= 3600) ubxData.baseRelH -= 3600;
     if (ubxData.baseRelH < 0) ubxData.baseRelH += 3600;
     ubxData.baseRelH *= 0.1;
@@ -156,6 +157,7 @@ private:
       Serial.printf(" REL update (%i)", relMissed);
       Serial.print(millis() - prevRelposnedMsgTime);
       Serial.print(" "); Serial.print((ubxData.iTOW % 1000) / 10);
+      Serial.print(" "); Serial.print(ubxData.baseRelH, 2);
     }
     msgPeriod = millis() - prevRelposnedMsgTime;
     prevRelposnedMsgTime = millis();
@@ -163,7 +165,7 @@ private:
     relPosNedRcvd = true;
     useDual = true;             // set true for the rest of runtime
 
-    
+
     bool gnssFixOk = ubxData.baseRelFlags & 1;
     bool diffSoln = ubxData.baseRelFlags & 2;
     bool relPosValid = ubxData.baseRelFlags & 4;
@@ -201,6 +203,16 @@ private:
       ubxData.baseRelRoll *= 0.9;     // "level off" dual roll
       relPosNedReady = true;         
     }
+
+    static double relRollOld;
+    if (debug) {
+      Serial.print(" "); Serial.print(ubxData.baseRelRoll, 2);
+      if (ubxData.baseRelRoll <= relRollOld - 0.5 || ubxData.baseRelRoll >= relRollOld + 0.5) {
+        Serial.printf("\r\n\n******************* ROLL JUMP %6.2f -> %6.2f ************************\r\n\n", relRollOld, ubxData.baseRelRoll);
+      }
+    }
+    relRollOld = ubxData.baseRelRoll;
+
   }
 
   void handle_NAV_PVT(unsigned long iTOW,
