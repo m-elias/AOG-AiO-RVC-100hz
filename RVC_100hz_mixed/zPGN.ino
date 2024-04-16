@@ -317,6 +317,7 @@ void checkForPGNs()
     newWasOffset        |= (udpData[11] << 8);   // read was zero offset Hi
 
     #ifdef JD_DAC_H
+      jdDac.setMaxPWM(steerSettings.highPWM);
       if (newWasOffset != steerSettings.wasOffset) {
         jdDac.centerDac();
       }

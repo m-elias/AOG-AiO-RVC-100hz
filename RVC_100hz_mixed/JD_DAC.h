@@ -148,9 +148,9 @@ public:
 
       // could use better mapping, maybe use SWS values from a cal proceedure?
       uint16_t output0, output1, output2invt;
-			output0 = map(_tractorPWM, 0, 254, steeringWheelSensorCenter[0], 3554);
-      output1 = map(_tractorPWM, 0, 254, steeringWheelSensorCenter[1], 3554);
-			output2invt = map(_tractorPWM, 0, 254, steeringWheelSensorCenter[2], 542);
+			output0 = map(_tractorPWM, 0, maxPWM, steeringWheelSensorCenter[0], 3554);
+      output1 = map(_tractorPWM, 0, maxPWM, steeringWheelSensorCenter[1], 3554);
+			output2invt = map(_tractorPWM, 0, maxPWM, steeringWheelSensorCenter[2], 542);
 
 			dac.analogWrite(output0, output1, output2invt);	// set all 3 channels, then do single i2c write loop
 
@@ -406,6 +406,10 @@ public:
 		}
 	}
 
+  void setMaxPWM(uint8_t _maxPWM) {
+    maxPWM = _maxPWM;
+  }
+
   bool printSWS = 0;
 
 private:
@@ -414,6 +418,7 @@ private:
 	bool isInit = false;
 	bool steerOutputEnabled = 0;
 	bool ch4Enabled = 0;
+  uint8_t maxPWM = 255;
 	//uint16_t left_center_right_DAC[3] = { 3512, 2019, 501 };
 	//uint16_t left_center_right_ADS[3] = { 22812, 13150, 3501 };
 	//uint8_t outputIndex = 0;
