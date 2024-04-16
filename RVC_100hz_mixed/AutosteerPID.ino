@@ -64,7 +64,7 @@ void motorDrive(void)
       // scale pwmDrive to DAC output
       // 0 PWM (no WAS change needed) = 2048 centered DAC output (4096 / 2 to get center voltage)
       DACusage.timeIn();
-      //if (gpsSpeed < (float)steerConfig.MinSpeed / 10.0) pwmDrive = 0;
+      if (gpsSpeed < (float)steerConfig.MinSpeed / 10.0) pwmDrive = 0;
       pwmDisplay = jdDac.steerOutput(pwmDrive);
       jdDac.ch4Output(pwmDrive);
       DACusage.timeOut();
