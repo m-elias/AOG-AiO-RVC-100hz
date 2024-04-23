@@ -379,8 +379,9 @@ void checkForPGNs()
       //Serial.print(" ON");
     }
 
-    //Bit 10 Tram
-    //tram = udpData[10];
+    //Bit 10 XTE
+    xte = udpData[10];
+    //Serial.print("\r\nXTE:"); Serial.print(xte-127);
 
     //Bit 11
     //relay = udpData[11];

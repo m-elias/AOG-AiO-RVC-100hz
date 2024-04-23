@@ -33,8 +33,8 @@ float gpsSpeed;
 
 // Relays
 /*bool isRelayActiveHigh = true;
-uint8_t relay = 0, relayHi = 0, uTurn = 0;
-uint8_t tram = 0;*/
+uint8_t relay = 0, relayHi = 0, uTurn = 0;*/
+uint8_t xte = 0;
 
 // Switches/Sensors
 uint8_t kickoutInput = 0, workInput = 0, steerState = 0, switchByte = 0;
