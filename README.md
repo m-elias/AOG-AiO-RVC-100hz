@@ -5,7 +5,6 @@
 
 # 100hz RVC firmware for All-In-One v4.x & v5.0a
 ### *** alpha testing stage ***
-*** currently testing/debugging missing GPS sentences/msgs ***
 
 A Teensy 4.1 (w/Eth) firmware for the AIO PCB to run the BNO IMU and Autosteer control loop at 100hz.
 
