@@ -38,12 +38,12 @@
 #include "pins_arduino.h"
 #endif
 
-#include "libraries/direct_pin_read.h"
+#include "direct_pin_read.h"
 
 #if defined(ENCODER_USE_INTERRUPTS) || !defined(ENCODER_DO_NOT_USE_INTERRUPTS)
 #define ENCODER_USE_INTERRUPTS
 #define ENCODER_ARGLIST_SIZE CORE_NUM_INTERRUPT
-#include "libraries/interrupt_pins.h"
+#include "interrupt_pins.h"
 #ifdef ENCODER_OPTIMIZE_INTERRUPTS
 #include "libraries/interrupt_config.h"
 #endif
