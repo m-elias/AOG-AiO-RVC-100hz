@@ -1,7 +1,7 @@
 /*
 
 Started Feb 2024 - Matt Elias
-Updated Mar 2024
+Updated Apr 2024
 
 Used Ace repo code and adapted for AiO v4.x/5.0a RVC 100hz
 - Started with code from Teensy "Nav" Ace module https://github.com/farmerbriantee/Ace/tree/master/Hardware/Ace
@@ -24,7 +24,7 @@ Dual Operation Logic
 	- if fix/diffsol/posvalid all good
 		- calc roll from dual baseline/relposD
 			- if carrsoln is not full RTK "wind down" dual roll by x0.9 each GPS update
-	- Send paogi
+	- Send PAOGI
 
 
 Machine/Section outputs
@@ -45,6 +45,7 @@ To-do
 - use 2nd Eth jack LED for something?
 - intelligently detect Eth link status?
   - Ethernet.linkStatus doesn't work until after the correct Ethernet.begin has started
+  - probably need to use diff Ethernet library like AsyncUDP_Teensy41
 
 - Testing !!!
   - pressure/current inputs should be scaled the same as old firmware, only bench tested by Matt

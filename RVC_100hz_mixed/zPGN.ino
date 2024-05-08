@@ -89,7 +89,7 @@ void checkForPGNs()
     //printPgnAnnoucement(udpData[3], (char*)"Corrected Position", len);
     /*
     union {           // both variables in the union share the same memory space
-      byte array[8];  // fill "array" from an 8 byte array converted in AOG from the "double" precision number we wanted to send
+      byte array[8];  // fill "array" from an 8 byte array converted in AOG from the "double" precision number we want to send
       double number;  // and the double "number" has the original "double" precision number from AOG
     } lat, lon;
 

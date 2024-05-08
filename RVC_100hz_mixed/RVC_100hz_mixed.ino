@@ -17,8 +17,8 @@ const uint8_t encoderType = 1;  // 1 - single input
                                 // 3 - variable duty cycle, for future updates
 
 #include "common.h"
-#include "JD_DAC.h"   // experimental JD 2 track DAC steering & SCV/remote hyd control
-JD_DAC jdDac(Wire1, 0x60, &Serial);
+//#include "JD_DAC.h"   // experimental JD 2 track DAC steering & SCV/remote hyd control
+//JD_DAC jdDac(Wire1, 0x60, &Serial);
 
 void setup()
 {
@@ -67,11 +67,11 @@ void loop()
   }
 
   #ifdef AIOv50a
-  RS232usage.timeIn();
-  if (SerialRS232->available()) {           // Check for RS232 data
-    Serial.write(SerialRS232->read());      // just print to USB for testing
-  }
-  RS232usage.timeOut();
+    RS232usage.timeIn();
+    if (SerialRS232->available()) {           // Check for RS232 data
+      Serial.write(SerialRS232->read());      // just print to USB for testing
+    }
+    RS232usage.timeOut();
   #endif
 
   BNOusage.timeIn();
