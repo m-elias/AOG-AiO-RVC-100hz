@@ -26,6 +26,14 @@ struct VTG_DATA {
 };
 VTG_DATA VTG;
 
+// HPR
+struct HPR_DATA {
+  char heading[8];
+  char roll[8];
+  int solQuality;
+};
+HPR_DATA HPR;
+
 // IMU
 struct IMU_DATA {
   char heading[6];
@@ -213,6 +221,20 @@ void GGA_Handler()  // Rec'd GGA
 void VTG_Handler() {
   nmeaParser.getArg(0, VTG.heading);     // vtg heading
   nmeaParser.getArg(4, VTG.speedKnots);  // vtg Speed knots
+}
+
+void HPR_Handler() {
+  NMEA_Pusage.timeIn();
+
+  nmeaParser.getArg(1, HPR.heading);
+  nmeaParser.getArg(2, HPR.roll);
+  nmeaParser.getArg(4, HPR.solQuality);
+  ubxParser.relPosNedReady = true;
+  ubxParser.useDual = true;
+  ubxParser.ubxData.baseRelH = atof(HPR.heading);
+  ubxParser.ubxData.baseRelRoll = atof(HPR.roll);
+
+  NMEA_Pusage.timeOut();
 }
 
 void buildPandaOrPaogi(bool _panda)  // only called by GGA_Handler (above)

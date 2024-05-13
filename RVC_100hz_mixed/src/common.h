@@ -70,7 +70,7 @@ const uint8_t pcaOutputPinNumbers[8] = { 1, 0, 12, 15, 9, 8, 6, 7 };    // all 8
 const uint8_t pcaInputPinNumbers[]  = { 14, 13, 11, 10, 2, 3, 4, 5 };   // all 8 PCA9555 section/machine output "sensing" pin numbers on v5.0a
 
 #include "zNMEA.h"
-NMEAParser<3> nmeaParser;                               // A parser is declared with 3 handlers at most
+NMEAParser<4> nmeaParser;                               // A parser is declared with 3 handlers at most
 bool nmeaDebug = 0, extraCRLF;
 
 #include "zUBXParser.h"
