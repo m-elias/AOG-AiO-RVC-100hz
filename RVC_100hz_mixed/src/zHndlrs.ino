@@ -226,13 +226,18 @@ void VTG_Handler() {
 void HPR_Handler() {
   NMEA_Pusage.timeIn();
 
-  nmeaParser.getArg(1, HPR.heading);
-  nmeaParser.getArg(2, HPR.roll);
-  nmeaParser.getArg(4, HPR.solQuality);
+  nmeaParser.getArg(1, HPR.heading);      // UM982 heading
+  nmeaParser.getArg(2, HPR.roll);         // UM982 roll (pitch)
+  nmeaParser.getArg(4, HPR.solQuality);   // UM982 heading solution quality
   ubxParser.relPosNedReady = true;
   ubxParser.useDual = true;
   ubxParser.ubxData.baseRelH = atof(HPR.heading);
-  ubxParser.ubxData.baseRelRoll = atof(HPR.roll);
+
+  if ( HPR.solQuality == 4 ) {
+    ubxParser.ubxData.baseRelRoll = atof(HPR.roll);
+  } else {
+    ubxParser.ubxData.baseRelRoll *= 0.9;     // "level off" dual roll 
+  }
 
   NMEA_Pusage.timeOut();
 }
