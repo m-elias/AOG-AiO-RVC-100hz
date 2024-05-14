@@ -231,6 +231,7 @@ void HPR_Handler() {
   nmeaParser.getArg(4, HPR.solQuality);   // UM982 heading solution quality
   ubxParser.relPosNedReady = true;
   ubxParser.useDual = true;
+  ubxParser.relPosTimer = 0;
   ubxParser.ubxData.baseRelH = atof(HPR.heading);
 
   if ( HPR.solQuality == 4 ) {
