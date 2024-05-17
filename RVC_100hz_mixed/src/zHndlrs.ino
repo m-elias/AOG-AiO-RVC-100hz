@@ -235,7 +235,7 @@ void HPR_Handler() {
   ubxParser.useDual = true;
   ubxParser.relPosTimer = 0;
 
-  if ( fuseImu.fuseData.useFUSEImu ) {
+  if ( fuseImu.fuseData.useFUSEImu ) { // Three separate if/else cluases for clarity. Can be one.
   // Send data to FUSEImu
   fuseImu.fuseData.rollDual = atof(HPR.roll);
   fuseImu.fuseData.heading = atof(HPR.heading);
@@ -244,13 +244,13 @@ void HPR_Handler() {
   fuseImu.imuDualDelta();
   }
 
-  if ( fuseImu.fuseData.useFUSEImu ) {
+  if ( fuseImu.fuseData.useFUSEImu ) { // Three separate if/else cluases for clarity. Can be one.
     ubxParser.ubxData.baseRelH = fuseImu.fuseData.imuCorrected;
   } else {
     ubxParser.ubxData.baseRelH = atof(HPR.heading);
   }
 
-  if ( fuseImu.fuseData.useFUSEImu ) {
+  if ( fuseImu.fuseData.useFUSEImu ) { // Three separate if/else cluases for clarity. Can be one.
     // if ( HPR.solQuality == 4 ) {
       ubxParser.ubxData.baseRelRoll = fuseImu.fuseData.rollDeltaSmooth;
     // } else {
