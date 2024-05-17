@@ -229,15 +229,39 @@ void HPR_Handler() {
   nmeaParser.getArg(1, HPR.heading);      // UM982 heading
   nmeaParser.getArg(2, HPR.roll);         // UM982 roll (pitch)
   nmeaParser.getArg(4, HPR.solQuality);   // UM982 heading solution quality
+
+  // Keep ubx stuff in main loop happy
   ubxParser.relPosNedReady = true;
   ubxParser.useDual = true;
   ubxParser.relPosTimer = 0;
-  ubxParser.ubxData.baseRelH = atof(HPR.heading);
 
-  if ( HPR.solQuality == 4 ) {
-    ubxParser.ubxData.baseRelRoll = atof(HPR.roll);
+  if ( fuseImu.fuseData.useFUSEImu ) {
+  // Send data to FUSEImu
+  fuseImu.fuseData.rollDual = atof(HPR.roll);
+  fuseImu.fuseData.heading = atof(HPR.heading);
+  fuseImu.fuseData.correctionHeading = BNO.rvcData.yawX10;
+  fuseImu.fuseData.rollImu = BNO.rvcData.pitchX10;
+  fuseImu.imuDualDelta();
+  }
+
+  if ( fuseImu.fuseData.useFUSEImu ) {
+    ubxParser.ubxData.baseRelH = fuseImu.fuseData.imuCorrected;
   } else {
-    ubxParser.ubxData.baseRelRoll *= 0.9;     // "level off" dual roll 
+    ubxParser.ubxData.baseRelH = atof(HPR.heading);
+  }
+
+  if ( fuseImu.fuseData.useFUSEImu ) {
+    // if ( HPR.solQuality == 4 ) {
+      ubxParser.ubxData.baseRelRoll = fuseImu.fuseData.rollDeltaSmooth;
+    // } else {
+    //   ubxParser.ubxData.baseRelRoll *= 0.9;     // "level off" dual roll 
+    // }
+  } else {
+    if ( HPR.solQuality == 4 ) {
+      ubxParser.ubxData.baseRelRoll = atof(HPR.roll);
+    } else {
+      ubxParser.ubxData.baseRelRoll *= 0.9;     // "level off" dual roll 
+    }
   }
 
   NMEA_Pusage.timeOut();

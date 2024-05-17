@@ -76,6 +76,9 @@ bool nmeaDebug = 0, extraCRLF;
 #include "zUBXParser.h"
 UBX_Parser ubxParser;
 
+#include "zFUSEImu.h"
+FUSE_Imu fuseImu;
+
 #define PANDA_SINGLE 1
 #define PAOGI_DUAL 0
 bool startup = false;
