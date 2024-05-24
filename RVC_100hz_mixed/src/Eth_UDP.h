@@ -27,6 +27,7 @@ public:
   
 	unsigned int portSteer_8888 = 8888;    // UDP port that Modules (like this one) listen to
 	EthernetUDP PGN;                       // UDP object for PGNs on port 8888
+
 	unsigned int portAgIO_9999 = 9999;     // UDP port that AgIO listens to, send data here
 
 	bool isRunning = false;                // set true with successful Eth Start()
@@ -130,7 +131,11 @@ public:
     PGN.endPacket();
   }
 
-
+   void SendUdpAry(char _data[], uint8_t _length, IPAddress _ip, uint16_t _port) {
+    PGN.beginPacket(_ip, _port);
+    PGN.write(_data, _length);
+    PGN.endPacket();
+  } 
 
   // "raw" method, bypasses limit checks in firmware but AOG should still have limits
   //uint8_t PGN_99[] = { 0x80, 0x81, 126, 0x99, n/u, 1-2, 1-10s, 'H', 'e', 'l', 'l', 'o', ' ', 'A', 'o', 'G', '!', '!' }; //, 0xCC };
