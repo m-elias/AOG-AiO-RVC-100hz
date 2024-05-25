@@ -108,7 +108,7 @@ void loop()
     {
       nmeaParser << gps1Read;
     } else {
-      
+      LEDs.setGpsLED(5);
       switch (gps1Read)
       {
       case '$':
