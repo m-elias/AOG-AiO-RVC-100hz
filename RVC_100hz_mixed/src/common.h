@@ -79,6 +79,12 @@ UBX_Parser ubxParser;
 #include "zFUSEImu.h"
 FUSE_Imu fuseImu;
 
+// Keya CAN bus
+#include <FlexCAN_T4.h>
+FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_256> Keya_Bus;
+int8_t KeyaCurrentSensorReading = 0;
+bool keyaDetected = false;
+
 #define PANDA_SINGLE 1
 #define PAOGI_DUAL 0
 bool startup = false;
@@ -106,7 +112,7 @@ uint8_t RTKrxbuffer[buffer_size];       // Extra RTK serial rx buffer
 extern "C" uint32_t set_arm_clock(uint32_t frequency);  // required prototype to set CPU speed
 
 // UDP Passthrough
-bool udpPassthrough = true;  // False = GPS neeeds to send GGA, VTG & HPR messages. True = GPS needs to send KSXT messages only.
+bool udpPassthrough = false;  // False = GPS neeeds to send GGA, VTG & HPR messages. True = GPS needs to send KSXT messages only.
 bool gotCR = false;
 bool gotLF = false;
 bool gotDollar = false;

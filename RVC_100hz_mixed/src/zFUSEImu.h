@@ -18,7 +18,7 @@ class FUSE_Imu {
         double rollDual = 0;
         double pitchDual = 0;
         double heading = 0;
-        bool useFUSEImu = false;
+        bool useFUSEImu = true;
     };
     FUSE_Data fuseData;
 

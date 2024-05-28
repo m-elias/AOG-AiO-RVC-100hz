@@ -57,6 +57,9 @@ void calcSteeringPID(void)
 
 void motorDrive(void)
 {
+  // Keya can bus output, always send pwmDrive to keya, SteerKeya function will deal with it
+  SteerKeya(pwmDrive); // use this for in tractor
+
   if (steerConfig.CytronDriver)
   {
     #ifdef JD_DAC_H

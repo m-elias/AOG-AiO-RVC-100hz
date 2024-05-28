@@ -292,22 +292,26 @@ void autoSteerUpdate() {
 
     // Current sensor?
     if (steerConfig.CurrentSensor) {
-      sensorSample = (float)analogRead(CURRENT_PIN);
-      //Serial << "\r\n" << sensorSample;
+      if (keyaDetected) {
+        sensorReading = sensorReading * 0.7 + KeyaCurrentSensorReading * 0.3; // then use keya current data
+      } else { // otherwise continue using analog input on PCB
+        sensorSample = (float)analogRead(CURRENT_PIN);
+        //Serial << "\r\n" << sensorSample;
 
-      #ifdef AIOv50a
-        //sensorSample = abs((sensorSample - ???)) * 0.0625;       // for v5.0a ACS711 (untested), output is not inverted
-        sensorSample = abs(sensorSample - 240) * 0.0625;     // for v5.0a DRV8701, output is not inverted
-      #else
-        sensorSample = abs(3100 - sensorSample) * 0.0625;    // 3100 is like old firmware, 3150 is center (zero current) value on Matt's v4.0 Micro
-      #endif
+        #ifdef AIOv50a
+          //sensorSample = abs((sensorSample - ???)) * 0.0625;       // for v5.0a ACS711 (untested), output is not inverted
+          sensorSample = abs(sensorSample - 240) * 0.0625;     // for v5.0a DRV8701, output is not inverted
+        #else
+          sensorSample = abs(3100 - sensorSample) * 0.0625;    // 3100 is like old firmware, 3150 is center (zero current) value on Matt's v4.0 Micro
+        #endif
 
-      //Serial << " " << sensorSample;
-      sensorReading = sensorReading * 0.7 + sensorSample * 0.3;
-      //Serial << " " << sensorReading << " max:" << steerConfig.PulseCountMax;
-      if (sensorReading >= steerConfig.PulseCountMax) {
-        steerState = 0;                                   // turn OFF autoSteer
-        prevSteerReading = !steerState;
+        //Serial << " " << sensorSample;
+        sensorReading = sensorReading * 0.7 + sensorSample * 0.3;
+        //Serial << " " << sensorReading << " max:" << steerConfig.PulseCountMax;
+        if (sensorReading >= steerConfig.PulseCountMax) {
+          steerState = 0;                                   // turn OFF autoSteer
+          prevSteerReading = !steerState;
+        }
       }
     }
 

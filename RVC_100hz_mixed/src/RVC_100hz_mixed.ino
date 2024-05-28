@@ -45,6 +45,7 @@ void setup()
     LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::NO_ETH);
 
   autosteerSetup();                         // Autosteer.ino
+  CAN_Setup();                              //Start CAN3 for Keya
 
   Serial.println("\r\n\nEnd of setup, waiting for GPS...\r\n"); 
   delay(1);
@@ -55,6 +56,8 @@ void setup()
 
 void loop()
 {
+  // Keya support
+  KeyaBus_Receive();
   checkForPGNs();                           // zPGN.ino, check for AgIO or SerialESP32 Sending PGNs
   PGNusage.timeOut();
   autoSteerUpdate();                        // Autosteer.ino, update AS loop every 10ms (100hz) regardless of whether there is a BNO installed
