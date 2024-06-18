@@ -17,7 +17,7 @@
 ;upload_protocol = teensy-gui
 ;lib_deps = 
 [env:teensy41]
-;build_type = release
+build_type = release
 platform = teensy
 board = teensy41
 framework = arduino
@@ -56,4 +56,18 @@ debug_server =
     4000
 debug_port = localhost:2331
 debug_init_cmds =
+    define pio_reset_halt_target
+      monitor reset
+      monitor halt
+    end
+    define pio_reset_run_target
+        monitor clrbp
+        monitor reset
+        monitor go
+    end
     target extended-remote $DEBUG_PORT
+    monitor clrbp
+    monitor speed auto
+    pio_reset_halt_target
+    $LOAD_CMDS
+    $INIT_BREAK

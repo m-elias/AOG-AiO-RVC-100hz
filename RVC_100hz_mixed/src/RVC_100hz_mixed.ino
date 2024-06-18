@@ -98,7 +98,7 @@ void loop()
   if (gps1Available)    // "if" is very crucial here, using "while" causes BNO overflow
   {
     if (gps1Available > buffer_size - 50) {   // this should not trigger except maybe at boot up
-      SerialGPS->clear();
+      //SerialGPS->clear();
       Serial.print((String)"\r\n" + millis() + " *** SerialGPS buffer cleared! ***");
       return;
     }
@@ -195,7 +195,7 @@ void loop()
   if (gps2Available)
   {
     if (gps2Available > buffer_size - 50) {   // this should not trigger except maybe at boot up
-      SerialGPS2->clear();
+      //SerialGPS2->clear();
       Serial.print((String)"\r\n" + millis() + " *** SerialGPS2 buffer cleared! ***");
       return;
     }

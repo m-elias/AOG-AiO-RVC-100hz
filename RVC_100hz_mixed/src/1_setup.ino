@@ -16,17 +16,17 @@ void serialSetup()
 
   // setup GPS serial ports here
   SerialGPS->begin(baudGPS);
-  SerialGPS->addMemoryForRead(GPSrxbuffer, buffer_size);
-  SerialGPS->addMemoryForWrite(GPStxbuffer, buffer_size);
+  //SerialGPS->addMemoryForRead(GPSrxbuffer, buffer_size);
+  //SerialGPS->addMemoryForWrite(GPStxbuffer, buffer_size);
 
   //delay(10);
   SerialRTK.begin(baudRTK);
-  SerialRTK.addMemoryForRead(RTKrxbuffer, buffer_size);
+  //SerialRTK.addMemoryForRead(RTKrxbuffer, buffer_size);
 
   //delay(10);
   SerialGPS2->begin(baudGPS);
-  SerialGPS2->addMemoryForRead(GPS2rxbuffer, buffer_size);
-  SerialGPS2->addMemoryForWrite(GPS2txbuffer, buffer_size);
+  //SerialGPS2->addMemoryForRead(GPS2rxbuffer, buffer_size);
+  //SerialGPS2->addMemoryForWrite(GPS2txbuffer, buffer_size);
 
   #ifdef AIOv50a
     SerialRS232->begin(baudRS232);
@@ -52,8 +52,8 @@ void parserSetup()
 void resetStartingTimersBuffers()
 {
   //machine.watchdogTimer = 0;
-  SerialGPS->clear();
-  SerialGPS2->clear();
+  //SerialGPS->clear();
+  //SerialGPS2->clear();
   #ifdef AIOv50a
   SerialESP32->clear();
   #endif
