@@ -71,3 +71,37 @@ debug_init_cmds =
     pio_reset_halt_target
     $LOAD_CMDS
     $INIT_BREAK
+
+
+    __________________
+
+    debug_server = 
+    ${platformio.packages_dir}/tool-jlink/JLinkGDBServerCLExe 
+    -singlerun 
+    -if 
+    jtag 
+    -select 
+    USB 
+    -device 
+    MIMXRT1062xxx6A 
+    -port 
+    2331
+    -speed
+    4000
+debug_port = localhost:2331
+debug_init_cmds =
+    define pio_reset_halt_target
+      monitor reset
+      monitor halt
+    end
+    define pio_reset_run_target
+        monitor clrbp
+        monitor reset
+        monitor go
+    end
+    target extended-remote $DEBUG_PORT
+    monitor clrbp
+    monitor speed auto
+    pio_reset_halt_target
+    $LOAD_CMDS
+    $INIT_BREAK
