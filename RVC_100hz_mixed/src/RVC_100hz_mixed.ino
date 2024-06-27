@@ -1,3 +1,5 @@
+#define FLASH_ID "fw_teensy41" // Teensy platform target ID for OTA update
+
 /*
 
 See HWv??.h for hardware (board specfic) definitions (IO & Serial)
@@ -9,8 +11,8 @@ See notes.ino for additional information
 */
 
 // pick only one or the other board file
-//#include "HWv50a.h"
-#include "HWv4x.h"
+#include "HWv50a.h"
+//#include "HWv4x.h"
 
 const uint8_t encoderType = 1;  // 1 - single input
                                 // 2 - dual input (quadrature encoder), uses Kickout_A (Pressure) & Kickout_D (Remote) inputs
@@ -26,6 +28,7 @@ void setup()
   //Serial.begin(115200);                   // Teensy doesn't need it
   Serial.print("\r\n\n\n*********************\r\nStarting setup...\r\n");
   Serial.print(inoVersion);
+  Serial.println(FLASH_ID);
   LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::PWR_ON);
 
   setCpuFrequency(600 * 1000000);           // Set CPU speed, default is 600mhz, 150mhz still seems fast enough, setup.ino
