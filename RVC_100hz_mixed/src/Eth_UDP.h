@@ -1,5 +1,5 @@
-#ifndef _ETHER_h
-#define _ETHER_h
+//#ifndef _ETHER_h
+//#define _ETHER_h
 
 #include <stdint.h>
 #include "elapsedMillis.h"
@@ -8,6 +8,7 @@
 //#include <NativeEthernet.h>
 //#include <NativeEthernetUdp.h>
 #include "QNEthernet.h"
+#include "AsyncUDP_Teensy41.h"
 #include <EEPROM.h>
 
 using namespace qindesign::network;
@@ -16,6 +17,9 @@ class Eth_UDP
 {
 public:
 	IPAddress myIP = { 192, 168, 5, 126 };  // 126 default IP for steer module
+  IPAddress myNetmask = {255, 255, 255, 0};
+  IPAddress myGW = {192, 168, 5, 1};
+  IPAddress mydnsServer= {192, 168, 5, 1};
   IPAddress broadcastIP;
   byte mac[6] = { 0x0A, 0x0F, myIP[0], myIP[1], myIP[2], myIP[3] };     // create unique MAC from IP as IP should already be unique
 
@@ -23,10 +27,10 @@ public:
 	// This modules listens to GPS sent on (carry over from Ace)
   // likely not needed but may be convenient for simulating a GPS receiver on the bench using UDP
 	unsigned int portNMEA_2211 = 2211;     // Why 2211? 22XX=GPS then 2211=GPS1 2222=GPS2 2233=RTCM3 corrections easy to remember.
-	EthernetUDP NMEA;                      // UDP object for incoming NMEA
+	//AsyncUDP NMEA;                      // UDP object for incoming NMEA
 
 	unsigned int portRTCM_2233 = 2233;     // Why 2211? 22XX=GPS then 2211=GPS1 2222=GPS2 2233=RTCM3 corrections easy to remember.
-	EthernetUDP RTCM;                      // UDP object for incoming RTCM
+	//AsyncUDP RTCM;                      // UDP object for incoming RTCM
   
 	unsigned int portSteer_8888 = 8888;    // UDP port that Modules (like this one) listen to
 	EthernetUDP PGN;                       // UDP object for PGNs on port 8888
@@ -91,7 +95,12 @@ public:
     Serial.println("Eth_UDP init Step 2");
 
     Ethernet.setLocalIP(myIP);                  // also non-blocking as opposed to Ethernet.begin(mac, myIP) which block with unplugged/unconnected cable
+    Ethernet.setSubnetMask(myNetmask);
+    Ethernet.setGatewayIP(myGW);
+    Ethernet.setDNSServerIP(mydnsServer);
     Serial.print("\r\n\nEthernet connection set with static IP address");
+
+    
 
     Serial.println("Eth_UDP init Step 3");
 
@@ -118,16 +127,6 @@ public:
     Serial.print("\r\n- Sending to AgIO port: ");
     Serial.print(portAgIO_9999);
 
-    if (NMEA.begin(portNMEA_2211)) {
-      Serial.print("\r\n- Ethernet UDP GPS listening on port: ");
-      Serial.print(portNMEA_2211);
-    }
-
-    if (RTCM.begin(portRTCM_2233)) {
-      Serial.print("\r\n- Ethernet UDP RTCM listening on port: ");
-      Serial.print(portRTCM_2233);
-    }
-
     // init UPD Port getting AutoSteer (8888) data from AGIO
     if (PGN.begin(portSteer_8888)) {
       Serial.print("\r\n- Ethernet UDP PGN listening to port: ");
@@ -137,6 +136,25 @@ public:
     isRunning = true;
     Serial.println("Eth_UDP init Step 5");
     return true;
+  }
+
+  void nTrip(AsyncUDPPacket packet)
+  {
+    if (packet.remotePort() != 9999 || packet.length() < 5) return;  //make sure from AgIO
+    uint16_t size = packet.length();
+    uint8_t NTRIPData[size - 4];
+    for (int i = 4; i < size; i++) NTRIPData[i - 4] = packet.data()[i];
+    SerialGPS->write(NTRIPData, size - 4);
+  }
+
+  void gNSS(AsyncUDPPacket packet)
+  {
+    if (packet.remotePort() != 9999 || packet.length() < 5) return;  //make sure from AgIO
+    Serial.println("Got udpGPS packet");
+    // uint16_t size = packet.length();
+    // uint8_t NTRIPData[size - 4];
+    // for (int i = 4; i < size; i++) nmeaParser << packet.data()[i];
+
   }
 
   void SendUdpByte(uint8_t* _data, uint8_t _length, IPAddress _ip, uint16_t _port) {
@@ -222,4 +240,4 @@ public:
   }
 
 };
-#endif
+//#endif

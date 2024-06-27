@@ -6,6 +6,8 @@
 
 */
 
+//#include "AsyncUDP_Teensy41.h"
+
 #define UDP_MAX_PACKET_SIZE 40         // Buffer For Receiving 8888 UDP PGN Data
 //uint32_t pgn254Time, pgn254MaxDelay, pgn254AveDelay, pgn254MinDelay = 99999;
 
@@ -509,51 +511,33 @@ void printPgnAnnoucement(uint8_t _pgnNum, char* _pgnName, uint8_t _len)
    - additional related port number 2233 RTCM
 * Character data
 */
-void udpNMEA() {
-  //Serial.println("udpNMEA");
-  if (!UDP.isRunning) return;  // When ethernet is not running, return directly. parsePacket() will block when we don't
+// void udpNMEA() {
+//   //Serial.println("udpNMEA");
+//   if (!UDP.isRunning) return;  // When ethernet is not running, return directly. parsePacket() will block when we don't
 
-  int packetLength = UDP.NMEA.parsePacket();
-  if (packetLength > 0) {
-    char NMEA_packetBuffer[256];       // buffer for receiving NMEA sentence
-    UDP.NMEA.read(NMEA_packetBuffer, packetLength);
-    for (int i = 0; i < packetLength; i++) {
-      nmeaParser << NMEA_packetBuffer[i];
-    }
-  }
-}
+//   int packetLength = UDP.NMEA.parsePacket();
+//   if (packetLength > 0) {
+//     char NMEA_packetBuffer[256];       // buffer for receiving NMEA sentence
+//     UDP.NMEA.read(NMEA_packetBuffer, packetLength);
+//     for (int i = 0; i < packetLength; i++) {
+//       nmeaParser << NMEA_packetBuffer[i];
+//     }
+//   }
+// }
 
+// void udpNmea( AsyncUDPPacket packet )
+// {
+//   if (packet.remotePort() != 9999 || packet.length() < 5) return;  //make sure from AgIO
+//   Serial.println("Got udpNMEA packet");
+// }
 
 /*
 *  To receive RTCM sent via UDP from AgIO NTRIP client - listen on port 2233 RTCM
 */
-void udpNtrip() {
-  NTRIPusage.timeIn();
-  static uint32_t ntripCheckTime;//, ntripUpdateTime;
-  // When ethernet is not running, return directly. parsePacket() will block when we don't
-  if (UDP.isRunning) {
-    if (millis() > ntripCheckTime) {  // limit update rate to save cpu time
-    
-      unsigned int packetLength = UDP.RTCM.parsePacket(); // this uses most of the cpu time in this function unless SerialGPS has low baud
-      ntripCheckTime = millis();                          // make sure we wait at least 1ms before checking again to avoid excessive cpu usage
-
-      if (packetLength > 0) {
-        //Serial.print("\r\nNTRIP "); Serial.print(millis() - ntripUpdateTime); Serial.print(" len:"); Serial.print(packetLength);
-        char RTCM_packetBuffer[buffer_size];
-        UDP.RTCM.read(RTCM_packetBuffer, buffer_size);
-        SerialGPS->write(RTCM_packetBuffer, buffer_size);
-        LEDs.queueBlueFlash(LED_ID::GPS);
-
-        // up to 256 byte packets are sent from AgIO and most NTRIP RTCM updates are larger so there's usually two packets per update
-        // this doesn't seem necessary, the above 1ms update limit already reduces cpu usage enough
-        /*if (packetLength < buffer_size){    // if buffer was not full, then end of NTRIP packet, can wait 800ms until we start checking again
-          ntripCheckTime = millis() + 800;  // most base stations send updates every 1000ms
-        }*/
-          
-        //ntripUpdateTime = millis();   // only used in Serial debug above, AgIO always delays sequential ntrip packets by about 52-70ms
-      }
-    }
-  }
-  NTRIPusage.timeOut();
-}
+// 
+// void udpNtrip( AsyncUDPPacket packet  )
+// {
+//   if (packet.remotePort() != 9999 || packet.length() < 5) return;  //make sure from AgIO
+//   Serial.println("Got udpNTRIP packet");
+// }
 
