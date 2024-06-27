@@ -60,7 +60,7 @@ const uint8_t ANALOG_TRIG_HYST = 10;
 BNO_RVC BNO;                                            // Roomba Vac mode for BNO085
 
 #include "Eth_UDP.h"
-Eth_UDP UDP = Eth_UDP();
+Eth_UDP UDP;
 
 #include "clsPCA9555.h" // https://github.com/nicoverduin/PCA9555
 PCA9555 outputs(0x20);  // 0x20 - I2C addr (A0-A2 grounded), interrupt pin causes boot loop
@@ -81,7 +81,7 @@ FUSE_Imu fuseImu;
 
 // Keya CAN bus
 #include <FlexCAN_T4.h>
-FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_256> Keya_Bus;
+FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_256> Keya_Bus;
 int8_t KeyaCurrentSensorReading = 0;
 bool keyaDetected = false;
 

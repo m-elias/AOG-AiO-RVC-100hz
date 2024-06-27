@@ -510,6 +510,7 @@ void printPgnAnnoucement(uint8_t _pgnNum, char* _pgnName, uint8_t _len)
 * Character data
 */
 void udpNMEA() {
+  //Serial.println("udpNMEA");
   if (!UDP.isRunning) return;  // When ethernet is not running, return directly. parsePacket() will block when we don't
 
   int packetLength = UDP.NMEA.parsePacket();

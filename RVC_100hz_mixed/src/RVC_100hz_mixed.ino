@@ -24,7 +24,7 @@ const uint8_t encoderType = 1;  // 1 - single input
 
 void setup()
 {
-  delay(1000);
+  delay(3000);
   //Serial.begin(115200);                   // Teensy doesn't need it
   Serial.print("\r\n\n\n*********************\r\nStarting setup...\r\n");
   Serial.print(inoVersion);
@@ -41,7 +41,7 @@ void setup()
     Serial.print("\r\nSection outputs (PCA9555) detected (8 channels, low side switching)");
     machine.init(&outputs, pcaOutputPinNumbers, pcaInputPinNumbers, 100); // mach.h
   }
-
+  UDP.Eth_EEPROM();
   if (UDP.init())                           // Eth_UDP.h
     LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::ETH_READY);
   else

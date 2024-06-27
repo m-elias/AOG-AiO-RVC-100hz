@@ -5,9 +5,12 @@
 #include "elapsedMillis.h"
 #include "IPAddress.h"
 #include "Arduino.h"
-#include <NativeEthernet.h>
-#include <NativeEthernetUdp.h>
+//#include <NativeEthernet.h>
+//#include <NativeEthernetUdp.h>
+#include "QNEthernet.h"
 #include <EEPROM.h>
+
+using namespace qindesign::network;
 
 class Eth_UDP
 {
@@ -36,7 +39,9 @@ public:
 
   elapsedMillis initTimer = 2000;
 
-  Eth_UDP(void) {                        //constructor
+  void Eth_EEPROM() {                        //constructor
+    Serial.println();
+    Serial.println("EEPROM IP Address reading");
     uint16_t eth_ee_read;
     EEPROM.get(60, eth_ee_read);
 
@@ -51,31 +56,44 @@ public:
       mac[2] = myIP[0];
       mac[3] = myIP[1];
       mac[4] = myIP[2];
+      Serial.println("EEPROM IP Address reading step 1");
     }
 
     broadcastIP[0] = myIP[0];
     broadcastIP[1] = myIP[1];
     broadcastIP[2] = myIP[2];
     broadcastIP[3] = 255;                // same subnet as module's IP but use broadcast
+    Serial.println("EEPROM IP Address reading Step 2");
+    Serial.println(broadcastIP);
+    Serial.print("mac: ");
+    for(int i=0; i<sizeof(mac); i++){
+    printHex(mac[i]);
+    }
+    Serial.println();
   }
-  ~Eth_UDP(void) {}                      //destructor
+  //~Eth_UDP(void) {}                      //destructor
 
   bool init()
   {
+    Serial.println("Eth_UDP init");
     if (isRunning) return true;
     //Ethernet.MACAddress(mac);                 // get Teensy's internal MAC, doesn't work reliably
     //Ethernet.begin(mac, 2000, 2000);          // start dhcp connection with 2s timeout, that's enough time to get an eth linkStatus update
     //Ethernet.begin(mac, myIP);                // blocks if unplugged
     Ethernet.begin(mac, 0);                     // non-blocking method, set IP later
+    Serial.println("Eth_UDP init Step 1");
 
     // Check for Ethernet hardware present, always returns "EthernetW5500" (3) for Teensy 4.1 w/Eth
     if (Ethernet.hardwareStatus() == EthernetNoHardware) {
       Serial.println("\r\n\n*** Ethernet was not found. GPS via USB only ***");   // maybe using non Ethernet Teensy?
       return false;
     }
+    Serial.println("Eth_UDP init Step 2");
 
     Ethernet.setLocalIP(myIP);                  // also non-blocking as opposed to Ethernet.begin(mac, myIP) which block with unplugged/unconnected cable
     Serial.print("\r\n\nEthernet connection set with static IP address");
+
+    Serial.println("Eth_UDP init Step 3");
 
     Serial.print("\r\n- Using MAC address: ");
     for (byte octet = 0; octet < 6; octet++) {
@@ -83,6 +101,7 @@ public:
       Serial.print(mac[octet], HEX);
       if (octet < 5) Serial.print(':');
     }
+    Serial.println("Eth_UDP init Step 4");
     /*Serial.print("\r\n- Using IP address: ");
     for (byte octet = 0; octet < 4; octet++) {
       Serial.print(myIP[octet]);
@@ -116,6 +135,7 @@ public:
     }
 
     isRunning = true;
+    Serial.println("Eth_UDP init Step 5");
     return true;
   }
 
@@ -194,6 +214,12 @@ public:
     EEPROM.put(64, myIP[2]);
   }
 
+  void printHex(uint8_t num) {
+  char hexCar[2];
+
+  sprintf(hexCar, "%02X", num);
+  Serial.print(hexCar);
+  }
 
 };
 #endif
