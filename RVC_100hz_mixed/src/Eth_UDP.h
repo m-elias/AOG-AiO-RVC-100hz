@@ -13,6 +13,10 @@
 
 using namespace qindesign::network;
 
+#include "AsyncUDP_Teensy41.h"
+AsyncUDP GNSS;
+AsyncUDP RTCM;
+
 class Eth_UDP
 {
 public:
@@ -121,6 +125,26 @@ public:
       Serial.print("\r\n- Ethernet UDP PGN listening to port: ");
       Serial.print(portSteer_8888);
     }
+
+  if (GNSS.listen(portGNSS_2211)) {
+        Serial.print("\r\nNMEA UDP Listening on: "); Serial.print(Ethernet.localIP());
+        Serial.print(":"); Serial.print(portGNSS_2211);
+
+        // this function is triggered asynchronously(?) by the AsyncUDP library
+        GNSS.onPacket([&](AsyncUDPPacket packet) {
+          gNSS(packet);          
+        }); // all the brackets and ending ; are necessary!
+      }
+  if (RTCM.listen(portRTCM_2233)) {
+        Serial.print("\r\nRTCM UDP Listening on: "); Serial.print(Ethernet.localIP());
+        Serial.print(":"); Serial.print(portRTCM_2233);
+
+        // this function is triggered asynchronously(?) by the AsyncUDP library
+        RTCM.onPacket([&](AsyncUDPPacket packet) {
+          nTrip(packet);
+        }); // all the brackets and ending ; are necessary!
+      }
+
 
     isRunning = true;
     return true;

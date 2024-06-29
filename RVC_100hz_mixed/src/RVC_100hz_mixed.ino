@@ -22,9 +22,7 @@ const uint8_t encoderType = 1;  // 1 - single input
 //#include "JD_DAC.h"   // experimental JD 2 track DAC steering & SCV/remote hyd control
 //JD_DAC jdDac(Wire1, 0x60, &Serial);
 
-#include "AsyncUDP_Teensy41.h"
-AsyncUDP GNSS;
-AsyncUDP RTCM;
+
 
 
 void setup()
@@ -55,24 +53,7 @@ void setup()
   autosteerSetup();                         // Autosteer.ino
   CAN_Setup();                              //Start CAN3 for Keya
 
-  if (GNSS.listen(UDP.portGNSS_2211)) {
-        Serial.print("\r\nNMEA UDP Listening on: "); Serial.print(Ethernet.localIP());
-        Serial.print(":"); Serial.print(UDP.portGNSS_2211);
 
-        // this function is triggered asynchronously(?) by the AsyncUDP library
-        GNSS.onPacket([](AsyncUDPPacket packet) {
-          UDP.gNSS(packet);          
-        }); // all the brackets and ending ; are necessary!
-      }
-  if (RTCM.listen(UDP.portRTCM_2233)) {
-        Serial.print("\r\nRTCM UDP Listening on: "); Serial.print(Ethernet.localIP());
-        Serial.print(":"); Serial.print(UDP.portRTCM_2233);
-
-        // this function is triggered asynchronously(?) by the AsyncUDP library
-        RTCM.onPacket([](AsyncUDPPacket packet) {
-          UDP.nTrip(packet);
-        }); // all the brackets and ending ; are necessary!
-      }
 
   Serial.println("\r\n\nEnd of setup, waiting for GPS...\r\n"); 
   delay(1);
