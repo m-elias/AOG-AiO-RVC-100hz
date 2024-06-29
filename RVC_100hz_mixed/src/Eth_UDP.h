@@ -26,7 +26,7 @@ public:
 
 	// This modules listens to GPS sent on (carry over from Ace)
   // likely not needed but may be convenient for simulating a GPS receiver on the bench using UDP
-	unsigned int portNMEA_2211 = 2211;     // Why 2211? 22XX=GPS then 2211=GPS1 2222=GPS2 2233=RTCM3 corrections easy to remember.
+	unsigned int portGNSS_2211 = 2211;     // Why 2211? 22XX=GPS then 2211=GPS1 2222=GPS2 2233=RTCM3 corrections easy to remember.
 	//AsyncUDP NMEA;                      // UDP object for incoming NMEA
 
 	unsigned int portRTCM_2233 = 2233;     // Why 2211? 22XX=GPS then 2211=GPS1 2222=GPS2 2233=RTCM3 corrections easy to remember.
@@ -84,15 +84,14 @@ public:
     //Ethernet.MACAddress(mac);                 // get Teensy's internal MAC, doesn't work reliably
     //Ethernet.begin(mac, 2000, 2000);          // start dhcp connection with 2s timeout, that's enough time to get an eth linkStatus update
     //Ethernet.begin(mac, myIP);                // blocks if unplugged
+    Ethernet.setDHCPEnabled(false);             // Must be set to false if using non-blocking begin() or DHCP client will wipe out static settings killing the ethernet connection.
     Ethernet.begin(mac, 0);                     // non-blocking method, set IP later
-    Serial.println("Eth_UDP init Step 1");
 
     // Check for Ethernet hardware present, always returns "EthernetW5500" (3) for Teensy 4.1 w/Eth
     if (Ethernet.hardwareStatus() == EthernetNoHardware) {
       Serial.println("\r\n\n*** Ethernet was not found. GPS via USB only ***");   // maybe using non Ethernet Teensy?
       return false;
     }
-    Serial.println("Eth_UDP init Step 2");
 
     Ethernet.setLocalIP(myIP);                  // also non-blocking as opposed to Ethernet.begin(mac, myIP) which block with unplugged/unconnected cable
     Ethernet.setSubnetMask(myNetmask);
@@ -100,22 +99,12 @@ public:
     Ethernet.setDNSServerIP(mydnsServer);
     Serial.print("\r\n\nEthernet connection set with static IP address");
 
-    
-
-    Serial.println("Eth_UDP init Step 3");
-
     Serial.print("\r\n- Using MAC address: ");
     for (byte octet = 0; octet < 6; octet++) {
       if (mac[octet] < 0x10) Serial.print("0");
       Serial.print(mac[octet], HEX);
       if (octet < 5) Serial.print(':');
     }
-    Serial.println("Eth_UDP init Step 4");
-    /*Serial.print("\r\n- Using IP address: ");
-    for (byte octet = 0; octet < 4; octet++) {
-      Serial.print(myIP[octet]);
-      if (octet < 3) Serial.print('.');
-    }*/
 
     Serial.print("\r\n- Ethernet IP of module: ");
     Serial.print(Ethernet.localIP());
@@ -134,7 +123,6 @@ public:
     }
 
     isRunning = true;
-    Serial.println("Eth_UDP init Step 5");
     return true;
   }
 
@@ -177,15 +165,15 @@ public:
 
   // "raw" method, bypasses limit checks in firmware but AOG should still have limits
   //uint8_t PGN_99[] = { 0x80, 0x81, 126, 0x99, n/u, 1-2, 1-10s, 'H', 'e', 'l', 'l', 'o', ' ', 'A', 'o', 'G', '!', '!' }; //, 0xCC };
-  //UDP.SendUdpByte(PGN_99, sizeof(PGN_99), UDP.broadcastIP, UDP.portAgIO_9999);
+  //SendUdpByte(PGN_99, sizeof(PGN_99), broadcastIP, portAgIO_9999);
 
   // "proper" function
   //char msg[] = "AutoSteer Switch ON";
   //char msgTime = 2;
-  //UDP.SendUdpFreeForm(1, msg, strlen(msg), msgTime, UDP.broadcastIP, UDP.portAgIO_9999);  // timed popup
+  //SendUdpFreeForm(1, msg, strlen(msg), msgTime, broadcastIP, portAgIO_9999);  // timed popup
 
   //char msg[] = "Work switch";
-  //UDP.SendUdpFreeForm(2, msg, strlen(msg), 1, UDP.broadcastIP, UDP.portAgIO_9999);        // interactive "OK" popup
+  //SendUdpFreeForm(2, msg, strlen(msg), 1, broadcastIP, portAgIO_9999);        // interactive "OK" popup
 
   void SendUdpFreeForm(uint8_t _type, char _msg[], uint8_t _len, char _seconds, IPAddress dip, uint16_t dport)
   {
