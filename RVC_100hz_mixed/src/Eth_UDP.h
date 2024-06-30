@@ -5,17 +5,12 @@
 #include "elapsedMillis.h"
 #include "IPAddress.h"
 #include "Arduino.h"
-//#include <NativeEthernet.h>
-//#include <NativeEthernetUdp.h>
-
 #include "AsyncUDP_Teensy41.h"
 #include <EEPROM.h>
 
-
-
 #include "AsyncUDP_Teensy41.h"
-AsyncUDP GNSS;
-AsyncUDP RTCM;
+AsyncUDP GNSS; // UDP object for incoming NMEA
+AsyncUDP RTCM; // UDP object for incoming RTCM
 
 class Eth_UDP
 {
@@ -27,14 +22,11 @@ public:
   IPAddress broadcastIP;
   byte mac[6] = { 0x0A, 0x0F, myIP[0], myIP[1], myIP[2], myIP[3] };     // create unique MAC from IP as IP should already be unique
 
-
 	// This modules listens to GPS sent on (carry over from Ace)
   // likely not needed but may be convenient for simulating a GPS receiver on the bench using UDP
-	unsigned int portGNSS_2211 = 2211;     // Why 2211? 22XX=GPS then 2211=GPS1 2222=GPS2 2233=RTCM3 corrections easy to remember.
-	//AsyncUDP NMEA;                      // UDP object for incoming NMEA
+	unsigned int portGNSS_2211 = 2211;     // Why 2211? 22XX=GPS then 2211=GPS1 2222=GPS2 2233=RTCM3 corrections easy to remember.              
 
-	unsigned int portRTCM_2233 = 2233;     // Why 2211? 22XX=GPS then 2211=GPS1 2222=GPS2 2233=RTCM3 corrections easy to remember.
-	//AsyncUDP RTCM;                      // UDP object for incoming RTCM
+	unsigned int portRTCM_2233 = 2233;     // Why 2211? 22XX=GPS then 2211=GPS1 2222=GPS2 2233=RTCM3 corrections easy to remember.                 
   
 	unsigned int portSteer_8888 = 8888;    // UDP port that Modules (like this one) listen to
 	EthernetUDP PGN;                       // UDP object for PGNs on port 8888
