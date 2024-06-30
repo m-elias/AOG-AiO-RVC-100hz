@@ -8,7 +8,6 @@
 #include "AsyncUDP_Teensy41.h"
 #include <EEPROM.h>
 
-#include "AsyncUDP_Teensy41.h"
 AsyncUDP GNSS; // UDP object for incoming NMEA
 AsyncUDP RTCM; // UDP object for incoming RTCM
 

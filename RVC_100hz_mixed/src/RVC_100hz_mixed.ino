@@ -53,8 +53,6 @@ void setup()
   autosteerSetup();                         // Autosteer.ino
   CAN_Setup();                              //Start CAN3 for Keya
 
-
-
   Serial.println("\r\n\nEnd of setup, waiting for GPS...\r\n"); 
   delay(1);
   resetStartingTimersBuffers();             // setup.ino
