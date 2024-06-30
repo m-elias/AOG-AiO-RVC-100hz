@@ -59,6 +59,9 @@ const uint8_t ANALOG_TRIG_HYST = 10;
 #include "BNO_RVC.h"
 BNO_RVC BNO;                                            // Roomba Vac mode for BNO085
 
+#include "QNEthernet.h"
+using namespace qindesign::network;
+
 #include "Eth_UDP.h"
 Eth_UDP UDP;
 

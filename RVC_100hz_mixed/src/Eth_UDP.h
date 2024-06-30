@@ -7,11 +7,11 @@
 #include "Arduino.h"
 //#include <NativeEthernet.h>
 //#include <NativeEthernetUdp.h>
-#include "QNEthernet.h"
+
 #include "AsyncUDP_Teensy41.h"
 #include <EEPROM.h>
 
-using namespace qindesign::network;
+
 
 #include "AsyncUDP_Teensy41.h"
 AsyncUDP GNSS;
@@ -47,7 +47,7 @@ public:
 
   elapsedMillis initTimer = 2000;
 
-  void Eth_EEPROM() {                        //constructor
+  void Eth_EEPROM() {
     Serial.println();
     Serial.println("EEPROM IP Address reading");
     uint16_t eth_ee_read;
@@ -79,7 +79,6 @@ public:
     }
     Serial.println();
   }
-  //~Eth_UDP(void) {}                      //destructor
 
   bool init()
   {
