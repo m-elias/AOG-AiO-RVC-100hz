@@ -79,7 +79,7 @@ public:
     //Ethernet.MACAddress(mac);                 // get Teensy's internal MAC, doesn't work reliably
     //Ethernet.begin(mac, 2000, 2000);          // start dhcp connection with 2s timeout, that's enough time to get an eth linkStatus update
     //Ethernet.begin(mac, myIP);                // blocks if unplugged
-    Ethernet.setDHCPEnabled(false);             // Must be set to false if using non-blocking begin() or DHCP client will wipe out static settings killing the ethernet connection.
+    Ethernet.setDHCPEnabled(false);             // Must be set to false if using non-blocking begin() or DHCP client will wipe out static settings in 6 minutes killing the ethernet connection.
     Ethernet.begin(mac, 0);                     // non-blocking method, set IP later
 
     // Check for Ethernet hardware present, always returns "EthernetW5500" (3) for Teensy 4.1 w/Eth
