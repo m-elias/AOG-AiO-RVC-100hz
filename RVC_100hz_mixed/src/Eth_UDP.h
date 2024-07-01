@@ -155,7 +155,6 @@ public:
 
 void checkForPGNs(AsyncUDPPacket packet)
 {
-  Serial.println("Check for PGNs **********************************************");
   #ifdef AIOv50a
   ESP32usage.timeIn();
   if (SerialESP32->available())
@@ -649,6 +648,7 @@ void checkForPGNs(AsyncUDPPacket packet)
     // for (int i = 4; i < size; i++) NTRIPData[i - 4] = packet.data()[i];
     // SerialGPS->write(NTRIPData, size - 4);
     SerialGPS->write(packet.data(), packet.length());
+    LEDs.queueBlueFlash(LED_ID::GPS);
   }
 
   void gNSS(AsyncUDPPacket packet)
