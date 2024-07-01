@@ -12,7 +12,7 @@
      3921hz = 2
 */
 const uint8_t PWM_Frequency = 2;
-const float LOW_HIGH_DEGREES = 3.0;    //How many degrees before decreasing Max PWM
+
 
 bool testBothWasSensors = false;
 bool adcDebug = false;
@@ -24,71 +24,29 @@ const int EE_Ident = 2401;                                  // if value in eepro
 
 uint32_t autoSteerLastTime, currentTime;
 elapsedMillis autoSteerUpdateTimer;
-const uint16_t WATCHDOG_THRESHOLD = 100;
-const uint16_t WATCHDOG_FORCE_VALUE = WATCHDOG_THRESHOLD + 2;  // Should be greater than WATCHDOG_THRESHOLD
-uint8_t watchdogTimer = WATCHDOG_FORCE_VALUE;
-uint8_t aog2Count = 0;
-bool autoSteerEnabled = false;
-float gpsSpeed;
+
 
 // Relays
 /*bool isRelayActiveHigh = true;
 uint8_t relay = 0, relayHi = 0, uTurn = 0;*/
-uint8_t xte = 0;
 
 // Switches/Sensors
-uint8_t kickoutInput = 0, workInput = 0, steerState = 0, switchByte = 0;
-float sensorReading, sensorSample;
+uint8_t kickoutInput = 0, workInput = 0;
+float sensorSample;
 
-//On Off
-uint8_t guidanceStatus = 0, prevGuidanceStatus = 0;
-bool guidanceStatusChanged = false;
+
 
 //steering variables
-float steerAngleActual = 0, steerAngleSetPoint = 0, steerAngleError = 0;
-int16_t steeringPosition = 0;  // from steering sensor (WAS)
+float steerAngleError = 0;
 
 //pwm variables
-int16_t pwmDrive = 0, pwmDisplay = 0;
-float highLowPerDeg = 0;
+int16_t pwmDrive = 0;
+
 
 //Steer switch button  ***********************************************************************************************************
-uint8_t steerReading, prevSteerReading = 1; //currentState = 0
-int16_t pulseCount = 0;  // Steering Wheel Encoder
+uint8_t steerReading; //currentState = 0
 int16_t lastEnc = -999;
 
-//Variables for settings
-struct SteerSettingsStruct {
-  uint8_t Kp = 40;      // proportional gain
-  uint8_t lowPWM = 10;  // band of no action
-  int16_t wasOffset = 0;
-  uint8_t minPWM = 9;
-  uint8_t highPWM = 150;  // max PWM value
-  float steerSensorCounts = 120;
-  float AckermanFix = 1;  // sent as percent
-};
-SteerSettingsStruct defaultSteerSettings;  // 11 bytes
-struct SteerSettingsStruct steerSettings = defaultSteerSettings;    // don't need 'struct' in front?
-
-//Variables for settings - 0 is false
-struct SteerConfigStruct {
-  uint8_t InvertWAS = 0;
-  uint8_t IsRelayActiveHigh = 0;  // if zero, active low (default)
-  uint8_t MotorDriveDirection = 0;
-  uint8_t SingleInputWAS = 1;
-  uint8_t CytronDriver = 1;
-  uint8_t SteerSwitch = 0;  // 1 if switch selected
-  uint8_t SteerButton = 0;  // 1 if button selected
-  uint8_t ShaftEncoder = 0;
-  uint8_t PressureSensor = 0;
-  uint8_t CurrentSensor = 0;
-  uint8_t PulseCountMax = 3;
-  uint8_t IsDanfoss = 0;
-  uint8_t IsUseY_Axis = 0;  //Set to 0 to use X Axis, 1 to use Y avis
-  uint8_t MinSpeed = 0;
-};
-SteerConfigStruct const defaultSteerConfig;  // 9 bytes
-struct SteerConfigStruct steerConfig = defaultSteerConfig;
 
 void steerConfigInit() {
   if (steerConfig.CytronDriver) {

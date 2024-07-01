@@ -45,8 +45,6 @@ IMU_DATA IMU;
 
 //uint32_t nmeaPgnSendTime, nmeaPgnMaxPeriod, nmeaPgnAvePeriod, nmeaPgnMinPeriod = 99999;
 //uint8_t nmeaCount;
-elapsedMicros aogGpsToAutoSteerLoopTimer;
-bool aogGpsToAutoSteerLoopTimerEnabled;
 
 // If odd characters showed up
 void errorHandler() {

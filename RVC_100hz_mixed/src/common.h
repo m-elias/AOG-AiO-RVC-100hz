@@ -42,6 +42,64 @@ bool printCpuUsages = false;
 bool printStats = false;
 uint16_t ggaMissed;
 
+// Autosteer variables
+bool autoSteerEnabled = false;
+float steerAngleActual = 0;
+int16_t steeringPosition = 0;  // from steering sensor (WAS)
+uint8_t switchByte = 0;
+float gpsSpeed;
+//On Off
+uint8_t guidanceStatus = 0, prevGuidanceStatus = 0;
+bool guidanceStatusChanged = false;
+float steerAngleSetPoint = 0;
+uint8_t steerState = 0;
+elapsedMicros aogGpsToAutoSteerLoopTimer;
+uint8_t xte = 0;
+int16_t pwmDisplay = 0;
+int16_t pulseCount = 0;  // Steering Wheel Encoder
+float sensorReading;
+uint8_t aog2Count = 0;
+const uint16_t WATCHDOG_THRESHOLD = 100;
+const uint16_t WATCHDOG_FORCE_VALUE = WATCHDOG_THRESHOLD + 2;  // Should be greater than WATCHDOG_THRESHOLD
+uint8_t watchdogTimer = WATCHDOG_FORCE_VALUE;
+float highLowPerDeg = 0;
+const float LOW_HIGH_DEGREES = 3.0;    //How many degrees before decreasing Max PWM
+uint8_t prevSteerReading = 1;
+//Variables for settings - 0 is false
+struct SteerConfigStruct {
+  uint8_t InvertWAS = 0;
+  uint8_t IsRelayActiveHigh = 0;  // if zero, active low (default)
+  uint8_t MotorDriveDirection = 0;
+  uint8_t SingleInputWAS = 1;
+  uint8_t CytronDriver = 1;
+  uint8_t SteerSwitch = 0;  // 1 if switch selected
+  uint8_t SteerButton = 0;  // 1 if button selected
+  uint8_t ShaftEncoder = 0;
+  uint8_t PressureSensor = 0;
+  uint8_t CurrentSensor = 0;
+  uint8_t PulseCountMax = 3;
+  uint8_t IsDanfoss = 0;
+  uint8_t IsUseY_Axis = 0;  //Set to 0 to use X Axis, 1 to use Y avis
+  uint8_t MinSpeed = 0;
+};
+SteerConfigStruct const defaultSteerConfig;  // 9 bytes
+struct SteerConfigStruct steerConfig = defaultSteerConfig;
+
+//Variables for settings
+struct SteerSettingsStruct {
+  uint8_t Kp = 40;      // proportional gain
+  uint8_t lowPWM = 10;  // band of no action
+  int16_t wasOffset = 0;
+  uint8_t minPWM = 9;
+  uint8_t highPWM = 150;  // max PWM value
+  float steerSensorCounts = 120;
+  float AckermanFix = 1;  // sent as percent
+};
+SteerSettingsStruct defaultSteerSettings;  // 11 bytes
+struct SteerSettingsStruct steerSettings = defaultSteerSettings;    // don't need 'struct' in front?
+
+bool aogGpsToAutoSteerLoopTimerEnabled;
+
 //#include "reset.h"    // no on board buttons for reset
 //const uint8_t RESET_BTN = A14;          // A13 on Matt's v4.0 test board, A14 ununsed on v5.0a
 //RESET teensyReset(RESET_BTN, 2000, LED_BUILTIN);           // reset.h - btn IO, factory reset PERIOD (ms), led IO 
