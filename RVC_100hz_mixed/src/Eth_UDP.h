@@ -644,10 +644,11 @@ void checkForPGNs(AsyncUDPPacket packet)
   void nTrip(AsyncUDPPacket packet)
   {
     if (packet.remotePort() != 9999 || packet.length() < 5) return;  //make sure from AgIO
-    uint16_t size = packet.length();
-    uint8_t NTRIPData[size - 4];
-    for (int i = 4; i < size; i++) NTRIPData[i - 4] = packet.data()[i];
-    SerialGPS->write(NTRIPData, size - 4);
+    // uint16_t size = packet.length();
+    // uint8_t NTRIPData[size - 4];
+    // for (int i = 4; i < size; i++) NTRIPData[i - 4] = packet.data()[i];
+    // SerialGPS->write(NTRIPData, size - 4);
+    SerialGPS->write(packet.data(), packet.length());
   }
 
   void gNSS(AsyncUDPPacket packet)
