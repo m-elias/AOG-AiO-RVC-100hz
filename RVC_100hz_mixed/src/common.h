@@ -120,15 +120,16 @@ BNO_RVC BNO;                                            // Roomba Vac mode for B
 #include "QNEthernet.h"
 using namespace qindesign::network;
 
-#include "Eth_UDP.h"
-Eth_UDP UDP;
-
 #include "clsPCA9555.h" // https://github.com/nicoverduin/PCA9555
 PCA9555 outputs(0x20);  // 0x20 - I2C addr (A0-A2 grounded), interrupt pin causes boot loop
+
 #include "machine.h"
 MACHINE machine;      // also used for v4 as it suppressing machine PGN debug messages
 const uint8_t pcaOutputPinNumbers[8] = { 1, 0, 12, 15, 9, 8, 6, 7 };    // all 8 PCA9555 section/machine output pin numbers on v5.0a
 const uint8_t pcaInputPinNumbers[]  = { 14, 13, 11, 10, 2, 3, 4, 5 };   // all 8 PCA9555 section/machine output "sensing" pin numbers on v5.0a
+
+#include "Eth_UDP.h"
+Eth_UDP UDP;
 
 #include "zNMEA.h"
 NMEAParser<4> nmeaParser;                               // A parser is declared with 3 handlers at most
