@@ -7,6 +7,7 @@
 #include "Arduino.h"
 #include "AsyncUDP_Teensy41.h"
 #include <EEPROM.h>
+#include "machine.h"
 
 #define UDP_MAX_PACKET_SIZE 40         // Buffer For Receiving 8888 UDP PGN Data
 
