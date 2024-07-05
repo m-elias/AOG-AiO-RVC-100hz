@@ -155,7 +155,7 @@ void KeyaBus_Receive()
       //		is that accurate enough for us?
       // 6-7 - Control_Close (error code)
       // TODO Yeah, if we ever see something here, fire off a disable, refuse to engage autosteer or..?
-      if ( debugKeya )
+      if (debugKeya)
       {
         uint32_t time = millis();
         Serial.print(time);
@@ -165,7 +165,6 @@ void KeyaBus_Receive()
         hbTime = time;
         printIdAndReply(KeyaBusReceiveData.id, KeyaBusReceiveData.buf);
         Serial.print(" HB ");
-      
 
         // calc speed
         Serial.print(KeyaBusReceiveData.buf[2]);
@@ -223,7 +222,7 @@ void KeyaBus_Receive()
             Serial.print("\r\nMotor disabled");
             Serial.print(" - set AS off");
             steerConfig.SteerSwitch = 1; // turn off AS if motor's internal shutdown triggers
-            //currentState = 1;
+            // currentState = 1;
             prevSteerReading = 0;
           }
         }
@@ -326,7 +325,8 @@ void KeyaBus_Receive()
       else if (isPatternMatch(KeyaBusReceiveData, keyaCurrentResponse, sizeof(keyaCurrentResponse)))
       {
         uint32_t time = millis();
-        if ( debugKeya ){
+        if (debugKeya)
+        {
           Serial.print(time);
           Serial.print(" ");
           Serial.print(time - keyaTime);
@@ -334,7 +334,7 @@ void KeyaBus_Receive()
           printIdAndReply(KeyaBusReceiveData.id, KeyaBusReceiveData.buf);
           Serial.print(" current reply ");
           Serial.print(KeyaBusReceiveData.buf[4]);
- 
+
           Serial.print(" ave ");
           Serial.print(sensorReading / 2.5); // to print ave in "amps"
         }

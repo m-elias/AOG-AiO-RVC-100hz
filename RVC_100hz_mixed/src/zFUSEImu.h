@@ -1,10 +1,12 @@
-class FUSE_Imu {
+class FUSE_Imu
+{
 
-    #define twoPI 6.28318530717958647692
-    #define PIBy2 1.57079632679489661923
+#define twoPI 6.28318530717958647692
+#define PIBy2 1.57079632679489661923
 
-    public:
-    struct FUSE_Data{
+public:
+    struct FUSE_Data
+    {
         // Fusing BNO with Dual
         double rollDelta;
         double rollDeltaSmooth;
@@ -22,11 +24,12 @@ class FUSE_Imu {
     };
     FUSE_Data fuseData;
 
-    void imuDualDelta() {
+    void imuDualDelta()
+    {
         // This routine is from original BrianT AOG firmmware
-        fuseData.correctionHeading = fuseData.correctionHeading  * 0.1 * -DEG_TO_RAD; // correctionHeading is IMU heading in radians
-        fuseData.gpsHeading = fuseData.heading * DEG_TO_RAD; // gpsHeading is Dual heading in radians
-        fuseData.rollImu = fuseData.rollImu * 0.1; //scale rollImu input.
+        fuseData.correctionHeading = fuseData.correctionHeading * 0.1 * -DEG_TO_RAD; // correctionHeading is IMU heading in radians
+        fuseData.gpsHeading = fuseData.heading * DEG_TO_RAD;                         // gpsHeading is Dual heading in radians
+        fuseData.rollImu = fuseData.rollImu * 0.1;                                   // scale rollImu input.
 
         // Difference between the IMU heading and the GPS heading
         fuseData.gyroDelta = (fuseData.correctionHeading + fuseData.imuGPS_Offset) - fuseData.gpsHeading;
@@ -40,11 +43,11 @@ class FUSE_Imu {
         {
             if (fuseData.gyroDelta > PIBy2)
             {
-            fuseData.gyroDelta = twoPI - fuseData.gyroDelta;
+                fuseData.gyroDelta = twoPI - fuseData.gyroDelta;
             }
             else
             {
-            fuseData.gyroDelta = (twoPI + fuseData.gyroDelta) * -1.0;
+                fuseData.gyroDelta = (twoPI + fuseData.gyroDelta) * -1.0;
             }
         }
         if (fuseData.gyroDelta > twoPI)
@@ -58,18 +61,18 @@ class FUSE_Imu {
             // a bit of delta and add to correction to current gyro
             fuseData.imuGPS_Offset += (fuseData.gyroDelta * (0.1));
             if (fuseData.imuGPS_Offset > twoPI)
-            fuseData.imuGPS_Offset -= twoPI;
+                fuseData.imuGPS_Offset -= twoPI;
             if (fuseData.imuGPS_Offset < -twoPI)
-            fuseData.imuGPS_Offset += twoPI;
+                fuseData.imuGPS_Offset += twoPI;
         }
         else
         {
             // a bit of delta and add to correction to current gyro
             fuseData.imuGPS_Offset += (fuseData.gyroDelta * (0.2));
             if (fuseData.imuGPS_Offset > twoPI)
-            fuseData.imuGPS_Offset -= twoPI;
+                fuseData.imuGPS_Offset -= twoPI;
             if (fuseData.imuGPS_Offset < -twoPI)
-            fuseData.imuGPS_Offset += twoPI;
+                fuseData.imuGPS_Offset += twoPI;
         }
 
         // So here how we have the difference between the IMU heading and the Dual GPS heading

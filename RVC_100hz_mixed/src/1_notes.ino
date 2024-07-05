@@ -37,7 +37,7 @@ Machine/Section outputs
 To-do
 - set ADS1115 single/dual according to config struct setting (saved in eeprom)
 - consolidate all EEPROM addrs in one place?
-    - Ethernet, Autosteer, machine
+	- Ethernet, Autosteer, machine
 - test/fix autosteer watch dog timeout from lost comms
 - write piezo class for v5.0a
 - expand machine/PCA9555 to monitor outputs with PCA's extra input pins
