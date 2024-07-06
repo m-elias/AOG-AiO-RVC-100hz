@@ -132,6 +132,8 @@ const uint8_t pcaInputPinNumbers[] = {14, 13, 11, 10, 2, 3, 4, 5}; // all 8 PCA9
 #include "Eth_UDP.h"
 Eth_UDP UDP;
 
+#include "OTA_Update.h"
+
 #include "zNMEA.h"
 NMEAParser<4> nmeaParser; // A parser is declared with 3 handlers at most
 bool nmeaDebug = 0, extraCRLF;
