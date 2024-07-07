@@ -51,6 +51,26 @@ void setup()
   autosteerSetup(); // Autosteer.ino
   CAN_Setup();      // Start CAN3 for Keya
 
+  // BEGIN OTA_Update
+  server.onNotFound(handleNotFound);
+
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest * request) {
+    String html = "<body><h1>AOG Firmware Update Via Ethernet</h1><br \><h2>Select firmware update file and click send:</h2><br \><div><form method='POST' enctype='multipart/form-data' action='/'><input type='file' name='file'><button type='submit'>Send</button></form></div></body>";
+    request->send(200, "text/html", html);
+    });
+
+  server.on("/", HTTP_POST, OTAend, OTA);
+
+  server.begin();
+  
+  Serial.print(F("\r\n WebServer IP : "));
+  Serial.println(Ethernet.localIP());
+  Serial.print(F("Visit http://"));
+  Serial.print(Ethernet.localIP());
+  Serial.println("/");
+
+  // END OTA_Update
+
   Serial.println("\r\n\nEnd of setup, waiting for GPS...\r\n");
   delay(1);
   resetStartingTimersBuffers(); // setup.ino
@@ -58,11 +78,17 @@ void setup()
 
 void loop()
 {
+  //OTA_Update
+  if (ota_apply){OTAapply();}
+  //OTA_Update
+
   // Keya support
   KeyaBus_Receive();
+
   // checkForPGNs();                           // zPGN.ino, check for AgIO or SerialESP32 Sending PGNs
   PGNusage.timeOut();
   autoSteerUpdate(); // Autosteer.ino, update AS loop every 10ms (100hz) regardless of whether there is a BNO installed
+  
   // udpNMEA();                                // check for NMEA via UDP
   // udpNtrip();                               // check for RTCM via UDP (AgIO NTRIP client)
 

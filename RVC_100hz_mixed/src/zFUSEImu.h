@@ -1,3 +1,6 @@
+#ifndef zFUSEImu_h
+#define zFUSEImu_h
+
 class FUSE_Imu
 {
 
@@ -111,3 +114,4 @@ public:
         Serial.println(fuseData.imuCorrected);
     }
 };
+#endif

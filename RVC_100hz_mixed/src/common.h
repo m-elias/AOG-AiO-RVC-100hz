@@ -3,6 +3,15 @@
 #include <stdint.h>
 #include <Streaming.h>
 #include "zADS1115.h"
+#include <AsyncWebServer_Teensy41.h>
+
+AsyncWebServer    server(80);
+bool ota_apply=0;
+
+#include "FXUtil.h"		// read_ascii_line(), hex file support
+extern "C" {
+  #include "FlashTxx.h"		// TLC/T3x/T4x/TMM flash primitives
+}
 
 #include "LEDS.h"
 LEDS LEDs = LEDS(1000, 255, 64, 127); // 1000ms RGB update, 255/64/127 RGB brightness balance levels for v5.0a
