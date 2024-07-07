@@ -370,10 +370,10 @@ void buildPandaOrPaogi(bool _panda) // only called by GGA_Handler (above)
   strcat(nmea, "\r\n");
 
   // if (nmeaDebug) {
-  Serial.print("\r\n");
-  Serial.print(millis());
-  Serial.print(" ");
-  Serial.write(nmea);
+  // Serial.print("\r\n");
+  // Serial.print(millis());
+  // Serial.print(" ");
+  // Serial.write(nmea);
   extraCRLF = false;
   //}
 
