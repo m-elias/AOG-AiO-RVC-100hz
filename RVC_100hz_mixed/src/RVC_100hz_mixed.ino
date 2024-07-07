@@ -27,7 +27,9 @@ void setup()
   delay(3000);
   // Serial.begin(115200);                   // Teensy doesn't need it
   Serial.print("\r\n\n\n*********************\r\nStarting setup...\r\n");
-  Serial.print(inoVersion);
+  Serial.print("Firmware version: ");
+  Serial.println(inoVersion);
+  Serial.print("Teensy Baord ID: ");
   Serial.println(FLASH_ID);
   LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::PWR_ON);
 
