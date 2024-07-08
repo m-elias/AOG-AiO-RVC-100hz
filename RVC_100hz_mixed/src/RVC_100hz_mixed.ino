@@ -53,25 +53,7 @@ void setup()
   autosteerSetup(); // Autosteer.ino
   CAN_Setup();      // Start CAN3 for Keya
 
-  // BEGIN OTA_Update
-  server.onNotFound(handleNotFound);
-
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest * request) {
-    String html = "<body><h1>AOG Firmware Update Via Ethernet</h1><br \><h2>Select firmware update file and click send:</h2><br \><div><form method='POST' enctype='multipart/form-data' action='/'><input type='file' name='file'><button type='submit'>Send</button></form></div></body>";
-    request->send(200, "text/html", html);
-    });
-
-  server.on("/", HTTP_POST, OTAend, OTA);
-
-  server.begin();
-  
-  Serial.print(F("\r\n WebServer IP : "));
-  Serial.println(Ethernet.localIP());
-  Serial.print(F("Visit http://"));
-  Serial.print(Ethernet.localIP());
-  Serial.println("/");
-
-  // END OTA_Update
+  ota_update_setup(); // Setup web pages for OTA_Update
 
   Serial.println("\r\n\nEnd of setup, waiting for GPS...\r\n");
   delay(1);
