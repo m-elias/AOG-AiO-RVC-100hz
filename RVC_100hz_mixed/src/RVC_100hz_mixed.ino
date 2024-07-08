@@ -1,4 +1,4 @@
-#define FLASH_ID "fw_teensy41" // Teensy platform target ID for OTA update
+#define FLASH_ID "fw_teensy41" // Teensy platform target ID for OTA update. Must be included for OTA update to recognize .hex file 
 
 /*
 
@@ -29,8 +29,8 @@ void setup()
   Serial.print("\r\n\n\n*********************\r\nStarting setup...\r\n");
   Serial.print("Firmware version: ");
   Serial.println(inoVersion);
-  Serial.print("Teensy Baord ID: ");
-  Serial.println(FLASH_ID);
+  Serial.print("Teensy Baord ID: "); // Must be included for OTA update to recognize .hex file 
+  Serial.println(FLASH_ID); // Must be included for OTA update to recognize .hex file 
   LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::PWR_ON);
 
   setCpuFrequency(600 * 1000000); // Set CPU speed, default is 600mhz, 150mhz still seems fast enough, setup.ino
