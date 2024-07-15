@@ -1,4 +1,4 @@
-#define FLASH_ID "fw_teensy41" // Teensy platform target ID for OTA update. Must be included for OTA update to recognize .hex file 
+#define FLASH_ID "fw_teensy41" // Teensy platform target ID for OTA update. Must be included for OTA update to recognize .hex file
 
 /*
 
@@ -29,8 +29,8 @@ void setup()
   Serial.print("\r\n\n\n*********************\r\nStarting setup...\r\n");
   Serial.print("Firmware version: ");
   Serial.println(inoVersion);
-  Serial.print("Teensy Baord ID: "); // Must be included for OTA update to recognize .hex file 
-  Serial.println(FLASH_ID); // Must be included for OTA update to recognize .hex file 
+  Serial.print("Teensy Baord ID: "); // Must be included for OTA update to recognize .hex file
+  Serial.println(FLASH_ID);          // Must be included for OTA update to recognize .hex file
   LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::PWR_ON);
 
   setCpuFrequency(600 * 1000000); // Set CPU speed, default is 600mhz, 150mhz still seems fast enough, setup.ino
@@ -62,9 +62,12 @@ void setup()
 
 void loop()
 {
-  //OTA_Update
-  if (ota_apply){OTAapply();}
-  //OTA_Update
+  // OTA_Update
+  if (ota_apply)
+  {
+    OTAapply();
+  }
+  // OTA_Update
 
   // Keya support
   KeyaBus_Receive();
@@ -72,7 +75,7 @@ void loop()
   // checkForPGNs();                           // zPGN.ino, check for AgIO or SerialESP32 Sending PGNs
   PGNusage.timeOut();
   autoSteerUpdate(); // Autosteer.ino, update AS loop every 10ms (100hz) regardless of whether there is a BNO installed
-  
+
   // udpNMEA();                                // check for NMEA via UDP
   // udpNtrip();                               // check for RTCM via UDP (AgIO NTRIP client)
 

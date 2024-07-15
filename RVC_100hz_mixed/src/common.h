@@ -5,12 +5,13 @@
 #include "zADS1115.h"
 #include <AsyncWebServer_Teensy41.h>
 
-AsyncWebServer    server(80); // Start web server OTA updates.
-bool ota_apply=0;
+AsyncWebServer server(80); // Start web server OTA updates.
+bool ota_apply = 0;
 
-#include "FXUtil.h"		// read_ascii_line(), hex file support
-extern "C" {
-  #include "FlashTxx.h"		// TLC/T3x/T4x/TMM flash primitives
+#include "FXUtil.h" // read_ascii_line(), hex file support
+extern "C"
+{
+#include "FlashTxx.h" // TLC/T3x/T4x/TMM flash primitives
 }
 
 #include "LEDS.h"

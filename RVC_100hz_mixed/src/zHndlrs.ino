@@ -369,13 +369,13 @@ void buildPandaOrPaogi(bool _panda) // only called by GGA_Handler (above)
   CalculateChecksum();
   strcat(nmea, "\r\n");
 
-  // if (nmeaDebug) {
-  // Serial.print("\r\n");
-  // Serial.print(millis());
-  // Serial.print(" ");
-  // Serial.write(nmea);
+  if (nmeaDebug) {
+  Serial.print("\r\n");
+  Serial.print(millis());
+  Serial.print(" ");
+  Serial.write(nmea);
   extraCRLF = false;
-  //}
+  }
 
   if (UDP.isRunning) // If ethernet running send the GPS there
   {
