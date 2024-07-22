@@ -233,15 +233,17 @@ void autoSteerUpdate() {
     {
       // If steering is OFF and AoG's GUI btn is switched ON
       if (guidanceStatusChanged && guidanceStatus == 1 && steerState == 0 && prevSteerReading == 1) {
+        prevSteerReading = steerState;
         steerState = 1;
-        prevSteerReading = !steerState;
+        //prevSteerReading = !steerState;
         LEDs.activateBlueFlash(LED_ID::STEER);
       }
 
       // If steering is ON and AoG's GUI btn is switched OFF
       if (guidanceStatusChanged && guidanceStatus == 0 && steerState == 1 && prevSteerReading == 0) {
+        prevSteerReading = steerState;
         steerState = 0;
-        prevSteerReading = !steerState;
+        //prevSteerReading = !steerState;
         LEDs.activateBlueFlash(LED_ID::STEER);
       }
     }

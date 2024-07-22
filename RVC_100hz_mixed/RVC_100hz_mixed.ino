@@ -9,8 +9,8 @@ See notes.ino for additional information
 */
 
 // pick only one or the other board file
-#include "HWv50a.h"
-//#include "HWv4x.h"
+//#include "HWv50a.h"
+#include "HWv4x.h"
 
 const uint8_t encoderType = 1;  // 1 - single input
                                 // 2 - dual input (quadrature encoder), uses Kickout_A (Pressure) & Kickout_D (Remote) inputs
