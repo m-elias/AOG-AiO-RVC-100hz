@@ -156,7 +156,7 @@ private:
       Serial.print("\r\n"); Serial.print(millis());
       Serial.printf(" REL update (%i)", relMissed);
       Serial.print(millis() - prevRelposnedMsgTime);
-      Serial.print(" "); Serial.print((ubxData.iTOW % 1000) / 10);
+      Serial.print(" "); Serial.print((iTOW % 1000) / 10);
       Serial.print(" "); Serial.print(ubxData.baseRelH, 2);
     }
     msgPeriod = millis() - prevRelposnedMsgTime;
@@ -243,10 +243,13 @@ private:
     ubxData.alt = (double)height * 0.001;
     if (debug) {
       Serial.print("\r\n"); Serial.print(millis()); Serial.print(" PVT update "); Serial.print(millis() - prevPvtMsgTime);
-      Serial.print(" "); Serial.print((double)iTOW / 1000.0, 2);
+      Serial.print(" ");
+      //Serial.print((double)iTOW / 1000.0, 1);
+      Serial.print((iTOW % 1000) / 10);
     }
     prevPvtMsgTime = millis();
     pvtTimer = 0;
+    pvtReady = true;
   }
 
   void reportUnhandled(char msgid) {
@@ -271,7 +274,7 @@ public:
   };
   UBX_Data ubxData;
 
-  bool relPosNedReady, useDual, relPosNedRcvd, debug;
+  bool relPosNedReady, useDual, relPosNedRcvd, pvtReady, debug;
   uint32_t msgPeriod, msgReadTime;
   elapsedMillis relPosTimer, pvtTimer;
   uint16_t relMissed;

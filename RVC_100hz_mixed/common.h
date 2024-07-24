@@ -47,14 +47,14 @@ uint16_t ggaMissed;
 //RESET teensyReset(RESET_BTN, 2000, LED_BUILTIN);           // reset.h - btn IO, factory reset PERIOD (ms), led IO 
 
 #include "Encoder.h"
-Encoder encoder(KICKOUT_D_PIN, KICKOUT_A_PIN);    // read single or double input values in Autosteer.ino
+Encoder encoder(KICKOUT_D_PIN, KICKOUT_A_PIN);     // read single or double input values in Autosteer.ino
 
 #include <ADC.h>
 #include <ADC_util.h>
 ADC* teensyADC = new ADC();                        // 16x oversampling medium speed 12 bit A/D object (set in Autosteer.ino)
 ADS1115_lite ads1115(ADS1115_DEFAULT_ADDRESS);     // Use this for the 16-bit version ADS1115
-const int16_t ANALOG_TRIG_THRES = 100;
-const uint8_t ANALOG_TRIG_HYST = 10;
+int16_t ANALOG_TRIG_THRES = 100;
+uint8_t ANALOG_TRIG_HYST = 10;
 
 #include "BNO_RVC.h"
 BNO_RVC BNO;                                            // Roomba Vac mode for BNO085

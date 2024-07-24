@@ -43,10 +43,10 @@ private:
     uint8_t hydLiftEnable = false;
     uint8_t isPinActiveHigh = 0;          // if zero, active low (default)
   
-    uint8_t user1;                        //user defined values set in machine tab
-    uint8_t user2;
+    uint8_t user[4];                      //user defined values set in machine tab
+    /*uint8_t user2;
     uint8_t user3;
-    uint8_t user4;
+    uint8_t user4;*/
 
     uint8_t pinFunction[1 + 24] = { 0,1,2,3,4,5,6,7,8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
   };  Config config;   // 33 bytes
@@ -408,10 +408,10 @@ public:
       config.isPinActiveHigh = bitRead(set0, 0) ? 1 : 0;
       config.hydLiftEnable   = bitRead(set0, 1) ? 1 : 0;
 
-      config.user1 = pgnData[9];
-      config.user2 = pgnData[10];
-      config.user3 = pgnData[11];
-      config.user4 = pgnData[12];
+      config.user[0] = pgnData[9];
+      config.user[1] = pgnData[10];
+      config.user[2] = pgnData[11];
+      config.user[3] = pgnData[12];
 
       //Serial << "\r\n- set0: " << set0 << " " << (bitRead(set0, 3) ? 1 : 0) << (bitRead(set0, 2) ? 1 : 0) << (bitRead(set0, 1) ? 1 : 0) << (bitRead(set0, 0) ? 1 : 0);
       if (debugLevel > 2) printConfig();
@@ -499,16 +499,22 @@ public:
     if (debugLevel > 1) Serial.print("\r\nNew Machine config saved to EEPROM");
   }
 
+  uint8_t getUserConfig(uint8_t _i)
+  {
+    if (_i < 4) return config.user[_i];
+    else return 255;
+  }
+
   void printConfig()
   {
     Serial.print("\r\n- raiseTime: "); Serial.print(config.raiseTime);
     Serial.print("\r\n- lowerTime: "); Serial.print(config.lowerTime);
     Serial.print("\r\n- relayActiveHigh: "); Serial.print(config.isPinActiveHigh);
     Serial.print("\r\n- hydLiftEnable: "); Serial.print(config.hydLiftEnable);
-    Serial.print("\r\n- user1: "); Serial.print(config.user1);
-    Serial.print("\r\n- user2: "); Serial.print(config.user2);
-    Serial.print("\r\n- user3: "); Serial.print(config.user3);
-    Serial.print("\r\n- user4: "); Serial.print(config.user4);
+    Serial.print("\r\n- user1: "); Serial.print(config.user[0]);
+    Serial.print("\r\n- user2: "); Serial.print(config.user[1]);
+    Serial.print("\r\n- user3: "); Serial.print(config.user[2]);
+    Serial.print("\r\n- user4: "); Serial.print(config.user[3]);
   }
 
   void printPinConfig()

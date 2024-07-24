@@ -16,7 +16,7 @@ void checkUSBSerial()
     {
       nmeaDebug = !nmeaDebug;
       ubxParser.debug = nmeaDebug;
-      Serial.print("\r\nSetting NMEA debug: "); Serial.print(nmeaDebug);
+      Serial.print("\r\nSetting NMEA debug: "); Serial.println(nmeaDebug);
     }
     else if (usbRead == 'c')        // output cpu usage stats
     {

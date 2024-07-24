@@ -161,6 +161,22 @@ void autosteerSetup() {
     EEPROM.get(10, steerSettings);              // read the Settings
     EEPROM.get(40, steerConfig);
     Serial.print("\r\n- loaded settings/config from EEPROM");
+    Serial.print("\r\n  - InvertWAS "); Serial.print(steerConfig.InvertWAS);
+    Serial.print("\r\n  - IsRelayActiveHigh "); Serial.print(steerConfig.IsRelayActiveHigh);
+    Serial.print("\r\n  - MotorDriveDirection "); Serial.print(steerConfig.MotorDriveDirection);
+    Serial.print("\r\n  - SingleInputWAS "); Serial.print(steerConfig.SingleInputWAS);
+    Serial.print("\r\n  - CytronDriver "); Serial.print(steerConfig.CytronDriver);
+    Serial.print("\r\n  - SteerSwitch "); Serial.print(steerConfig.SteerSwitch);
+    Serial.print("\r\n  - SteerButton "); Serial.print(steerConfig.SteerButton);
+    Serial.print("\r\n  - ShaftEncoder "); Serial.print(steerConfig.ShaftEncoder);
+    Serial.print("\r\n  - IsDanfoss "); Serial.print(steerConfig.IsDanfoss);
+    Serial.print("\r\n  - PressureSensor "); Serial.print(steerConfig.PressureSensor);
+    Serial.print("\r\n  - CurrentSensor "); Serial.print(steerConfig.CurrentSensor);
+    Serial.print("\r\n  - IsUseY_Axis "); Serial.print(steerConfig.IsUseY_Axis);
+    Serial.print("\r\n  - PulseCountMax "); Serial.print(steerConfig.PulseCountMax);
+    Serial.print("\r\n  - MinSpeed "); Serial.print(steerConfig.MinSpeed);
+    //Serial.println();
+
   }
 
   steerSettingsInit();
@@ -249,18 +265,18 @@ void autoSteerUpdate() {
     }
 
 
-
     // ******************* Kickouts ( Encoders / Pressure / Current ) *******************
+    // Encoder?
     if (steerConfig.ShaftEncoder){
-      if (encoderType == 1)                     // single input
+      if (encoderType == 1)                     // single input, KICKOUT_D_PIN
       {
         pulseCount = encoder.readCount();
         if (pulseCount != lastEnc){
-          //Serial << "\r\npulseCount:" << pulseCount << " " << encoder.readPosition();
+          Serial << "\r\npulseCount:" << pulseCount;// << " " << encoder.readPosition();
           lastEnc = pulseCount;
         }
       }
-      else if (encoderType == 2)                // dual input (quadrature encoder)
+      else if (encoderType == 2)                // dual input (quadrature encoder), KICKOUT_D_PIN & KICKOUT_A_PIN
       {
         pulseCount = abs(encoder.readPosition());
         if (pulseCount != lastEnc){
@@ -313,8 +329,13 @@ void autoSteerUpdate() {
       }
     }
 
+
+    // WORK input, 0/GND is ON
     #ifdef AIOv50a
-      uint8_t read = analogRead(WORK_PIN) > ANALOG_TRIG_THRES ? HIGH : LOW;           // read work input
+      ANALOG_TRIG_THRES = machine.getUserConfig(0);
+      ANALOG_TRIG_HYST = machine.getUserConfig(1);
+      uint8_t read = analogRead(WORK_PIN) > ANALOG_TRIG_THRES ? LOW : HIGH;     // read work input
+      //Serial.println(analogRead(WORK_PIN));
     #else
       uint8_t read = digitalRead(WORK_PIN);
     #endif
@@ -339,7 +360,8 @@ void autoSteerUpdate() {
       if (adcDebug) Serial.printf("\r\n%6i", millis());
       if (useInternalADC || testBothWasSensors)
       {
-        steeringPosition = int(float(teensyADC->adc1->analogRead(WAS_SENSOR_PIN)) * 3.23);
+        //steeringPosition = int(float(teensyADC->adc1->analogRead(WAS_SENSOR_PIN)) * 3.23);
+        steeringPosition = 6600;  // to zero WAS position when there's no WAS connected
         if (adcDebug) Serial.printf(" Teensy ADC(x3.23):%5i", steeringPosition);
       }
       int16_t temp = steeringPosition;
@@ -399,7 +421,7 @@ void autoSteerUpdate() {
       // Enable H Bridge for IBT2, hyd aux, etc for cytron
       if (steerConfig.CytronDriver) {
         #ifdef JD_DAC_H
-          jdDac.steerEnable(true);        // select IBT2 for JD DAC control
+          jdDac.steerEnable(true);
           jdDac.ch4Enable(true);
         #else
           digitalWrite(SLEEP_PIN, steerConfig.IsRelayActiveHigh ? LOW : HIGH);
@@ -418,7 +440,7 @@ void autoSteerUpdate() {
       //Disable H Bridge for IBT2, hyd aux, etc for cytron
       pwmDrive = 0;                    //turn off steering motor
       pulseCount = 0;
-      encoder.write(0);
+      //encoder.write(0);
 
       if (steerConfig.CytronDriver) {
         #ifdef JD_DAC_H

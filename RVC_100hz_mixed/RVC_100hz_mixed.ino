@@ -9,8 +9,8 @@ See notes.ino for additional information
 */
 
 // pick only one or the other board file
-//#include "HWv50a.h"
-#include "HWv4x.h"
+#include "HWv50a.h"
+//#include "HWv4x.h"
 
 const uint8_t encoderType = 1;  // 1 - single input
                                 // 2 - dual input (quadrature encoder), uses Kickout_A (Pressure) & Kickout_D (Remote) inputs
@@ -58,6 +58,7 @@ void loop()
   PGNusage.timeOut();
 
   autoSteerUpdate();                        // Autosteer.ino, update AS loop every 10ms (100hz) regardless of whether there is a BNO installed
+  oneHertzUpdate();                         // misc.ino
   udpNMEA();                                // check for NMEA via UDP
   udpNtrip();                               // check for RTCM via UDP (AgIO NTRIP client)
     
@@ -94,7 +95,7 @@ void loop()
   int16_t gps1Available = SerialGPS->available();
   if (gps1Available)    // "if" is very crucial here, using "while" causes BNO overflow
   {
-    if (gps1Available > buffer_size - 50) {   // this should not trigger except maybe at boot up
+    if (gps1Available > buffer_size - 50) {   // this should not trigger except at boot up
       SerialGPS->clear();
       Serial.print((String)"\r\n" + millis() + " *** SerialGPS buffer cleared! ***");
       return;
@@ -123,7 +124,7 @@ void loop()
   int16_t gps2Available = SerialGPS2->available();
   if (gps2Available)
   {
-    if (gps2Available > buffer_size - 50) {   // this should not trigger except maybe at boot up
+    if (gps2Available > buffer_size - 50) {   // this should not trigger except at boot up
       SerialGPS2->clear();
       Serial.print((String)"\r\n" + millis() + " *** SerialGPS2 buffer cleared! ***");
       return;
@@ -165,7 +166,7 @@ void loop()
     ggaReady = false;
     ubxParser.relPosNedReady = false;
   }
-
+/*
   if (ubxParser.relPosTimer > 150) {
     ubxParser.relPosTimer -= 100;
     ubxParser.relMissed++;
@@ -175,13 +176,17 @@ void loop()
     ubxParser.clearCount();
     ggaReady = false;
     ubxParser.relPosNedReady = false;
-  }
+  }*/
 
   /*if (ubxParser.pvtTimer > 150) {
     ubxParser.pvtTimer -= 100;
     Serial.print("\r\n\n"); Serial.print(millis()); Serial.print(" ");
     Serial.print("                 *** PVT was missed or late! ***\r\n");
   }*/
+  if (ubxParser.pvtReady) {
+    PVT_Handler();
+    ubxParser.pvtReady = false;
+  }
 
   // *************************************************************************************************
   // ************************************* UPDATE OTHER STUFF *************************************

@@ -144,10 +144,12 @@ void GNS_Handler()  // Rec'd GNS
 
 void GGA_GNS_PostProcess()  // called by either GGA or GNS handler
 {
+  /*
   static double platold, plongold, paltold;
   double plat = atof(GGA.latitude);
   double plong = atof(GGA.longitude);
   double palt = atof(GGA.altitude);
+  
   if (plat >= platold + 0.00001 || plat <= platold - 0.00001) {
     Serial.print("\r\nlat "); Serial.print(plat, 5);
     Serial.print(">"); Serial.print(platold, 5);
@@ -163,7 +165,7 @@ void GGA_GNS_PostProcess()  // called by either GGA or GNS handler
     Serial.print(">"); Serial.print(paltold, 2);
     paltold = palt;
   }
-
+*/
   ggaReady = true;  // we have new GGA or GNS sentence
   /*Serial.print("\r\n"); Serial.print(millis());
   Serial.print(" GGA Received ");
@@ -199,7 +201,8 @@ void GGA_Handler()  // Rec'd GGA
   nmeaParser.getArg(12, GGA.ageDGPS);    // time of last DGPS update
 
   if (nmeaDebug) {
-    Serial.print("\r\n"); Serial.print(millis());
+    //Serial.print("\r\n");
+    Serial.print(millis());
     Serial.printf(" GGA update (%i)", ggaMissed);
     Serial.print(imuPandaSyncTimer); Serial.print(" ");
     Serial.print(atoi(&GGA.fixTime[strlen(GGA.fixTime)-2]));
@@ -208,6 +211,12 @@ void GGA_Handler()  // Rec'd GGA
   LEDs.toggleTeensyLED();
   //gpsLostTimer = 0;  // Used for GGA timeout (LED's ETC)
   NMEA_Pusage.timeOut();
+}
+
+void PVT_Handler()
+{
+  GGA_GNS_PostProcess();
+  LEDs.toggleTeensyLED();
 }
 
 void VTG_Handler() {
@@ -271,13 +280,11 @@ void buildPandaOrPaogi(bool _panda)  // only called by GGA_Handler (above)
   CalculateChecksum();
   strcat(nmea, "\r\n");
   
-
-  //if (nmeaDebug) {
-    Serial.print("\r\n");
-    Serial.print(millis()); Serial.print(" ");
-    Serial.write(nmea);
-    extraCRLF = false;
-  //}
+  if (nmeaDebug) Serial.print("\r\n");
+  //Serial.print(millis()); Serial.print(" ");
+  //Serial.write(nmea);
+  //Serial.println();
+  extraCRLF = false;
 
   if (UDP.isRunning)  //If ethernet running send the GPS there
   {
