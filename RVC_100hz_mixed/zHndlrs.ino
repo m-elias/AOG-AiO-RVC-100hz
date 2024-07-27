@@ -290,7 +290,7 @@ void buildPandaOrPaogi(bool _panda)  // only called by GGA_Handler (above)
   {
     //send char stream
     UDP_Susage.timeIn();
-    UDP.SendUdpChar(nmea, strlen(nmea), UDP.broadcastIP, UDP.portAgIO_9999);
+    //UDP.SendUdpChar(nmea, strlen(nmea), UDP.broadcastIP, UDP.portAgIO_9999);
     UDP_Susage.timeOut();
   }
   else if (!nmeaDebug)

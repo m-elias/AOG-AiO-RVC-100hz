@@ -329,19 +329,55 @@ void autoSteerUpdate() {
       }
     }
 
+    // read flow sensor
+    // - connected to kickout D (encoder) input
+    uint8_t flowRead = encoder.readCount();   // read encoder value for single input (pulsing flow meter)
+    static uint16_t flowTotal;
+    flowTotal += flowRead;
+    if (flowRead || !workInput) Serial << "\r\nflowRead:" << flowRead << " " << flowTotal;// << " " << encoder.readPosition();
+
+    union {           // both variables in the union share the same memory space
+      byte array[4];  // fill "array" from an 8 byte array converted in AOG from the "double" precision number we want to send
+      unsigned long number;  // and the double "number" has the original "double" precision number from AOG
+    } flowCalibrated;
+
+    uint16_t flowCalFactor = (machine.getUserConfig(0) * 100) + machine.getUserConfig(1);
+    flowCalibrated.number = (long)flowRead * 10000L / flowCalFactor;
+
+    // send data to AOG with custom PGN
+    // product application rate - 0xA0 (160) - low byte, high byte (whatever units you want)
+    uint8_t PGN_160[] = { 0x80, 0x81, 123, 160, 4, 0, 0, 0, 0, 0xCC };
+
+    PGN_160[5] = flowCalibrated.array[0];
+    PGN_160[6] = flowCalibrated.array[1];
+    PGN_160[7] = flowCalibrated.array[2];
+    PGN_160[8] = flowCalibrated.array[3];
+
+    //checksum
+    int16_t CK_A = 0;
+    for (uint8_t i = 2; i < sizeof(PGN_160) - 1; i++)
+      CK_A = (CK_A + PGN_160[i]);
+
+    PGN_160[sizeof(PGN_160) - 1] = CK_A;
+
+    //off to AOG
+    UDP.SendUdpByte(PGN_160, sizeof(PGN_160), UDP.broadcastIP, UDP.portAgIO_9999);
+    encoder.write(0); // clear encoder count
+
 
     // WORK input, 0/GND is ON
     #ifdef AIOv50a
-      ANALOG_TRIG_THRES = machine.getUserConfig(0);
-      ANALOG_TRIG_HYST = machine.getUserConfig(1);
-      uint8_t read = analogRead(WORK_PIN) > ANALOG_TRIG_THRES ? LOW : HIGH;     // read work input
+      //ANALOG_TRIG_THRES = machine.getUserConfig(0);
+      //ANALOG_TRIG_HYST = machine.getUserConfig(1);
+      //uint8_t workRead = analogRead(WORK_PIN) > ANALOG_TRIG_THRES ? LOW : HIGH;     // read work input
+      uint8_t workRead = flowRead > 1 ? LOW : flowRead < 1 ? HIGH : workInput;  // work ON >= 2, OFF < 1, unchanged = 1
       //Serial.println(analogRead(WORK_PIN));
     #else
-      uint8_t read = digitalRead(WORK_PIN);
+      uint8_t workRead = digitalRead(WORK_PIN);
     #endif
-    if (read != workInput) {
-      Serial.printf("\r\nWORK input: %s", (read == 1 ? "OFF" : "ON"));
-      workInput = read;
+    if (workRead != workInput) {
+      Serial.printf("\r\nWORK input: %s", (workRead == 1 ? "OFF" : "ON"));
+      workInput = workRead;
     }
 
     switchByte = 0;
