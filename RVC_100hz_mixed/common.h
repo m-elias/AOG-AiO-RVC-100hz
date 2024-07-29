@@ -53,7 +53,7 @@ Encoder encoder(KICKOUT_D_PIN, KICKOUT_A_PIN);     // read single or double inpu
 #include <ADC_util.h>
 ADC* teensyADC = new ADC();                        // 16x oversampling medium speed 12 bit A/D object (set in Autosteer.ino)
 ADS1115_lite ads1115(ADS1115_DEFAULT_ADDRESS);     // Use this for the 16-bit version ADS1115
-int16_t ANALOG_TRIG_THRES = 100;
+int16_t ANALOG_TRIG_THRES = 80;
 uint8_t ANALOG_TRIG_HYST = 10;
 
 #include "BNO_RVC.h"

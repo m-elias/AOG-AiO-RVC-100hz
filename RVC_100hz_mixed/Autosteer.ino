@@ -366,7 +366,7 @@ void autoSteerUpdate() {
 
     //off to AOG
     if (flowRead || !workInput) {
-      Serial << "\r\nflowRead:" << flowRead << " " << flowTotal << " "; Serial.print(flowCalibrated.number, 6);
+      Serial << "\r\nflowRead:" << flowRead << " " << flowTotal << " "; Serial.print(flowCalibrated.number, 6);// Serial << " " << analogRead(WORK_PIN);
     }
     UDP.SendUdpByte(PGN_160, sizeof(PGN_160), UDP.broadcastIP, UDP.portAgIO_9999);
     encoder.write(0); // clear encoder count

@@ -161,8 +161,8 @@ void loop()
     imuPandaSyncTimer -= 100;
     ggaMissed++;
     if (nmeaDebug) Serial.println();
-    //Serial.print("\r\n"); Serial.print(millis()); Serial.print(" ");
-    //Serial.printf("                 *** GGA was missed or late! *** (%i)\r\n", ggaMissed);
+    Serial.print("\r\n"); Serial.print(millis()); Serial.print(" ");
+    Serial.printf("                 *** GGA was missed or late! *** (%i)\r\n", ggaMissed);
     ggaReady = false;
     ubxParser.relPosNedReady = false;
   }
