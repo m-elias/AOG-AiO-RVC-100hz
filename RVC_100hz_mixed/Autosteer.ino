@@ -332,26 +332,30 @@ void autoSteerUpdate() {
     // read flow sensor
     // - connected to kickout D (encoder) input
     uint8_t flowRead = encoder.readCount();   // read encoder value for single input (pulsing flow meter)
+    if (analogRead(WORK_PIN) < ANALOG_TRIG_THRES) flowRead = 10;
     static uint16_t flowTotal;
     flowTotal += flowRead;
-    if (flowRead || !workInput) Serial << "\r\nflowRead:" << flowRead << " " << flowTotal;// << " " << encoder.readPosition();
 
     union {           // both variables in the union share the same memory space
-      byte array[4];  // fill "array" from an 8 byte array converted in AOG from the "double" precision number we want to send
-      unsigned long number;  // and the double "number" has the original "double" precision number from AOG
+      byte array[8];  // fill "array" from an 8 byte array converted in AOG from the "double" precision number we want to send
+      double number;  // and the double "number" has the original "double" precision number from AOG
     } flowCalibrated;
 
     uint16_t flowCalFactor = (machine.getUserConfig(0) * 100) + machine.getUserConfig(1);
-    flowCalibrated.number = (long)flowRead * 10000L / flowCalFactor;
+    flowCalibrated.number = (double)flowRead / (double)flowCalFactor;
 
     // send data to AOG with custom PGN
     // product application rate - 0xA0 (160) - low byte, high byte (whatever units you want)
-    uint8_t PGN_160[] = { 0x80, 0x81, 123, 160, 4, 0, 0, 0, 0, 0xCC };
+    uint8_t PGN_160[] = { 0x80, 0x81, 123, 160, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0xCC };
 
     PGN_160[5] = flowCalibrated.array[0];
     PGN_160[6] = flowCalibrated.array[1];
     PGN_160[7] = flowCalibrated.array[2];
     PGN_160[8] = flowCalibrated.array[3];
+    PGN_160[9] = flowCalibrated.array[4];
+    PGN_160[10] = flowCalibrated.array[5];
+    PGN_160[11] = flowCalibrated.array[6];
+    PGN_160[12] = flowCalibrated.array[7];
 
     //checksum
     int16_t CK_A = 0;
@@ -361,6 +365,9 @@ void autoSteerUpdate() {
     PGN_160[sizeof(PGN_160) - 1] = CK_A;
 
     //off to AOG
+    if (flowRead || !workInput) {
+      Serial << "\r\nflowRead:" << flowRead << " " << flowTotal << " "; Serial.print(flowCalibrated.number, 6);
+    }
     UDP.SendUdpByte(PGN_160, sizeof(PGN_160), UDP.broadcastIP, UDP.portAgIO_9999);
     encoder.write(0); // clear encoder count
 
