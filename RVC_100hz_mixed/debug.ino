@@ -3,6 +3,7 @@ void checkUSBSerial()
   if (Serial.available())
   {
     uint8_t usbRead = Serial.read();
+
     if (usbRead == 'r')
     {
       Serial.print("\r\n\n* Resetting hi/lo stats *");
@@ -12,11 +13,18 @@ void checkUSBSerial()
       relTtrStats.resetAll();
       bnoStats.resetAll();
     }
-    else if (usbRead == 'n')         // output realtime GPS update data
+    else if (usbRead == 'n')         // output realtime GPS position update data
     {
-      nmeaDebug = !nmeaDebug;
-      ubxParser.debug = nmeaDebug;
-      Serial.print("\r\nSetting NMEA debug: "); Serial.print(nmeaDebug);
+      if (Serial.available()) {
+        if (Serial.read() == '2') {
+          nmeaDebug2 = !nmeaDebug2;
+          Serial.print("\r\nSetting NMEA2 debug: "); Serial.print(nmeaDebug2);
+        }
+      } else {
+        nmeaDebug = !nmeaDebug;
+        ubxParser.debug = nmeaDebug;
+        Serial.print("\r\nSetting NMEA debug: "); Serial.print(nmeaDebug);
+      }
     }
     else if (usbRead == 'c')        // output cpu usage stats
     {
@@ -52,6 +60,16 @@ void checkUSBSerial()
         LEDs.setBrightness((usbRead - '0') * 50);
         Serial.print("\r\nSetting RGB brightness: "); Serial.print((usbRead - '0') * 50);
       }
+    }
+    else if (usbRead == 13 || usbRead == 10)      // ignore CR or LF
+    {
+      // do nothing
+    }
+    else
+    {
+      // USB serial data not recognized
+      Serial << "\r\n\n*** Unrecognized USB serial input: \"" << usbRead << "\" ";
+      while (Serial.available()) Serial.read();
     }
   }
 }

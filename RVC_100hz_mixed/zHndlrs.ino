@@ -100,7 +100,7 @@ void GNS_Handler()  // Rec'd GNS
 
   char temp[4];
   nmeaParser.getArg(5, temp);
-  switch (temp[0]) {
+  switch (temp[0]) {    // check GPS fix qual
     case 'A':
       itoa(1, GGA.fixQuality, 10);  // 1: autonomous, no correction
       break;

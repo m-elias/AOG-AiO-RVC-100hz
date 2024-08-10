@@ -6,11 +6,40 @@
 
 */
 
-#define UDP_MAX_PACKET_SIZE 40         // Buffer For Receiving 8888 UDP PGN Data
+#define UDP_MAX_PACKET_SIZE 40         // Buffer size For Receiving UDP PGN Data
 //uint32_t pgn254Time, pgn254MaxDelay, pgn254AveDelay, pgn254MinDelay = 99999;
+
+void checkForUdpPackets()
+{
+  if (!UDP.isRunning) return;      // When ethernet is not running, return directly. parsePacket() will block with no ethernet
+
+  static uint32_t udpCheckTime = 0;
+  uint32_t microsNow = micros();
+  if (microsNow < udpCheckTime) return;   // only need to check for new PGN data every 0.1 ms, not 100s of times per ms
+  //Serial.print((String)"\r\n" + microsNow + " PGN check " + udpCheckTime);
+  udpCheckTime = microsNow + 100;     // allow check every 0.1 ms
+
+  const uint8_t udpBufferLength = 100; // large enough for all OGX packets?
+  char udpBuffer[udpBufferLength];     // longest I know of is 22 chars (SETTINGS) except RTCM can be huge, we're ignoring it in this class, the host microcontroller takes care of RTCM
+
+  // check OGX UDP
+  uint16_t lenOGX = UDP.PGN_OGX.parsePacket();     // get data from OGX:9998 to this:7777
+  if (lenOGX > 6) {                                // all packets should be 7 or longer but min 5 to get a PGN header number
+    //IPAddress remIp = UDP.PGN.remoteIP();
+    //IPAddress remPort = UDP.PGN.remotePort();
+
+    UDP.PGN_OGX.read(udpBuffer, (lenOGX >= udpBufferLength) ? udpBufferLength - 1 : lenOGX );  // make sure we don't overrun buffer size
+    udpBuffer[(lenOGX >= udpBufferLength) ? udpBufferLength : lenOGX] = 0;                     // make sure string ends with NULL
+
+    grade.checkforPGNs(udpBuffer, lenOGX);
+  }
+
+}
 
 void checkForPGNs()
 {
+  if (!UDP.isRunning) return;                           // When ethernet is not running, return directly. parsePacket() will block with no ethernet
+
   #ifdef AIOv50a
   ESP32usage.timeIn();
   if (SerialESP32->available())
@@ -59,7 +88,6 @@ void checkForPGNs()
   //Serial.print((String)"\r\n" + millisNow + " PGN check " + pgnCheckTime);
   pgnCheckTime = millisNow + 1;     // allow check every ms
 
-  if (!UDP.isRunning) return;                           // When ethernet is not running, return directly. parsePacket() will block when we don't
   uint16_t len = UDP.PGN.parsePacket();                 //get data from AgIO sent by 9999 to this 8888
   if (UDP.PGN.remotePort() != 9999 || len < 5) return;  //make sure from AgIO
 

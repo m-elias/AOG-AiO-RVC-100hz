@@ -9,8 +9,8 @@ See notes.ino for additional information
 */
 
 // pick only one or the other board file
-//#include "HWv50a.h"
-#include "HWv4x.h"
+#include "HWv50a.h"
+//#include "HWv4x.h"
 
 const uint8_t encoderType = 1;  // 1 - single input
                                 // 2 - dual input (quadrature encoder), uses Kickout_A (Pressure) & Kickout_D (Remote) inputs
@@ -19,6 +19,9 @@ const uint8_t encoderType = 1;  // 1 - single input
 #include "common.h"
 //#include "JD_DAC.h"   // experimental JD 2 track DAC steering & SCV/remote hyd control
 //JD_DAC jdDac(Wire1, 0x60, &Serial);
+
+#include "OGX.h"
+OpenGradeX grade;
 
 void setup()
 {
@@ -45,6 +48,8 @@ void setup()
 
   autosteerSetup();                         // Autosteer.ino
 
+  grade.init(0, 0, 90);    // CAN2RX LED, LOW is ON
+
   Serial.println("\r\n\nEnd of setup, waiting for GPS...\r\n"); 
   delay(1);
   resetStartingTimersBuffers();             // setup.ino
@@ -54,7 +59,9 @@ void setup()
 
 void loop()
 {
+  checkForUdpPackets();
   checkForPGNs();                           // zPGN.ino, check for AgIO or SerialESP32 Sending PGNs
+  grade.updateLoop();
   PGNusage.timeOut();
 
   autoSteerUpdate();                        // Autosteer.ino, update AS loop every 10ms (100hz) regardless of whether there is a BNO installed
@@ -63,6 +70,7 @@ void loop()
     
   if (SerialRTK.available()) {              // Check for RTK Radio RTCM data
     SerialGPS->write(SerialRTK.read());     // send to GPS1
+    SerialGPS2->write(SerialRTK.read());    // send to GPS2
     LEDs.queueBlueFlash(LED_ID::GPS);
   }
 
@@ -89,7 +97,7 @@ void loop()
 
 
 
-  // ******************* "Right" Dual or Single GPS1 (position) *******************
+  // ******************* "Right" Single GPS1 (position) *******************
   GPS1usage.timeIn();
   int16_t gps1Available = SerialGPS->available();
   if (gps1Available)    // "if" is very crucial here, using "while" causes BNO overflow
@@ -118,7 +126,7 @@ void loop()
   GPS1usage.timeOut();
 
 
-  // ******************* "Left" Dual GPS2 (heading) *******************
+  // ******************* "Left" GPS2 (OGX Blade) *******************
   GPS2usage.timeIn();
   int16_t gps2Available = SerialGPS2->available();
   if (gps2Available)
@@ -131,7 +139,9 @@ void loop()
     gps2Stats.update(gps2Available);
 
     uint8_t gps2Read = SerialGPS2->read();
-    ubxParser.parse(gps2Read);
+    if (nmeaDebug2) Serial.write(gps2Read);
+    //ubxParser.parse(gps2Read);  // no UBX in this version, GPS2 is used for OGX blade position
+
 
     /*#ifdef AIOv50a
       GPS2usage.timeOut();
@@ -144,12 +154,12 @@ void loop()
 
 
   // ******************* For DUAL mode *******************
-  if (ubxParser.relPosNedReady && ggaReady) {   // if both GGA & relposNED are ready
+  /*if (ubxParser.relPosNedReady && ggaReady) {   // if both GGA & relposNED are ready
       buildPandaOrPaogi(PAOGI_DUAL);                 // build a PAOGI msg
       ubxParser.relPosNedReady = false;         // reset for next relposned trigger
       ubxParser.relPosNedRcvd = false;
       ggaReady = false;
-    }
+    }*/
 
   if (imuPandaSyncTimer > 50 && extraCRLF && nmeaDebug) {
     Serial.print("\r\n");
@@ -160,22 +170,22 @@ void loop()
     imuPandaSyncTimer -= 100;
     ggaMissed++;
     if (nmeaDebug) Serial.println();
-    Serial.print("\r\n"); Serial.print(millis()); Serial.print(" ");
-    Serial.printf("                 *** GGA was missed or late! *** (%i)\r\n", ggaMissed);
+    //Serial.print("\r\n"); Serial.print(millis()); Serial.print(" ");
+    //Serial.printf("                 *** GGA was missed or late! *** (%i)\r\n", ggaMissed);
     ggaReady = false;
     ubxParser.relPosNedReady = false;
   }
 
-  if (ubxParser.relPosTimer > 150) {
+  /*if (ubxParser.relPosTimer > 150) {
     ubxParser.relPosTimer -= 100;
     ubxParser.relMissed++;
     if (nmeaDebug) Serial.println();
-    Serial.print("\r\n"); Serial.print(millis()); Serial.print(" ");
-    Serial.printf("                   *** relposNED was missed or late! *** (%i)\r\n", ubxParser.relMissed);
+    //Serial.print("\r\n"); Serial.print(millis()); Serial.print(" ");
+    //Serial.printf("                   *** relposNED was missed or late! *** (%i)\r\n", ubxParser.relMissed);
     ubxParser.clearCount();
     ggaReady = false;
     ubxParser.relPosNedReady = false;
-  }
+  }*/
 
   /*if (ubxParser.pvtTimer > 150) {
     ubxParser.pvtTimer -= 100;
@@ -189,13 +199,13 @@ void loop()
 
 
   // this is only for dual stats monitoring
-  if (dualTime != ubxParser.ubxData.iTOW)
+  /*if (dualTime != ubxParser.ubxData.iTOW)
   {
     gps2Stats.incHzCount();
     relJitterStats.update(ubxParser.msgPeriod);
     relTtrStats.update(ubxParser.msgReadTime);
     dualTime = ubxParser.ubxData.iTOW;
-  }
+  }*/
   
   if (bufferStatsTimer > 5000) printTelem();
   

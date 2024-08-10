@@ -27,7 +27,7 @@
 #define Hardware_H
 
 #define AIOv50a
-const char inoVersion[] = "RVC 100hz AiO v5.0a alpha - " __DATE__;
+const char inoVersion[] = "AiO v5.0a OGX - " __DATE__;
 
 // ********* IO Defines *********
 const uint8_t WAS_SENSOR_PIN = A15;     // WAS input
@@ -39,10 +39,10 @@ SpeedPulse speedPulse(SPEEDPULSE_PIN, SPEEDPULSE10_PIN);     // misc.h
 const uint8_t PIEZO1 = 37;
 const uint8_t PIEZO2 = 36;
 
-// Cytron
-#define DIR_PIN           6     // IBT2 Enable pin (IBT not really used on these AIO)
-#define PWM_PIN           9     // IBT2 Left pin
-#define SLEEP_PIN         4     // IBT2 Right pin
+// Cytron/DRV8701
+#define DIR_PIN           6     // DRV Dir pin
+#define PWM_PIN           9     // DRV PWM pin
+#define SLEEP_PIN         4     // DRV Sleep pin, LOCK output
 
 // Switches/Sensors
 #define STEER_PIN         2
