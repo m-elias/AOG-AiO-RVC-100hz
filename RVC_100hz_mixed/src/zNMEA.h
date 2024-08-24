@@ -35,39 +35,47 @@
 
 #include <Arduino.h>
 
-namespace NMEA {
-/*
-       Error codes
-    */
-typedef enum {
-  NO_ERROR,
-  UNEXPECTED_CHAR,
-  BUFFER_FULL,
-  TYPE_TOO_LONG,
-  CRC_ERROR,
-  INTERNAL_ERROR
-} ErrorCode;
+namespace NMEA
+{
+  /*
+         Error codes
+      */
+  typedef enum
+  {
+    NO_ERROR,
+    UNEXPECTED_CHAR,
+    BUFFER_FULL,
+    TYPE_TOO_LONG,
+    CRC_ERROR,
+    INTERNAL_ERROR
+  } ErrorCode;
 }
 
 /*
    The library consists of a single template: NMEAParser.
 */
-template<size_t S> class NMEAParser {
+template <size_t S>
+class NMEAParser
+{
 
 private:
   typedef void (*NMEAErrorHandler)(void);
   typedef void (*NMEAHandler)(void);
-  typedef struct {
+  typedef struct
+  {
     char mToken[6];
     NMEAHandler mHandler;
   } NMEAHandlerEntry;
-  typedef enum { INIT,
-                 SENT,
-                 ARG,
-                 CRCH,
-                 CRCL,
-                 CRLFCR,
-                 CRLFLF } State;
+  typedef enum
+  {
+    INIT,
+    SENT,
+    ARG,
+    CRCH,
+    CRCL,
+    CRLFCR,
+    CRLFLF
+  } State;
 
 public:
   /*
@@ -145,18 +153,22 @@ private:
        a section in which the 'stringification' is done : the constructor
        does that according to the arguments and se destructor restore the buffer.
     */
-  class NMEAParserStringify {
+  class NMEAParserStringify
+  {
     uint8_t mPos;
     char mTmp;
     NMEAParser<S> *mParent;
+
   public:
     NMEAParserStringify(NMEAParser<S> *inParent, uint8_t inPos)
-      : mPos(inPos),
-        mParent(inParent) {
+        : mPos(inPos),
+          mParent(inParent)
+    {
       mTmp = mParent->mBuffer[mPos];
       mParent->mBuffer[mPos] = '\0';
     }
-    ~NMEAParserStringify() {
+    ~NMEAParserStringify()
+    {
       mParent->mBuffer[mPos] = mTmp;
     }
   };
@@ -164,8 +176,10 @@ private:
   /*
        Call the error handler if defined
     */
-  void callErrorHandler(void) {
-    if (mErrorHandler != NULL) {
+  void callErrorHandler(void)
+  {
+    if (mErrorHandler != NULL)
+    {
       mErrorHandler();
     }
   }
@@ -173,7 +187,8 @@ private:
   /*
        Called when the parser encounter a char that should not be there
     */
-  void unexpectedChar() {
+  void unexpectedChar()
+  {
     mError = NMEA::UNEXPECTED_CHAR;
     callErrorHandler();
     reset();
@@ -182,7 +197,8 @@ private:
   /*
        Called when the buffer is full because of a malformed sentence
     */
-  void bufferFull() {
+  void bufferFull()
+  {
     mError = NMEA::BUFFER_FULL;
     callErrorHandler();
     reset();
@@ -191,7 +207,8 @@ private:
   /*
        Called when the type of the sentence is longer than 5 characters
     */
-  void typeTooLong() {
+  void typeTooLong()
+  {
     mError = NMEA::TYPE_TOO_LONG;
     callErrorHandler();
     reset();
@@ -199,7 +216,8 @@ private:
   /*
        Called when the CRC is wrong
     */
-  void crcError() {
+  void crcError()
+  {
     mError = NMEA::CRC_ERROR;
     callErrorHandler();
     reset();
@@ -208,7 +226,8 @@ private:
   /*
        Called when the state of the parser is not ok
     */
-  void internalError() {
+  void internalError()
+  {
     mError = NMEA::INTERNAL_ERROR;
     callErrorHandler();
     reset();
@@ -217,23 +236,32 @@ private:
   /*
        retuns true is there is at least one byte left in the buffer
     */
-  bool spaceAvail() {
+  bool spaceAvail()
+  {
     return (mIndex < mArgIndex);
   }
 
   /*
        convert a one hex digit char into an int. Used for the CRC
     */
-  static int8_t hexToNum(const char inChar) {
-    if (isdigit(inChar)) return inChar - '0';
-    else if (isupper(inChar) && inChar <= 'F') return inChar - 'A' + 10;
-    else if (islower(inChar) && inChar <= 'f') return inChar - 'a' + 10;
-    else return -1;
+  static int8_t hexToNum(const char inChar)
+  {
+    if (isdigit(inChar))
+      return inChar - '0';
+    else if (isupper(inChar) && inChar <= 'F')
+      return inChar - 'A' + 10;
+    else if (islower(inChar) && inChar <= 'f')
+      return inChar - 'a' + 10;
+    else
+      return -1;
   }
 
-  static bool strnwcmp(const char *s1, const char *s2, uint8_t len) {
-    while (len-- > 0) {
-      if (*s1 != *s2 && *s1 != '-' && *s2 != '-') return false;
+  static bool strnwcmp(const char *s1, const char *s2, uint8_t len)
+  {
+    while (len-- > 0)
+    {
+      if (*s1 != *s2 && *s1 != '-' && *s2 != '-')
+        return false;
       s1++;
       s2++;
     }
@@ -243,10 +271,13 @@ private:
   /*
        return the slot number for a handler. -1 if not found
     */
-  int8_t getHandler(const char *inToken) {
+  int8_t getHandler(const char *inToken)
+  {
     /* Look for the token */
-    for (uint8_t i = 0; i < mHandlerCount; i++) {
-      if (strnwcmp(mHandlers[i].mToken, inToken, 5)) {
+    for (uint8_t i = 0; i < mHandlerCount; i++)
+    {
+      if (strnwcmp(mHandlers[i].mToken, inToken, 5))
+      {
         return i;
       }
     }
@@ -256,7 +287,8 @@ private:
   /*
        When all the sentence has been parsed, process it by calling the handler
     */
-  void processSentence() {
+  void processSentence()
+  {
     /* Look for the token */
     uint8_t endPos = startArgPos(0);
     int8_t slot;
@@ -264,10 +296,14 @@ private:
       NMEAParserStringify stfy(this, endPos);
       slot = getHandler(mBuffer);
     }
-    if (slot != -1) {
+    if (slot != -1)
+    {
       mHandlers[slot].mHandler();
-    } else {
-      if (mDefaultHandler != NULL) {
+    }
+    else
+    {
+      if (mDefaultHandler != NULL)
+      {
         mDefaultHandler();
       }
     }
@@ -276,21 +312,24 @@ private:
   /*
        Return true if inArgNum corresponds to an actual argument
     */
-  bool validArgNum(uint8_t inArgNum) {
+  bool validArgNum(uint8_t inArgNum)
+  {
     return inArgNum < (kSentenceMaxSize - mArgIndex);
   }
 
   /*
        Return the start index of the inArgNum th argument
     */
-  uint8_t startArgPos(uint8_t inArgNum) {
+  uint8_t startArgPos(uint8_t inArgNum)
+  {
     return mBuffer[kSentenceMaxSize - 1 - inArgNum];
   }
 
   /*
        Return the end index of the inArgNum th argument
     */
-  uint8_t endArgPos(uint8_t inArgNum) {
+  uint8_t endArgPos(uint8_t inArgNum)
+  {
     return mBuffer[kSentenceMaxSize - 2 - inArgNum];
   }
 
@@ -299,20 +338,22 @@ public:
        Constructor initialize the parser.
     */
   NMEAParser()
-    : mErrorHandler(NULL),
-      mDefaultHandler(NULL),
-      mHandlerCount(0),
-      mError(NMEA::NO_ERROR),
-      mHandleCRC(true),
-      mComputedCRC(0),
-      mGotCRC(0) {
+      : mErrorHandler(NULL),
+        mDefaultHandler(NULL),
+        mHandlerCount(0),
+        mError(NMEA::NO_ERROR),
+        mHandleCRC(true),
+        mComputedCRC(0),
+        mGotCRC(0)
+  {
     reset();
   }
 
   /*
       Reset the parser
     */
-  void reset() {
+  void reset()
+  {
     mState = INIT;
     mIndex = 0;
     mArgIndex = kSentenceMaxSize;
@@ -322,10 +363,13 @@ public:
   /*
        Add a sentence handler
     */
-  void addHandler(const char *inToken, NMEAHandler inHandler) {
-    if (mHandlerCount < S) {
-      if (getHandler(inToken) == -1) {
-        memcpy(mHandlers[mHandlerCount].mToken, inToken, 5);  // strncpy produces warnings
+  void addHandler(const char *inToken, NMEAHandler inHandler)
+  {
+    if (mHandlerCount < S)
+    {
+      if (getHandler(inToken) == -1)
+      {
+        memcpy(mHandlers[mHandlerCount].mToken, inToken, 5); // strncpy produces warnings
         mHandlers[mHandlerCount].mToken[5] = '\0';
         mHandlers[mHandlerCount].mHandler = inHandler;
         mHandlerCount++;
@@ -337,13 +381,16 @@ public:
   /*
        Add a sentence handler. Version with a token stored in flash.
     */
-  void addHandler(const __FlashStringHelper *ifsh, NMEAHandler inHandler) {
+  void addHandler(const __FlashStringHelper *ifsh, NMEAHandler inHandler)
+  {
     char buf[6];
     PGM_P p = reinterpret_cast<PGM_P>(ifsh);
-    for (uint8_t i = 0; i < 6; i++) {
+    for (uint8_t i = 0; i < 6; i++)
+    {
       char c = pgm_read_byte(p++);
       buf[i] = c;
-      if (c == '\0') break;
+      if (c == '\0')
+        break;
     }
     addHandler(buf, inHandler);
   }
@@ -352,7 +399,8 @@ public:
   /*
        Set the error handler which is called when a sentence is malformed
     */
-  void setErrorHandler(NMEAErrorHandler inHandler) {
+  void setErrorHandler(NMEAErrorHandler inHandler)
+  {
     mErrorHandler = inHandler;
   }
 
@@ -360,140 +408,183 @@ public:
        Set the default handler which is called when a sentence is well formed
        but has no handler associated to
     */
-  void setDefaultHandler(NMEAHandler inHandler) {
+  void setDefaultHandler(NMEAHandler inHandler)
+  {
     mDefaultHandler = inHandler;
   }
 
   /*
        Give a character to the parser
     */
-  void operator<<(char inChar) {
+  void operator<<(char inChar)
+  {
     int8_t tmp;
 
-    //Serial.write(inChar); Serial.printf("(%i)", inChar);
+    // Serial.write(inChar); Serial.printf("(%i)", inChar);
 
-    if (inChar == '$' && mState != INIT) reset(); // extra parser reset() safeguard (random sentances need it for some reason)
+    if (inChar == '$' && mState != INIT)
+      reset(); // extra parser reset() safeguard (random sentances need it for some reason)
 
-    switch (mState) {
+    switch (mState)
+    {
 
-      /* Waiting for the starting $ character */
-      case INIT:
-        mError = NMEA::NO_ERROR;
-        if (inChar == '$') {
-          mComputedCRC = 0;
-          mState = SENT;
-        } else unexpectedChar();
-        break;
+    /* Waiting for the starting $ character */
+    case INIT:
+      mError = NMEA::NO_ERROR;
+      if (inChar == '$')
+      {
+        mComputedCRC = 0;
+        mState = SENT;
+      }
+      else
+        unexpectedChar();
+      break;
 
-      case SENT:
-        if (isalnum(inChar)) {
-          if (spaceAvail()) {
-            if (mIndex < 5) {
-              mBuffer[mIndex++] = inChar;
-              mComputedCRC ^= inChar;
-            } else {
-              typeTooLong();
-            }
-          } else bufferFull();
-        } else {
-          switch (inChar) {
-            case ',':
-              mComputedCRC ^= inChar;
-              mBuffer[--mArgIndex] = mIndex;
-              mState = ARG;
-              break;
-            case '*':
-              mGotCRC = 0;
-              mBuffer[--mArgIndex] = mIndex;
-              mState = CRCH;
-              break;
-            default:
-              unexpectedChar();
-              break;
+    case SENT:
+      if (isalnum(inChar))
+      {
+        if (spaceAvail())
+        {
+          if (mIndex < 5)
+          {
+            mBuffer[mIndex++] = inChar;
+            mComputedCRC ^= inChar;
+          }
+          else
+          {
+            typeTooLong();
           }
         }
-        break;
+        else
+          bufferFull();
+      }
+      else
+      {
+        switch (inChar)
+        {
+        case ',':
+          mComputedCRC ^= inChar;
+          mBuffer[--mArgIndex] = mIndex;
+          mState = ARG;
+          break;
+        case '*':
+          mGotCRC = 0;
+          mBuffer[--mArgIndex] = mIndex;
+          mState = CRCH;
+          break;
+        default:
+          unexpectedChar();
+          break;
+        }
+      }
+      break;
 
-      case ARG:
-        if (spaceAvail()) {
-          switch (inChar) {
-            case ',':
-              mComputedCRC ^= inChar;
-              mBuffer[--mArgIndex] = mIndex;
-              break;
-            case '*':
-              mGotCRC = 0;
-              mBuffer[--mArgIndex] = mIndex;
-              mState = CRCH;
-              break;
-            default:
-              mComputedCRC ^= inChar;
-              mBuffer[mIndex++] = inChar;
-              break;
-          }
-        } else bufferFull();
-        break;
+    case ARG:
+      if (spaceAvail())
+      {
+        switch (inChar)
+        {
+        case ',':
+          mComputedCRC ^= inChar;
+          mBuffer[--mArgIndex] = mIndex;
+          break;
+        case '*':
+          mGotCRC = 0;
+          mBuffer[--mArgIndex] = mIndex;
+          mState = CRCH;
+          break;
+        default:
+          mComputedCRC ^= inChar;
+          mBuffer[mIndex++] = inChar;
+          break;
+        }
+      }
+      else
+        bufferFull();
+      break;
 
-      case CRCH:
-        tmp = hexToNum(inChar);
-        if (tmp != -1) {
-          mGotCRC |= (uint8_t)tmp << 4;
-          mState = CRCL;
-        } else unexpectedChar();
-        break;
+    case CRCH:
+      tmp = hexToNum(inChar);
+      if (tmp != -1)
+      {
+        mGotCRC |= (uint8_t)tmp << 4;
+        mState = CRCL;
+      }
+      else
+        unexpectedChar();
+      break;
 
-      case CRCL:
-        tmp = hexToNum(inChar);
-        if (tmp != -1) {
-          mGotCRC |= (uint8_t)tmp;
-          mState = CRLFCR;
-        } else unexpectedChar();
-        break;
+    case CRCL:
+      tmp = hexToNum(inChar);
+      if (tmp != -1)
+      {
+        mGotCRC |= (uint8_t)tmp;
+        mState = CRLFCR;
+      }
+      else
+        unexpectedChar();
+      break;
 
-      case CRLFCR:
-        if (inChar == '\r') {
-          mState = CRLFLF;
-        } else unexpectedChar();
-        break;
+    case CRLFCR:
+      if (inChar == '\r')
+      {
+        mState = CRLFLF;
+      }
+      else
+        unexpectedChar();
+      break;
 
-      case CRLFLF:
-        if (inChar == '\n') {
-          if (mHandleCRC && (mGotCRC != mComputedCRC)) {
-            crcError();
-          } else {
-            processSentence();
-          }
-          reset();  // for some reason this is not called for GNS sentance
-        } else unexpectedChar();
-        break;
+    case CRLFLF:
+      if (inChar == '\n')
+      {
+        if (mHandleCRC && (mGotCRC != mComputedCRC))
+        {
+          crcError();
+        }
+        else
+        {
+          processSentence();
+        }
+        reset(); // for some reason this is not called for GNS sentance
+      }
+      else
+        unexpectedChar();
+      break;
 
-      default:
-        internalError();
-        break;
+    default:
+      internalError();
+      break;
     }
   }
 
   /*
        Returns the number of arguments discovered in a well formed sentence.
     */
-  uint8_t argCount() {
+  uint8_t argCount()
+  {
     return kSentenceMaxSize - mArgIndex - 1;
   }
 
   /*
        Returns one of the arguments. Different versions according to data type.
     */
-  bool getArg(uint8_t num, char &arg) {
-    if (validArgNum(num)) {
+  bool getArg(uint8_t num, char &arg)
+  {
+    if (validArgNum(num))
+    {
       uint8_t startPos = startArgPos(num);
       uint8_t endPos = endArgPos(num);
       arg = mBuffer[startPos];
       return (endPos - startPos) == 1;
-    } else return false;
+    }
+    else
+      return false;
   }
 
-  bool getArg(uint8_t num, char *arg) {
-    if (validArgNum(num)) {
+  bool getArg(uint8_t num, char *arg)
+  {
+    if (validArgNum(num))
+    {
       uint8_t startPos = startArgPos(num);
       uint8_t endPos = endArgPos(num);
       {
@@ -501,12 +592,16 @@ public:
         strcpy(arg, &mBuffer[startPos]);
       }
       return true;
-    } else return false;
+    }
+    else
+      return false;
   }
 
 #ifdef ARDUINO
-  bool getArg(uint8_t num, String &arg) {
-    if (validArgNum(num)) {
+  bool getArg(uint8_t num, String &arg)
+  {
+    if (validArgNum(num))
+    {
       uint8_t startPos = startArgPos(num);
       uint8_t endPos = endArgPos(num);
       {
@@ -514,12 +609,16 @@ public:
         arg = &mBuffer[startPos];
       }
       return true;
-    } else return false;
+    }
+    else
+      return false;
   }
 #endif
 
-  bool getArg(uint8_t num, int &arg) {
-    if (validArgNum(num)) {
+  bool getArg(uint8_t num, int &arg)
+  {
+    if (validArgNum(num))
+    {
       uint8_t startPos = startArgPos(num);
       uint8_t endPos = endArgPos(num);
       {
@@ -527,11 +626,15 @@ public:
         arg = atoi(&mBuffer[startPos]);
       }
       return true;
-    } else return false;
+    }
+    else
+      return false;
   }
 
-  bool getArg(uint8_t num, float &arg) {
-    if (validArgNum(num)) {
+  bool getArg(uint8_t num, float &arg)
+  {
+    if (validArgNum(num))
+    {
       uint8_t startPos = startArgPos(num);
       uint8_t endPos = endArgPos(num);
       {
@@ -539,13 +642,17 @@ public:
         arg = atof(&mBuffer[startPos]);
       }
       return true;
-    } else return false;
+    }
+    else
+      return false;
   }
   /*
        Returns the type of sentence.
     */
-  bool getType(char *arg) {
-    if (mIndex > 0) {
+  bool getType(char *arg)
+  {
+    if (mIndex > 0)
+    {
       uint8_t endPos = startArgPos(0);
       {
         NMEAParserStringify stfy(this, endPos);
@@ -553,46 +660,63 @@ public:
         arg[5] = '\0';
       }
       return true;
-    } else return false;
+    }
+    else
+      return false;
   }
 
 #ifdef ARDUINO
-  bool getType(String &arg) {
-    if (mIndex > 0) {
+  bool getType(String &arg)
+  {
+    if (mIndex > 0)
+    {
       uint8_t endPos = startArgPos(0);
       {
         NMEAParserStringify stfy(this, endPos);
         arg = mBuffer;
       }
       return true;
-    } else return false;
+    }
+    else
+      return false;
   }
 #endif
 
-  bool getType(uint8_t inIndex, char &outTypeChar) {
-    if (mIndex > 0) {
+  bool getType(uint8_t inIndex, char &outTypeChar)
+  {
+    if (mIndex > 0)
+    {
       uint8_t endPos = startArgPos(0);
-      if (inIndex < endPos) {
+      if (inIndex < endPos)
+      {
         outTypeChar = mBuffer[inIndex];
         return true;
-      } else return false;
-    } else return false;
+      }
+      else
+        return false;
+    }
+    else
+      return false;
   }
 
-  NMEA::ErrorCode error() {
+  NMEA::ErrorCode error()
+  {
     return mError;
   }
 
-  void setHandleCRC(bool inHandleCRC) {
+  void setHandleCRC(bool inHandleCRC)
+  {
     mHandleCRC = inHandleCRC;
   }
 #ifdef __amd64__
-  void printBuffer() {
+  void printBuffer()
+  {
     {
       NMEAParserStringify stfy(this, startArgPos(0));
       printf("%s\n", mBuffer);
     }
-    for (uint8_t i = 0; i < argCount(); i++) {
+    for (uint8_t i = 0; i < argCount(); i++)
+    {
       uint8_t startPos = startArgPos(i);
       uint8_t endPos = endArgPos(i);
       {

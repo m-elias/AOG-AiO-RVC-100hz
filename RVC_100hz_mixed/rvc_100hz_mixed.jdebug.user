@@ -1,0 +1,28 @@
+
+
+OpenDocument="Eth_UDP.h", FilePath="/Users/chris/Code/AOG-AiO-RVC-100hz/RVC_100hz_mixed/src/Eth_UDP.h", Line=78
+OpenDocument="misc.h", FilePath="/Users/chris/Code/AOG-AiO-RVC-100hz/RVC_100hz_mixed/src/misc.h", Line=117
+OpenDocument="core_cmInstr.h", FilePath="/Users/chris/.platformio/packages/framework-arduinoteensy/cores/teensy4/core_cmInstr.h", Line=278
+OpenDocument="delay.c", FilePath="/Users/chris/.platformio/packages/framework-arduinoteensy/cores/teensy4/delay.c", Line=68
+OpenDocument="RVC_100hz_mixed.ino", FilePath="/Users/chris/Code/AOG-AiO-RVC-100hz/RVC_100hz_mixed/src/RVC_100hz_mixed.ino", Line=75
+OpenDocument="zHndlrs.ino", FilePath="/Users/chris/Code/AOG-AiO-RVC-100hz/RVC_100hz_mixed/src/zHndlrs.ino", Line=0
+OpenDocument="zNMEA.h", FilePath="/Users/chris/Code/AOG-AiO-RVC-100hz/RVC_100hz_mixed/src/zNMEA.h", Line=445
+OpenDocument="Autosteer.ino", FilePath="/Users/chris/Code/AOG-AiO-RVC-100hz/RVC_100hz_mixed/src/Autosteer.ino", Line=30
+OpenDocument="main.cpp", FilePath="/Users/chris/.platformio/packages/framework-arduinoteensy/cores/teensy4/main.cpp", Line=0
+OpenToolbar="Debug", Floating=0, x=0, y=0
+OpenWindow="Disassembly", DockArea=RIGHT, x=0, y=0, w=424, h=130, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Break & Tracepoints", DockArea=LEFT, x=0, y=0, w=719, h=465, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, VectorCatchIndexMask=254
+OpenWindow="Memory 1", DockArea=BOTTOM, x=1, y=0, w=1016, h=315, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, EditorAddress=0x0
+OpenWindow="Global Data", DockArea=RIGHT, x=0, y=1, w=424, h=436, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Local Data", DockArea=RIGHT, x=0, y=2, w=424, h=249, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Functions", DockArea=LEFT, x=0, y=1, w=719, h=351, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Console", DockArea=BOTTOM, x=0, y=0, w=1028, h=315, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+SmartViewPlugin="", Page="", Toolbar="Hidden", Window="SmartView 1"
+TableHeader="Global Data", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Value";"Location";"Size";"Type";"Scope"], ColWidths=[100;158;100;100;100;100]
+TableHeader="Vector Catches", SortCol="", SortOrder="ASCENDING", VisibleCols=["";"Vector Catch";"Description"], ColWidths=[50;300;500]
+TableHeader="Break & Tracepoints", SortCol="", SortOrder="ASCENDING", VisibleCols=["";"Type";"Location";"Extras"], ColWidths=[100;100;100;419]
+TableHeader="Local Data", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Value";"Location";"Size";"Type";"Scope"], ColWidths=[100;100;100;100;100;100]
+TableHeader="Functions", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Address";"Size";"#Insts";"Source"], ColWidths=[2082;100;100;100;152]
+TableHeader="Power Sampling", SortCol="None", SortOrder="ASCENDING", VisibleCols=["Index";"Time";"Ch 0"], ColWidths=[100;100;100]
+TableHeader="RegisterSelectionDialog", SortCol="None", SortOrder="ASCENDING", VisibleCols=[], ColWidths=[]
+TableHeader="TargetExceptionDialog", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Value";"Address";"Description"], ColWidths=[200;100;100;343]
