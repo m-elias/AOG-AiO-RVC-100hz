@@ -45,29 +45,42 @@ void calcSteeringPID(void)
     // Serial.print(" ");
     // Serial.print(pwmDrive);
 
-    //mtz8302
+    // mtz8302
     pwmDisplay = abs(pwmDrive);
-    //do average to reduce pwm spikes
-    if (pwmDrive > 0) {
-        if (pwmDriveFloat < 0) { pwmDriveFloat = 1; pwmDrive = 1; } //change direction
-        else {
-            if (pwmDrive > pwmDriveFloat) { //accellerate softer
+    // do average to reduce pwm spikes
+    if (pwmDrive > 0)
+    {
+        if (pwmDriveFloat < 0)
+        {
+            pwmDriveFloat = 1;
+            pwmDrive = 1;
+        } // change direction
+        else
+        {
+            if (pwmDrive > pwmDriveFloat)
+            { // accellerate softer
                 pwmDriveFloat = pwmDriveFloat * 0.65 + float(pwmDrive) * 0.35;
                 pwmDrive = int(pwmDriveFloat);
             }
-            else pwmDriveFloat = pwmDrive; //keep value
+            else
+                pwmDriveFloat = pwmDrive; // keep value
         }
     }
-    else {
-        if (pwmDriveFloat > 0) { pwmDriveFloat = -1; pwmDrive = 1; } //change direction
+    else
+    {
+        if (pwmDriveFloat > 0)
+        {
+            pwmDriveFloat = -1;
+            pwmDrive = 1;
+        } // change direction
+        else if (pwmDrive < pwmDriveFloat)
+        { // accellerate softer
+            pwmDriveFloat = pwmDriveFloat * 0.65 + float(pwmDrive) * 0.35;
+            pwmDrive = int(pwmDriveFloat);
+        }
         else
-            if (pwmDrive < pwmDriveFloat) { //accellerate softer
-                pwmDriveFloat = pwmDriveFloat * 0.65 + float(pwmDrive) * 0.35;
-                pwmDrive = int(pwmDriveFloat);
-            }
-            else pwmDriveFloat = pwmDrive; //keep value
+            pwmDriveFloat = pwmDrive; // keep value
     }
-
 
     if (steerConfig.IsDanfoss)
     {
@@ -88,52 +101,52 @@ void calcSteeringPID(void)
 
 void motorDrive(void)
 {
-  // Keya can bus output, always send pwmDrive to keya, SteerKeya function will deal with it
-  SteerKeya(pwmDrive); // use this for in tractor
+    // Keya can bus output, always send pwmDrive to keya, SteerKeya function will deal with it
+    SteerKeya(pwmDrive); // use this for in tractor
 
-  if (steerConfig.CytronDriver)
-  {
+    if (steerConfig.CytronDriver)
+    {
 #ifdef JD_DAC_H
-    // For JD_DAC.h, MCP4728 QUAD DAC steering
-    // scale pwmDrive to DAC output
-    // 0 PWM (no WAS change needed) = 2048 centered DAC output (4096 / 2 to get center voltage)
-    DACusage.timeIn();
-    if (gpsSpeed < (float)steerConfig.MinSpeed / 10.0)
-      pwmDrive = 0;
-    pwmDisplay = jdDac.steerOutput(pwmDrive);
-    jdDac.ch4Output(pwmDrive);
-    DACusage.timeOut();
+        // For JD_DAC.h, MCP4728 QUAD DAC steering
+        // scale pwmDrive to DAC output
+        // 0 PWM (no WAS change needed) = 2048 centered DAC output (4096 / 2 to get center voltage)
+        DACusage.timeIn();
+        if (gpsSpeed < (float)steerConfig.MinSpeed / 10.0)
+            pwmDrive = 0;
+        pwmDisplay = jdDac.steerOutput(pwmDrive);
+        jdDac.ch4Output(pwmDrive);
+        DACusage.timeOut();
 #else
-    // Cytron Driver Dir + PWM Signal
-    if (pwmDrive > 0)
-    {
-      digitalWrite(DIR_PIN, HIGH);
-    }
-    else
-    {
-      digitalWrite(DIR_PIN, LOW);
-      pwmDrive = -1 * pwmDrive;
-    }
+        // Cytron Driver Dir + PWM Signal
+        if (pwmDrive > 0)
+        {
+            digitalWrite(DIR_PIN, HIGH);
+        }
+        else
+        {
+            digitalWrite(DIR_PIN, LOW);
+            pwmDrive = -1 * pwmDrive;
+        }
 
-    analogWrite(PWM_PIN, pwmDrive); // write out the 0 to 255 value
+        analogWrite(PWM_PIN, pwmDrive); // write out the 0 to 255 value
 #endif
-  }
-  else
-  {
-    // IBT 2 Driver DIR_PIN connected to BOTH enables
-    // PWM_PIN Left + SLEEP_PIN Right Signal
-    // kept in case someone hacked their AIO to use IBT2 style driver
-
-    if (pwmDrive > 0)
-    {
-      analogWrite(SLEEP_PIN, 0); // Turn off before other one on
-      analogWrite(PWM_PIN, pwmDrive);
     }
     else
     {
-      pwmDrive = -1 * pwmDrive;
-      analogWrite(PWM_PIN, 0); // Turn off before other one on
-      analogWrite(SLEEP_PIN, pwmDrive);
+        // IBT 2 Driver DIR_PIN connected to BOTH enables
+        // PWM_PIN Left + SLEEP_PIN Right Signal
+        // kept in case someone hacked their AIO to use IBT2 style driver
+
+        if (pwmDrive > 0)
+        {
+            analogWrite(SLEEP_PIN, 0); // Turn off before other one on
+            analogWrite(PWM_PIN, pwmDrive);
+        }
+        else
+        {
+            pwmDrive = -1 * pwmDrive;
+            analogWrite(PWM_PIN, 0); // Turn off before other one on
+            analogWrite(SLEEP_PIN, pwmDrive);
+        }
     }
-  }
 }

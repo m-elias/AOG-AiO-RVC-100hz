@@ -51,22 +51,22 @@ const uint8_t PIEZO2 = 36;
 #define CURRENT_PIN A13   // CURRENT sense from on board DRV8701
 #define KICKOUT_A_PIN A12 // PRESSURE
 
-//Sensor ADC mulitpiers / theshold
+// Sensor ADC mulitpiers / theshold
 const float SteerAngleADCMultiplier = 3.23;
-int16_t WorkSWAnanlogThres = 2000;// 100; no const, to set threshold externaly
+int16_t WorkSWAnanlogThres = 2000; // 100; no const, to set threshold externaly
 int16_t SteerPWMonStartRampTime = 1000;
 
 // ********* Serial Assignments *********
 #define SerialRTK Serial3 // RTK radio
 // HardwareSerial SerialRTK = Serial3;   // causes boot loop
-HardwareSerial *SerialIMU = &Serial6;   // IMU BNO-085 in RVC serial mode
-//HardwareSerial *SerialGPS = &Serial5;   // Main postion receiver (GGA & VTG)
-#define SerialGPS Serial5 //normaly 5
-HardwareSerial* SerialGPS2 = &Serial8;  // Dual heading receiver  (relposNED)
-//HardwareSerial *SerialRS232 = &Serial7; // RS232
-#define SerialRS232 Serial7 //RS232
-//HardwareSerial *SerialESP32 = &Serial2; // ESP32
-#define SerialESP32 Serial2 //ESP32
+HardwareSerial *SerialIMU = &Serial6; // IMU BNO-085 in RVC serial mode
+// HardwareSerial *SerialGPS = &Serial5;   // Main postion receiver (GGA & VTG)
+#define SerialGPS Serial5              // normaly 5
+HardwareSerial *SerialGPS2 = &Serial8; // Dual heading receiver  (relposNED)
+// HardwareSerial *SerialRS232 = &Serial7; // RS232
+#define SerialRS232 Serial7 // RS232
+// HardwareSerial *SerialESP32 = &Serial2; // ESP32
+#define SerialESP32 Serial2 // ESP32
 
 const int32_t baudGPS = 460800;
 const int32_t baudRTK = 460800; // most are using Xbee radios with default of 115200

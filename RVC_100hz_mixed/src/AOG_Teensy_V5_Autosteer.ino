@@ -1,4 +1,4 @@
-#define FLASH_ID "fw_teensy41" // Teensy platform target ID for OTA update. Must be included for OTA update to recognize .hex file 
+#define FLASH_ID "fw_teensy41" // Teensy platform target ID for OTA update. Must be included for OTA update to recognize .hex file
 
 /*
 
@@ -24,50 +24,54 @@ const uint8_t encoderType = 1; // 1 - single input
 
 void setup()
 {
-  delay(3000);
-  // Serial.begin(115200);                   // Teensy doesn't need it
-  Serial.print("\r\n\n\n*********************\r\nStarting setup...\r\n");
-  Serial.print("Firmware version: ");
-  Serial.println(inoVersion);
-  Serial.print("Teensy Baord ID: "); // Must be included for OTA update to recognize .hex file 
-  Serial.println(FLASH_ID); // Must be included for OTA update to recognize .hex file 
-  LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::PWR_ON);
+    delay(3000);
+    // Serial.begin(115200);                   // Teensy doesn't need it
+    Serial.print("\r\n\n\n*********************\r\nStarting setup...\r\n");
+    Serial.print("Firmware version: ");
+    Serial.println(inoVersion);
+    Serial.print("Teensy Baord ID: "); // Must be included for OTA update to recognize .hex file
+    Serial.println(FLASH_ID);          // Must be included for OTA update to recognize .hex file
+    LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::PWR_ON);
 
-  setCpuFrequency(600 * 1000000); // Set CPU speed, default is 600mhz, 150mhz still seems fast enough, setup.ino
-  serialSetup();                  // setup.ino
-  parserSetup();                  // setup.ino
-  BNO.begin(SerialIMU);           // BNO_RVC.cpp
+    setCpuFrequency(600 * 1000000); // Set CPU speed, default is 600mhz, 150mhz still seems fast enough, setup.ino
+    serialSetup();                  // setup.ino
+    parserSetup();                  // setup.ino
+    BNO.begin(SerialIMU);           // BNO_RVC.cpp
 
-  // v5 has machine outputs, v4 fails outputs.begin so machine is also not init'd
-  if (SConAiO_InUse) {
-      if (outputs.begin())
-      { // clsPCA9555.cpp
-          Serial.print("\r\nSection outputs (PCA9555) detected (8 channels, low side switching)");
-          machine.init(&outputs, pcaOutputPinNumbers, pcaInputPinNumbers, 100); // mach.h
-      }
-  }
-  UDP.Eth_EEPROM();
-  if (UDP.init()) // Eth_UDP.h
-    LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::ETH_READY);
-  else
-    LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::NO_ETH);
+    // v5 has machine outputs, v4 fails outputs.begin so machine is also not init'd
+    if (SConAiO_InUse)
+    {
+        if (outputs.begin())
+        { // clsPCA9555.cpp
+            Serial.print("\r\nSection outputs (PCA9555) detected (8 channels, low side switching)");
+            machine.init(&outputs, pcaOutputPinNumbers, pcaInputPinNumbers, 100); // mach.h
+        }
+    }
+    UDP.Eth_EEPROM();
+    if (UDP.init()) // Eth_UDP.h
+        LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::ETH_READY);
+    else
+        LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::NO_ETH);
 
-  autosteerSetup(); // Autosteer.ino
-  CAN_Setup();      // Start CAN3 for Keya
+    autosteerSetup(); // Autosteer.ino
+    CAN_Setup();      // Start CAN3 for Keya
 
-  ota_update_setup(); // Setup web pages for OTA_Update
+    ota_update_setup(); // Setup web pages for OTA_Update
 
-  Serial.println("\r\n\nEnd of setup, waiting for GPS...\r\n");
-  delay(1);
-  resetStartingTimersBuffers(); // setup.ino
+    Serial.println("\r\n\nEnd of setup, waiting for GPS...\r\n");
+    delay(1);
+    resetStartingTimersBuffers(); // setup.ino
 }
 
 void loop()
 {
 
-    //OTA_Update
-    if (ota_apply) { OTAapply(); }
-    //OTA_Update
+    // OTA_Update
+    if (ota_apply)
+    {
+        OTAapply();
+    }
+    // OTA_Update
 
     // Keya support
     KeyaBus_Receive();
@@ -80,7 +84,7 @@ void loop()
     // udpNtrip();                               // check for RTCM via UDP (AgIO NTRIP client)
 
     if (SerialRTK.available())
-    {                                     // Check for RTK Radio RTCM data
+    {                                      // Check for RTK Radio RTCM data
         SerialGPS.write(SerialRTK.read()); // send to GPS1
         LEDs.queueBlueFlash(LED_ID::GPS);
     }
@@ -88,22 +92,26 @@ void loop()
 #ifdef AIOv50a
     RS232usage.timeIn();
     if (SerialRS232.available())
-    {                                    // Check for RS232 data
+    {                                     // Check for RS232 data
         Serial.write(SerialRS232.read()); // just print to USB for testing
     }
     RS232usage.timeOut();
 
-    //ESP32 data comming from Serial
+    // ESP32 data comming from Serial
     ESP32usage.timeIn();
     unsigned int ESP32InPacketLength = 0;
-    //ESP32 data?
-    while (SerialESP32.available()) {
+    // ESP32 data?
+    while (SerialESP32.available())
+    {
         ESP32InPacketLength = SerialESP32.available();
-        if (ESP32InPacketLength) {
-            for (byte b = 0; b < ESP32InPacketLength; b++) {                
-                if (ESP32incomingBytesLength > 252)ESP32incomingBytesLength = 0;//prevent overflow
-                ESP32incomingBytes[ESP32incomingBytesLength] = SerialESP32.read(); 
-                ESP32incomingBytesLength++;      
+        if (ESP32InPacketLength)
+        {
+            for (byte b = 0; b < ESP32InPacketLength; b++)
+            {
+                if (ESP32incomingBytesLength > 252)
+                    ESP32incomingBytesLength = 0; // prevent overflow
+                ESP32incomingBytes[ESP32incomingBytesLength] = SerialESP32.read();
+                ESP32incomingBytesLength++;
                 if ((ESP32incomingBytes[ESP32incomingBytesLength - 2] == 13) && (ESP32incomingBytes[ESP32incomingBytesLength - 1] == 10))
                 {
                     ESP32gotLFCR = true;
@@ -112,17 +120,23 @@ void loop()
                 }
             }
         }
-        if (ESP32gotLFCR) {            
-            if (ESP32Debug) {
-                Serial.print("ESP32->T41: "); Serial.print(ESP32incomingBytesLength); Serial.print(" bytes: ");
+        if (ESP32gotLFCR)
+        {
+            if (ESP32Debug)
+            {
+                Serial.print("ESP32->T41: ");
+                Serial.print(ESP32incomingBytesLength);
+                Serial.print(" bytes: ");
                 for (byte b = 0; b < ESP32incomingBytesLength; b++)
                 {
-                    Serial.print(ESP32incomingBytes[b]); Serial.print(" ");
+                    Serial.print(ESP32incomingBytes[b]);
+                    Serial.print(" ");
                 }
                 Serial.println();
             }
-            if (UDP.isRunning) {
-                UDP.SendUdpByte(ESP32incomingBytes, ESP32incomingBytesLength, UDP.broadcastIP, UDP.portAgIO_9999);              
+            if (UDP.isRunning)
+            {
+                UDP.SendUdpByte(ESP32incomingBytes, ESP32incomingBytesLength, UDP.broadcastIP, UDP.portAgIO_9999);
             }
             ESP32gotLFCR = false;
             ESP32incomingBytesLength = 0;
@@ -149,16 +163,19 @@ void loop()
     // ******************* "Right" Dual or Single GPS1 (position) *******************
     GPS1usage.timeIn();
     gps1MsgBufLen = SerialGPS.available();
-    if (gps1MsgBufLen) {
+    if (gps1MsgBufLen)
+    {
 #if AIOv50a false
-        for (byte b = 0; b < gps1MsgBufLen; b++) {
+        for (byte b = 0; b < gps1MsgBufLen; b++)
+        {
             nmeaParser << SerialGPS.read();
         }
         GPS1usage.timeOut();
 #endif
 #ifdef AIOv50a
         SerialGPS.readBytes(gps1MsgBuf, gps1MsgBufLen);
-        for (byte b = 0; b < gps1MsgBufLen; b++) {
+        for (byte b = 0; b < gps1MsgBufLen; b++)
+        {
             nmeaParser << gps1MsgBuf[b];
         }
         GPS1usage.timeOut();
@@ -176,7 +193,7 @@ void loop()
         if (gps2Available > buffer_size - 50)
         { // this should not trigger except maybe at boot up
           // SerialGPS2->clear();
-            Serial.print((String)"\r\n" + millis() + " *** SerialGPS2 buffer cleared! ***");
+            Serial.print((String) "\r\n" + millis() + " *** SerialGPS2 buffer cleared! ***");
             return;
         }
         gps2Stats.update(gps2Available);
@@ -195,7 +212,7 @@ void loop()
 
     // ******************* For DUAL mode *******************
     if (ubxParser.relPosNedReady && ggaReady)
-    {                                   // if both GGA & relposNED are ready
+    {                                     // if both GGA & relposNED are ready
         buildPandaOrPaogi(PAOGI_DUAL);    // build a PAOGI msg
         ubxParser.relPosNedReady = false; // reset for next relposned trigger
         ubxParser.relPosNedRcvd = false;
@@ -210,8 +227,9 @@ void loop()
 
     if (imuPandaSyncTimer > 150)
     {
-        //imuPandaSyncTimer -= 100;       
-        if (nmeaDebug) {
+        // imuPandaSyncTimer -= 100;
+        if (nmeaDebug)
+        {
             Serial.println();
             Serial.print("\r\n");
             Serial.print(millis());
@@ -219,7 +237,7 @@ void loop()
             Serial.print(imuPandaSyncTimer);
             Serial.printf("                 *** GGA was missed or late! *** (%i)\r\n", ggaMissed);
         }
-        imuPandaSyncTimer -= 100; 
+        imuPandaSyncTimer -= 100;
         ggaMissed++;
         ggaReady = false;
         ubxParser.relPosNedReady = false;
@@ -227,7 +245,8 @@ void loop()
 
     if (ubxParser.relPosTimer > 150)
     {
-        if (nmeaDebug) {
+        if (nmeaDebug)
+        {
             Serial.println();
             Serial.print("\r\n");
             Serial.print(millis());
@@ -267,7 +286,8 @@ void loop()
     LEDSusage.timeIn();
     LEDs.updateLoop(); // LEDS.h
     LEDSusage.timeOut();
-    if (SConAiO_InUse) {
+    if (SConAiO_InUse)
+    {
         MACHusage.timeIn();
         machine.watchdogCheck(); // machine.h, run machine class for v4.x to suppress unprocessed PGN messages, also reduces #ifdefs
         MACHusage.timeOut();
@@ -279,7 +299,7 @@ void loop()
     teensyReset.update(); // reset.h
 #endif
 
-  // to count loop hz & get baseline cpu "idle" time
+    // to count loop hz & get baseline cpu "idle" time
     LOOPusage.timeIn();
     testCounter++;
     LOOPusage.timeOut();

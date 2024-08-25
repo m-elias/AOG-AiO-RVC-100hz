@@ -3,145 +3,161 @@
 //******************************************************************************
 #include <Arduino.h>
 #include "CRCStream.h"
-extern "C" {
-  #include "FlashTxx.h"		// TLC/T3x/T4x/TMM flash primitives
+extern "C"
+{
+#include "FlashTxx.h" // TLC/T3x/T4x/TMM flash primitives
 }
 
 //******************************************************************************
 // hex_info_t	struct for hex record and hex file info
 //******************************************************************************
-typedef struct {	// 
-  char *data;		// pointer to array allocated elsewhere
-  unsigned int addr;	// address in intel hex record
-  unsigned int code;	// intel hex record type (0=data, etc.)
-  unsigned int num;	// number of data bytes in intel hex record
- 
-  uint32_t base;	// base address to be added to intel hex 16-bit addr
-  uint32_t min;		// min address in hex file
-  uint32_t max;		// max address in hex file
-  
-  int eof;		// set true on intel hex EOF (code = 1)
-  int lines;		// number of hex records received  
-} hex_info_t;
+typedef struct
+{                    //
+  char *data;        // pointer to array allocated elsewhere
+  unsigned int addr; // address in intel hex record
+  unsigned int code; // intel hex record type (0=data, etc.)
+  unsigned int num;  // number of data bytes in intel hex record
 
+  uint32_t base; // base address to be added to intel hex 16-bit addr
+  uint32_t min;  // min address in hex file
+  uint32_t max;  // max address in hex file
+
+  int eof;   // set true on intel hex EOF (code = 1)
+  int lines; // number of hex records received
+} hex_info_t;
 
 //******************************************************************************
 // hex_info_t	struct for hex record and hex file info
 //******************************************************************************
-void read_ascii_line( Stream *serial, char *line, int maxbytes, bool* streamHasCRLF );
-int  parse_hex_line( const char *theline, char *bytes,
-	unsigned int *addr, unsigned int *num, unsigned int *code );
-int  process_hex_record( hex_info_t *hex );
-void update_firmware( Stream *in, Stream *out,
-			uint32_t buffer_addr, uint32_t buffer_size );
+void read_ascii_line(Stream *serial, char *line, int maxbytes, bool *streamHasCRLF);
+int parse_hex_line(const char *theline, char *bytes,
+                   unsigned int *addr, unsigned int *num, unsigned int *code);
+int process_hex_record(hex_info_t *hex);
+void update_firmware(Stream *in, Stream *out,
+                     uint32_t buffer_addr, uint32_t buffer_size);
 
 //******************************************************************************
 // update_firmware()	read hex file and write new firmware to program flash
 //******************************************************************************
-void update_firmware( CRCStream *in, Stream *out, uint32_t buffer_addr, uint32_t buffer_size )
+void update_firmware(CRCStream *in, Stream *out, uint32_t buffer_addr, uint32_t buffer_size)
 {
-  static char line[96];					// buffer for hex lines
-  static char data[32] __attribute__ ((aligned (8)));	// buffer for hex data
-  hex_info_t hex = {					// intel hex info struct
-    data, 0, 0, 0,					//   data,addr,num,code
-    0, 0xFFFFFFFF, 0, 					//   base,min,max,
-    0, 0						//   eof,lines
+  static char line[96];                             // buffer for hex lines
+  static char data[32] __attribute__((aligned(8))); // buffer for hex data
+  hex_info_t hex = {
+      // intel hex info struct
+      data, 0, 0, 0,    //   data,addr,num,code
+      0, 0xFFFFFFFF, 0, //   base,min,max,
+      0, 0              //   eof,lines
   };
 
-  out->printf( "reading hex lines...\n" );
+  out->printf("reading hex lines...\n");
 
   bool streamHasCRLF = false;
-  
-  // read and process intel hex lines until EOF or error
-  while (!hex.eof)  {
 
-    read_ascii_line( in, line, sizeof(line), &streamHasCRLF);
+  // read and process intel hex lines until EOF or error
+  while (!hex.eof)
+  {
+
+    read_ascii_line(in, line, sizeof(line), &streamHasCRLF);
     // reliability of transfer via USB is improved by this printf/flush
-    if (in == out && out == (Stream*)&Serial) {
-      out->printf( "%s\n", line );
+    if (in == out && out == (Stream *)&Serial)
+    {
+      out->printf("%s\n", line);
       out->flush();
     }
 
-    if (parse_hex_line( (const char*)line, hex.data, &hex.addr, &hex.num, &hex.code ) == 0) {
-      out->printf( "abort - bad hex line %s\n", line );
+    if (parse_hex_line((const char *)line, hex.data, &hex.addr, &hex.num, &hex.code) == 0)
+    {
+      out->printf("abort - bad hex line %s\n", line);
     }
-    else if (process_hex_record( &hex ) != 0) { // error on bad hex code
-      out->printf( "abort - invalid hex code %d\n", hex.code );
+    else if (process_hex_record(&hex) != 0)
+    { // error on bad hex code
+      out->printf("abort - invalid hex code %d\n", hex.code);
       return;
     }
-    else if (hex.code == 0) { // if data record
+    else if (hex.code == 0)
+    { // if data record
       uint32_t addr = buffer_addr + hex.base + hex.addr - FLASH_BASE_ADDR;
-      if (hex.max > (FLASH_BASE_ADDR + buffer_size)) {
-        out->printf( "abort - max address %08lX too large\n", hex.max );
+      if (hex.max > (FLASH_BASE_ADDR + buffer_size))
+      {
+        out->printf("abort - max address %08lX too large\n", hex.max);
         return;
       }
-      else if (!IN_FLASH(buffer_addr)) {
-        memcpy( (void*)addr, (void*)hex.data, hex.num );
+      else if (!IN_FLASH(buffer_addr))
+      {
+        memcpy((void *)addr, (void *)hex.data, hex.num);
       }
-      else if (IN_FLASH(buffer_addr)) {
-        int error = flash_write_block( addr, hex.data, hex.num );
-        if (error) {
-          out->printf( "abort - error %02X in flash_write_block()\n", error );
-	        return;
+      else if (IN_FLASH(buffer_addr))
+      {
+        int error = flash_write_block(addr, hex.data, hex.num);
+        if (error)
+        {
+          out->printf("abort - error %02X in flash_write_block()\n", error);
+          return;
         }
       }
     }
     hex.lines++;
   }
-  
-  if (!in->sizeAndCRCMatch()) {
-    out->printf( "abort - data size or CRC does not match expected\n" );
-    out->printf( "Expected size: %d, actual: %d\n", in->getExpectedSize(), in->getCurrentSize());
-    out->printf( "Expected CRC: %x, actual: %x\n", in->getExpectedCRC(), in->getCurrentCRC());
+
+  if (!in->sizeAndCRCMatch())
+  {
+    out->printf("abort - data size or CRC does not match expected\n");
+    out->printf("Expected size: %d, actual: %d\n", in->getExpectedSize(), in->getCurrentSize());
+    out->printf("Expected CRC: %x, actual: %x\n", in->getExpectedCRC(), in->getCurrentCRC());
     return;
   }
 
-  out->printf( "\ndata size: %d, data CRC: %x\n", in->getCurrentSize(), in->getCurrentCRC());
-  out->printf( "hex file: %1d lines %1lu bytes (%08lX - %08lX)\n",
-			hex.lines, hex.max-hex.min, hex.min, hex.max );
+  out->printf("\ndata size: %d, data CRC: %x\n", in->getCurrentSize(), in->getCurrentCRC());
+  out->printf("hex file: %1d lines %1lu bytes (%08lX - %08lX)\n",
+              hex.lines, hex.max - hex.min, hex.min, hex.max);
 
-  // check FSEC value in new code -- abort if incorrect
-  #if defined(KINETISK) || defined(KINETISL)
+// check FSEC value in new code -- abort if incorrect
+#if defined(KINETISK) || defined(KINETISL)
   uint32_t value = *(uint32_t *)(0x40C + buffer_addr);
-  if (value == 0xfffff9de) {
-    out->printf( "new code contains correct FSEC value %08lX\n", value );
+  if (value == 0xfffff9de)
+  {
+    out->printf("new code contains correct FSEC value %08lX\n", value);
   }
-  else {
-    out->printf( "abort - FSEC value %08lX should be FFFFF9DE\n", value );
+  else
+  {
+    out->printf("abort - FSEC value %08lX should be FFFFF9DE\n", value);
     return;
-  } 
-  #endif
+  }
+#endif
 
   // check FLASH_ID in new code - abort if not found
-  if (check_flash_id( buffer_addr, hex.max - hex.min )) {
-    out->printf( "new code contains correct target ID %s\n", FLASH_ID );
+  if (check_flash_id(buffer_addr, hex.max - hex.min))
+  {
+    out->printf("new code contains correct target ID %s\n", FLASH_ID);
   }
-  else {
-    out->printf( "abort - new code missing string %s\n", FLASH_ID );
+  else
+  {
+    out->printf("abort - new code missing string %s\n", FLASH_ID);
     return;
   }
 
-// We don't want user input for our purposes
-//  // get user input to write to flash or abort
-//  int user_lines = -1;
-//  while (user_lines != hex.lines && user_lines != 0) {
-//    out->printf( "enter %d to flash or 0 to abort\n", hex.lines );
-//    read_ascii_line( out, line, sizeof(line) );
-//    sscanf( line, "%d", &user_lines );
-//  }
-//  
-//  if (user_lines == 0) {
-//    out->printf( "abort - user entered 0 lines\n" );
-//    return;
-//  }
-//  else {
-    out->printf( "calling flash_move() to load new firmware in 5 seconds...\n" );
-    out->flush();
-    delay(5000);
-//  }
-  
+  // We don't want user input for our purposes
+  //  // get user input to write to flash or abort
+  //  int user_lines = -1;
+  //  while (user_lines != hex.lines && user_lines != 0) {
+  //    out->printf( "enter %d to flash or 0 to abort\n", hex.lines );
+  //    read_ascii_line( out, line, sizeof(line) );
+  //    sscanf( line, "%d", &user_lines );
+  //  }
+  //
+  //  if (user_lines == 0) {
+  //    out->printf( "abort - user entered 0 lines\n" );
+  //    return;
+  //  }
+  //  else {
+  out->printf("calling flash_move() to load new firmware in 5 seconds...\n");
+  out->flush();
+  delay(5000);
+  //  }
+
   // move new program from buffer to flash, free buffer, and reboot
-  flash_move( FLASH_BASE_ADDR, buffer_addr, hex.max-hex.min );
+  flash_move(FLASH_BASE_ADDR, buffer_addr, hex.max - hex.min);
 
   // should not return from flash_move(), but put REBOOT here as reminder
   REBOOT;
@@ -150,30 +166,36 @@ void update_firmware( CRCStream *in, Stream *out, uint32_t buffer_addr, uint32_t
 //******************************************************************************
 // read_ascii_line()	read ascii characters until '\n', '\r', or max bytes
 //******************************************************************************
-void read_ascii_line( Stream *serial, char *line, int maxbytes, bool* streamHasCRLF )
+void read_ascii_line(Stream *serial, char *line, int maxbytes, bool *streamHasCRLF)
 {
-  int c=0, nchar=0;
-  while (serial->available()) {
+  int c = 0, nchar = 0;
+  while (serial->available())
+  {
     c = serial->read();
-    if (c == '\n' || c == '\r') {
+    if (c == '\n' || c == '\r')
+    {
       *streamHasCRLF = true;
       continue;
     }
-    else {
+    else
+    {
       line[nchar++] = c;
       break;
     }
   }
-  while (nchar < maxbytes && !(c == '\n' || c == '\r')) {
-    if (serial->available()) {
+  while (nchar < maxbytes && !(c == '\n' || c == '\r'))
+  {
+    if (serial->available())
+    {
       c = serial->read();
       line[nchar++] = c;
     }
   }
-  line[nchar-1] = 0;	// null-terminate
+  line[nchar - 1] = 0; // null-terminate
 
   // drop the extra cr/lf now
-  if (*streamHasCRLF && serial->available()) {
+  if (*streamHasCRLF && serial->available())
+  {
     serial->read();
   }
 }
@@ -181,31 +203,37 @@ void read_ascii_line( Stream *serial, char *line, int maxbytes, bool* streamHasC
 //******************************************************************************
 // process_hex_record()		process record and return okay (0) or error (1)
 //******************************************************************************
-int process_hex_record( hex_info_t *hex )
+int process_hex_record(hex_info_t *hex)
 {
-  if (hex->code==0) { // data -- update min/max address so far
+  if (hex->code == 0)
+  { // data -- update min/max address so far
     if (hex->base + hex->addr + hex->num > hex->max)
       hex->max = hex->base + hex->addr + hex->num;
     if (hex->base + hex->addr < hex->min)
       hex->min = hex->base + hex->addr;
   }
-  else if (hex->code==1) { // EOF (:flash command not received yet)
+  else if (hex->code == 1)
+  { // EOF (:flash command not received yet)
     hex->eof = 1;
   }
-  else if (hex->code==2) { // extended segment address (top 16 of 24-bit addr)
+  else if (hex->code == 2)
+  { // extended segment address (top 16 of 24-bit addr)
     hex->base = ((hex->data[0] << 8) | hex->data[1]) << 4;
   }
-  else if (hex->code==3) { // start segment address (80x86 real mode only)
+  else if (hex->code == 3)
+  { // start segment address (80x86 real mode only)
     return 1;
   }
-  else if (hex->code==4) { // extended linear address (top 16 of 32-bit addr)
+  else if (hex->code == 4)
+  { // extended linear address (top 16 of 32-bit addr)
     hex->base = ((hex->data[0] << 8) | hex->data[1]) << 16;
   }
-  else if (hex->code==5) { // start linear address (32-bit big endian addr)
-    hex->base = (hex->data[0] << 24) | (hex->data[1] << 16)
-              | (hex->data[2] <<  8) | (hex->data[3] <<  0);
+  else if (hex->code == 5)
+  { // start linear address (32-bit big endian addr)
+    hex->base = (hex->data[0] << 24) | (hex->data[1] << 16) | (hex->data[2] << 8) | (hex->data[3] << 0);
   }
-  else {
+  else
+  {
     return 1;
   }
 
@@ -244,11 +272,11 @@ int process_hex_record( hex_info_t *hex )
 /* line was valid, or a 0 if an error occured.  The variable */
 /* num gets the number of bytes that were stored into bytes[] */
 
-#include <stdio.h>		// sscanf(), etc.
-#include <string.h>		// strlen(), etc.
+#include <stdio.h>  // sscanf(), etc.
+#include <string.h> // strlen(), etc.
 
-int parse_hex_line( const char *theline, char *bytes, 
-		unsigned int *addr, unsigned int *num, unsigned int *code )
+int parse_hex_line(const char *theline, char *bytes,
+                   unsigned int *addr, unsigned int *num, unsigned int *code)
 {
   unsigned sum, len, cksum;
   const char *ptr;
@@ -257,25 +285,25 @@ int parse_hex_line( const char *theline, char *bytes,
   *num = 0;
   if (theline[0] != ':')
     return 0;
-  if (strlen (theline) < 11)
+  if (strlen(theline) < 11)
     return 0;
   ptr = theline + 1;
-  if (!sscanf (ptr, "%02x", &len))
+  if (!sscanf(ptr, "%02x", &len))
     return 0;
   ptr += 2;
-  if (strlen (theline) < (11 + (len * 2)))
+  if (strlen(theline) < (11 + (len * 2)))
     return 0;
-  if (!sscanf (ptr, "%04x", (unsigned int *)addr))
+  if (!sscanf(ptr, "%04x", (unsigned int *)addr))
     return 0;
   ptr += 4;
   /* Serial.printf("Line: length=%d Addr=%d\n", len, *addr); */
-  if (!sscanf (ptr, "%02x", code))
+  if (!sscanf(ptr, "%02x", code))
     return 0;
   ptr += 2;
   sum = (len & 255) + ((*addr >> 8) & 255) + (*addr & 255) + (*code & 255);
   while (*num != len)
   {
-    if (!sscanf (ptr, "%02x", &temp))
+    if (!sscanf(ptr, "%02x", &temp))
       return 0;
     bytes[*num] = temp;
     ptr += 2;
@@ -284,10 +312,10 @@ int parse_hex_line( const char *theline, char *bytes,
     if (*num >= 256)
       return 0;
   }
-  if (!sscanf (ptr, "%02x", &cksum))
+  if (!sscanf(ptr, "%02x", &cksum))
     return 0;
 
   if (((sum & 255) + (cksum & 255)) & 255)
-    return 0;     /* checksum error */
+    return 0; /* checksum error */
   return 1;
 }

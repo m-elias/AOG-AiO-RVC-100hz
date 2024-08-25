@@ -31,13 +31,13 @@ void serialSetup()
 #ifdef AIOv50a
   SerialRS232.begin(baudRS232);
   SerialRS232.addMemoryForWrite(RS232txbuffer, buffer_size);
-  //SerialRS232.addMemoryForRead(RS232rxbuffer, buffer_size);    // not needed unless custom rs232 rx code is added
-  SerialESP32.begin(baudESP32); //MTZ8302
+  // SerialRS232.addMemoryForRead(RS232rxbuffer, buffer_size);    // not needed unless custom rs232 rx code is added
+  SerialESP32.begin(baudESP32); // MTZ8302
   SerialESP32.addMemoryForRead(ESP32rxbuffer, buffer_size);
   SerialESP32.addMemoryForWrite(ESP32txbuffer, buffer_size);
-  //MTZ8302 SerialESP32->begin(baudESP32);
-  //MTZ8302 SerialESP32->addMemoryForRead(ESP32rxbuffer, buffer_size);
-  //MTZ8302 SerialESP32->addMemoryForWrite(ESP32txbuffer, buffer_size);
+  // MTZ8302 SerialESP32->begin(baudESP32);
+  // MTZ8302 SerialESP32->addMemoryForRead(ESP32rxbuffer, buffer_size);
+  // MTZ8302 SerialESP32->addMemoryForWrite(ESP32txbuffer, buffer_size);
 #endif
 }
 
@@ -53,9 +53,9 @@ void parserSetup()
 
 void resetStartingTimersBuffers()
 {
- machine.watchdogTimer = 0;
- SerialGPS.clear();
- //SerialGPS2->clear();
+  machine.watchdogTimer = 0;
+  SerialGPS.clear();
+  // SerialGPS2->clear();
 #ifdef AIOv50a
   SerialESP32.clear();
 #endif

@@ -47,21 +47,43 @@
 #endif
 
 // Do not use stl library, implement trivial version of std::is_signed
-namespace streaming_std {
-template<typename T>
-  struct is_signed { static const bool value = false; };
-  template<>
-  struct is_signed<int8_t> { static const bool value = true; };
-  template<>
-  struct is_signed<int16_t> { static const bool value = true; };
-  template<>
-  struct is_signed<int32_t> { static const bool value = true; };
-  template<>
-  struct is_signed<int64_t> { static const bool value = true; };
-  template<>
-  struct is_signed<float> { static const bool value = true; };
-  template<>
-  struct is_signed<double> { static const bool value = true; };
+namespace streaming_std
+{
+  template <typename T>
+  struct is_signed
+  {
+    static const bool value = false;
+  };
+  template <>
+  struct is_signed<int8_t>
+  {
+    static const bool value = true;
+  };
+  template <>
+  struct is_signed<int16_t>
+  {
+    static const bool value = true;
+  };
+  template <>
+  struct is_signed<int32_t>
+  {
+    static const bool value = true;
+  };
+  template <>
+  struct is_signed<int64_t>
+  {
+    static const bool value = true;
+  };
+  template <>
+  struct is_signed<float>
+  {
+    static const bool value = true;
+  };
+  template <>
+  struct is_signed<double>
+  {
+    static const bool value = true;
+  };
 };
 
 #define STREAMING_LIBRARY_VERSION 6
@@ -70,28 +92,33 @@ template<typename T>
 #define typeof(x) __typeof__(x)
 #endif
 
-#define STREAMING_MIN(a,b) ((a)<(b)?(a):(b))
+#define STREAMING_MIN(a, b) ((a) < (b) ? (a) : (b))
 
 // PrintBuffer implementation of Print, a small buffer to print in
 // see its use with pad_float()
 template <size_t N>
 class PrintBuffer : public Print
 {
-  size_t  pos = 0;
-  char    str[N] {};
+  size_t pos = 0;
+  char str[N]{};
+
 public:
-  inline const char *operator() ()
-  { return str; };
+  inline const char *operator()()
+  {
+    return str;
+  };
 
   // inline void clear()
   // { pos = 0; str[0] = '\0'; };
 
   inline size_t write(uint8_t c)
-  { return write(&c, 1); };
+  {
+    return write(&c, 1);
+  };
 
   inline size_t write(const uint8_t *buffer, size_t size)
   {
-    size_t s = STREAMING_MIN(size, N-1 - pos); // need a /0 left
+    size_t s = STREAMING_MIN(size, N - 1 - pos); // need a /0 left
     if (s)
     {
       memcpy(&str[pos], buffer, s);
@@ -102,17 +129,21 @@ public:
 };
 
 // Generic template
-template<class T>
-inline Print &operator <<(Print &stream, const T &arg)
-{ stream.print(arg); return stream; }
+template <class T>
+inline Print &operator<<(Print &stream, const T &arg)
+{
+  stream.print(arg);
+  return stream;
+}
 
-template<typename T>
+template <typename T>
 struct _BASED
 {
   T val;
   int base;
-  _BASED(T v, int b): val(v), base(b)
-  {}
+  _BASED(T v, int b) : val(v), base(b)
+  {
+  }
 };
 
 #if ARDUINO >= 100
@@ -121,32 +152,39 @@ struct _BYTE_CODE
 {
   byte val;
   _BYTE_CODE(byte v) : val(v)
-  {}
+  {
+  }
 };
-#define _BYTE(a)    _BYTE_CODE(a)
+#define _BYTE(a) _BYTE_CODE(a)
 
-inline Print &operator <<(Print &obj, const _BYTE_CODE &arg)
-{ obj.write(arg.val); return obj; }
+inline Print &operator<<(Print &obj, const _BYTE_CODE &arg)
+{
+  obj.write(arg.val);
+  return obj;
+}
 
 #else
 
-#define _BYTE(a)    _BASED<typeof(a)>(a, BYTE)
+#define _BYTE(a) _BASED<typeof(a)>(a, BYTE)
 
 #endif
 
-#define _HEX(a)     _BASED<typeof(a)>(a, HEX)
-#define _DEC(a)     _BASED<typeof(a)>(a, DEC)
-#define _OCT(a)     _BASED<typeof(a)>(a, OCT)
-#define _BIN(a)     _BASED<typeof(a)>(a, BIN)
+#define _HEX(a) _BASED<typeof(a)>(a, HEX)
+#define _DEC(a) _BASED<typeof(a)>(a, DEC)
+#define _OCT(a) _BASED<typeof(a)>(a, OCT)
+#define _BIN(a) _BASED<typeof(a)>(a, BIN)
 
 // Specialization for class _BASED
 // Thanks to Arduino forum user Ben Combee who suggested this
 // clever technique to allow for expressions like
 //   Serial << _HEX(a);
 
-template<typename T>
-inline Print &operator <<(Print &obj, const _BASED<T> &arg)
-{ obj.print(arg.val, arg.base); return obj; }
+template <typename T>
+inline Print &operator<<(Print &obj, const _BASED<T> &arg)
+{
+  obj.print(arg.val, arg.base);
+  return obj;
+}
 
 #if ARDUINO >= 18
 // Specialization for class _FLOAT
@@ -159,12 +197,16 @@ struct _FLOAT
 {
   double val; // only Print::print(double)
   int digits;
-  _FLOAT(double v, int d): val(v), digits(d)
-  {}
+  _FLOAT(double v, int d) : val(v), digits(d)
+  {
+  }
 };
 
-inline Print &operator <<(Print &obj, const _FLOAT &arg)
-{ obj.print(arg.val, arg.digits); return obj; }
+inline Print &operator<<(Print &obj, const _FLOAT &arg)
+{
+  obj.print(arg.val, arg.digits);
+  return obj;
+}
 #endif
 
 // Specialization for enum _EndLineCode
@@ -172,10 +214,16 @@ inline Print &operator <<(Print &obj, const _FLOAT &arg)
 // clever technique to allow for expressions like
 //   Serial << "Hello!" << endl;
 
-enum _EndLineCode { endl };
+enum _EndLineCode
+{
+  endl
+};
 
-inline Print &operator <<(Print &obj, _EndLineCode)
-{ obj.println(); return obj; }
+inline Print &operator<<(Print &obj, _EndLineCode)
+{
+  obj.println();
+  return obj;
+}
 
 // Specialization for padding & filling, mainly utilized
 // by the width printers
@@ -186,13 +234,13 @@ inline Print &operator <<(Print &obj, _EndLineCode)
 struct _PAD
 {
   int8_t width;
-  char   chr;
+  char chr;
   _PAD(int8_t w, char c) : width(w), chr(c) {}
 };
 
-inline Print &operator <<(Print& stm, const _PAD &arg)
+inline Print &operator<<(Print &stm, const _PAD &arg)
 {
-  for(int8_t i = 0; i < arg.width; i++)
+  for (int8_t i = 0; i < arg.width; i++)
     stm.print(arg.chr);
   return stm;
 }
@@ -213,23 +261,23 @@ inline Print &operator <<(Print& stm, const _PAD &arg)
 //    for(int index=0; index<byte_array_size; index++)
 //      Serial << _WIDTHZ(_HEX(byte_array[index]))
 
-template<typename T>
+template <typename T>
 struct __WIDTH
 {
   const T val;
   int8_t width;
   char pad;
-  __WIDTH(const T& v, int8_t w, char p) : val(v), width(w), pad(p) {}
+  __WIDTH(const T &v, int8_t w, char p) : val(v), width(w), pad(p) {}
 };
 
 //  Count digits in an integer of specific base
-template<typename T>
+template <typename T>
 inline uint8_t digits(T v, int8_t base = 10)
 {
   uint8_t digits = 0;
-  if ( streaming_std::is_signed<T>::value )
+  if (streaming_std::is_signed<T>::value)
   {
-    if ( v < 0 )
+    if (v < 0)
     {
       digits++;
       v = -v; // v needs to be postive for the digits counter to work
@@ -239,57 +287,74 @@ inline uint8_t digits(T v, int8_t base = 10)
   {
     v /= base;
     digits++;
-  } while( v > 0 );
+  } while (v > 0);
   return digits;
 }
 
 // Generic get the width of a value in base 10
-template<typename T>
+template <typename T>
 inline uint8_t get_value_width(T val)
-{ return digits(val); }
+{
+  return digits(val);
+}
 
-inline uint8_t get_value_width(const char * val)
-{ return strlen(val); }
+inline uint8_t get_value_width(const char *val)
+{
+  return strlen(val);
+}
 
 #ifdef ARDUINO
-inline uint8_t get_value_width(const __FlashStringHelper * val)
-{ return strlen_P(reinterpret_cast<const char *>(val)); }
+inline uint8_t get_value_width(const __FlashStringHelper *val)
+{
+  return strlen_P(reinterpret_cast<const char *>(val));
+}
 #endif
 
 // _BASED<T> get the width of a value
-template<typename T>
+template <typename T>
 inline uint8_t get_value_width(_BASED<T> b)
-{ return digits(b.val, b.base); }
+{
+  return digits(b.val, b.base);
+}
 
 // Constructor wrapper to allow automatic template parameter deduction
-template<typename T>
+template <typename T>
 __WIDTH<T> _WIDTH(T val, int8_t width) { return __WIDTH<T>(val, width, ' '); }
-template<typename T>
+template <typename T>
 __WIDTH<T> _WIDTHZ(T val, int8_t width) { return __WIDTH<T>(val, width, '0'); }
 
-
 // Operator overload to handle width printing.
-template<typename T>
-inline Print &operator <<(Print &stm, const __WIDTH<T> &arg)
-{ stm << _PAD(arg.width - get_value_width(arg.val), arg.pad) << arg.val; return stm; }
+template <typename T>
+inline Print &operator<<(Print &stm, const __WIDTH<T> &arg)
+{
+  stm << _PAD(arg.width - get_value_width(arg.val), arg.pad) << arg.val;
+  return stm;
+}
 
 // explicit Operator overload to handle width printing of _FLOAT, double and float
-template<typename T>
+template <typename T>
 inline Print &pad_float(Print &stm, const __WIDTH<T> &arg, const double val, const int digits = 2) // see Print::print(double, int = 2)
 {
-  PrintBuffer<32> buf; // it's only ~45B on the stack, no allocation, leak or fragmentation
-  size_t size = buf.print(val, digits); // print in buf
+  PrintBuffer<32> buf;                                    // it's only ~45B on the stack, no allocation, leak or fragmentation
+  size_t size = buf.print(val, digits);                   // print in buf
   return stm << _PAD(arg.width - size, arg.pad) << buf(); // pad and concat what's in buf
 }
 
-inline Print &operator <<(Print &stm, const __WIDTH<float>  &arg)
-{ return pad_float(stm, arg, arg.val); }
+inline Print &operator<<(Print &stm, const __WIDTH<float> &arg)
+{
+  return pad_float(stm, arg, arg.val);
+}
 
-inline Print &operator <<(Print &stm, const __WIDTH<double> &arg)
-{ return pad_float(stm, arg, arg.val); }
+inline Print &operator<<(Print &stm, const __WIDTH<double> &arg)
+{
+  return pad_float(stm, arg, arg.val);
+}
 
-inline Print &operator <<(Print &stm, const __WIDTH<_FLOAT> &arg)
-{ auto& f = arg.val; return pad_float(stm, arg, f.val, f.digits); }
+inline Print &operator<<(Print &stm, const __WIDTH<_FLOAT> &arg)
+{
+  auto &f = arg.val;
+  return pad_float(stm, arg, f.val, f.digits);
+}
 
 // a less verbose _FLOATW for _WIDTH(_FLOAT)
 #define _FLOATW(val, digits, width) _WIDTH<_FLOAT>(_FLOAT((val), (digits)), (width))
@@ -309,26 +374,28 @@ inline Print &operator <<(Print &stm, const __WIDTH<_FLOAT> &arg)
 
 // Ok, hold your hats. This is a foray into C++11's variadic template engine ...
 
-inline char get_next_format_char(const char *& format_string)
+inline char get_next_format_char(const char *&format_string)
 {
   char format_char = *format_string;
-  if ( format_char > 0 ) format_string++;
+  if (format_char > 0)
+    format_string++;
   return format_char;
 }
 
 #ifdef ARDUINO
-inline char get_next_format_char(const __FlashStringHelper*& format_string)
+inline char get_next_format_char(const __FlashStringHelper *&format_string)
 {
   char format_char = pgm_read_byte(format_string);
-  if ( format_char > 0 ) format_string = reinterpret_cast<const __FlashStringHelper*>(reinterpret_cast<const char *>(format_string)+1);
+  if (format_char > 0)
+    format_string = reinterpret_cast<const __FlashStringHelper *>(reinterpret_cast<const char *>(format_string) + 1);
   return format_char;
 }
 #endif
 
-template<typename Ft>
-inline bool check_backslash(char& format_char, Ft& format_string)
+template <typename Ft>
+inline bool check_backslash(char &format_char, Ft &format_string)
 {
-  if ( format_char == '\\')
+  if (format_char == '\\')
   {
     format_char = get_next_format_char(format_string);
     return true;
@@ -337,35 +404,35 @@ inline bool check_backslash(char& format_char, Ft& format_string)
 }
 
 // The template tail printer helper
-template<typename Ft, typename... Ts>
+template <typename Ft, typename... Ts>
 struct __FMT
 {
   Ft format_string;
-  __FMT(Ft f, Ts ... args) : format_string(f) {}
-  inline void tstreamf(Print& stm, Ft format) const
+  __FMT(Ft f, Ts... args) : format_string(f) {}
+  inline void tstreamf(Print &stm, Ft format) const
   {
-    while(char c = get_next_format_char(format))
+    while (char c = get_next_format_char(format))
     {
       check_backslash(c, format);
-      if ( c )
+      if (c)
         stm.print(c);
     }
   }
 };
 
 // The variadic template helper
-template<typename Ft, typename T, typename... Ts>
+template <typename Ft, typename T, typename... Ts>
 struct __FMT<Ft, T, Ts...> : __FMT<Ft, Ts...>
 {
   T val;
   __FMT(Ft f, T t, Ts... ts) : __FMT<Ft, Ts...>(f, ts...), val(t) {}
-  inline void tstreamf(Print& stm, Ft format) const
+  inline void tstreamf(Print &stm, Ft format) const
   {
-    while(char c = get_next_format_char(format))
+    while (char c = get_next_format_char(format))
     {
       if (!check_backslash(c, format))
       {
-        if ( c == '%')
+        if (c == '%')
         {
           stm << val;
           // Variadic recursion ... compiler rolls this out during
@@ -382,25 +449,25 @@ struct __FMT<Ft, T, Ts...> : __FMT<Ft, Ts...>
 
 // The actual operator should you only instanciate the FMT
 // helper with a format string and no parameters
-template<typename Ft, typename... Ts>
-inline Print& operator <<(Print &stm, const __FMT<Ft, Ts...> &args)
+template <typename Ft, typename... Ts>
+inline Print &operator<<(Print &stm, const __FMT<Ft, Ts...> &args)
 {
-    args.tstreamf(stm, args.format_string);
-    return stm;
+  args.tstreamf(stm, args.format_string);
+  return stm;
 }
 
 // The variadic stream helper
-template<typename Ft, typename T, typename... Ts>
-inline Print& operator <<(Print &stm, const __FMT<Ft, T, Ts...> &args)
+template <typename Ft, typename T, typename... Ts>
+inline Print &operator<<(Print &stm, const __FMT<Ft, T, Ts...> &args)
 {
-    args.tstreamf(stm, args.format_string);
-    return stm;
+  args.tstreamf(stm, args.format_string);
+  return stm;
 }
 
 // As we don't have C++17, we can't get a constructor to use
 // automatic argument deduction, but ... this little trick gets
 // around that ...
-template<typename Ft, typename... Ts>
-__FMT<Ft, Ts...> _FMT(Ft format, Ts ... args) { return __FMT<Ft, Ts...>(format, args...); }
+template <typename Ft, typename... Ts>
+__FMT<Ft, Ts...> _FMT(Ft format, Ts... args) { return __FMT<Ft, Ts...>(format, args...); }
 
 #endif

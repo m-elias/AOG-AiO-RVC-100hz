@@ -5,13 +5,14 @@
 #include "zADS1115.h"
 #include <AsyncWebServer_Teensy41.h>
 
-AsyncWebServer    server(80); // Start web server OTA updates.
+AsyncWebServer server(80); // Start web server OTA updates.
 
-bool ota_apply=0;
+bool ota_apply = 0;
 
-#include "FXUtil.h"		// read_ascii_line(), hex file support
-extern "C" {
-  #include "FlashTxx.h"		// TLC/T3x/T4x/TMM flash primitives
+#include "FXUtil.h" // read_ascii_line(), hex file support
+extern "C"
+{
+#include "FlashTxx.h" // TLC/T3x/T4x/TMM flash primitives
 }
 
 #include "LEDS.h"
@@ -51,12 +52,11 @@ bool printCpuUsages = false;
 bool printStats = false;
 uint16_t ggaMissed;
 
-//ESP32
+// ESP32
 bool ESP32Debug = false;
 bool ESP32gotLFCR = false;
 uint8_t ESP32incomingBytes[254];
 uint8_t ESP32incomingBytesLength = 0;
-
 
 // Autosteer variables
 bool autoSteerEnabled = false;
@@ -198,6 +198,3 @@ bool gotLF = false;
 bool gotDollar = false;
 byte gps1MsgBuf[254];
 int gps1MsgBufLen = 0;
-
-
-
