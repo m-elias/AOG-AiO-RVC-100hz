@@ -15,9 +15,9 @@ void serialSetup()
 #endif
 
   // setup GPS serial ports here
-  SerialGPS->begin(baudGPS);
-  // SerialGPS->addMemoryForRead(GPSrxbuffer, buffer_size);
-  // SerialGPS->addMemoryForWrite(GPStxbuffer, buffer_size);
+  SerialGPS.begin(baudGPS);
+  SerialGPS.addMemoryForRead(GPSrxbuffer, buffer_size);
+  SerialGPS.addMemoryForWrite(GPStxbuffer, buffer_size);
 
   // delay(10);
   SerialRTK.begin(baudRTK);
@@ -29,13 +29,15 @@ void serialSetup()
   // SerialGPS2->addMemoryForWrite(GPS2txbuffer, buffer_size);
 
 #ifdef AIOv50a
-  SerialRS232->begin(baudRS232);
-  SerialRS232->addMemoryForWrite(RS232txbuffer, buffer_size);
-  // SerialRS232->addMemoryForRead(RS232rxbuffer, buffer_size);    // not needed unless custom rs232 rx code is added
-
-  SerialESP32->begin(baudESP32);
-  SerialESP32->addMemoryForRead(ESP32rxbuffer, buffer_size);
-  SerialESP32->addMemoryForWrite(ESP32txbuffer, buffer_size);
+  SerialRS232.begin(baudRS232);
+  SerialRS232.addMemoryForWrite(RS232txbuffer, buffer_size);
+  //SerialRS232.addMemoryForRead(RS232rxbuffer, buffer_size);    // not needed unless custom rs232 rx code is added
+  SerialESP32.begin(baudESP32); //MTZ8302
+  SerialESP32.addMemoryForRead(ESP32rxbuffer, buffer_size);
+  SerialESP32.addMemoryForWrite(ESP32txbuffer, buffer_size);
+  //MTZ8302 SerialESP32->begin(baudESP32);
+  //MTZ8302 SerialESP32->addMemoryForRead(ESP32rxbuffer, buffer_size);
+  //MTZ8302 SerialESP32->addMemoryForWrite(ESP32txbuffer, buffer_size);
 #endif
 }
 
@@ -51,11 +53,11 @@ void parserSetup()
 
 void resetStartingTimersBuffers()
 {
-// machine.watchdogTimer = 0;
-// SerialGPS->clear();
-// SerialGPS2->clear();
+ machine.watchdogTimer = 0;
+ SerialGPS.clear();
+ //SerialGPS2->clear();
 #ifdef AIOv50a
-  SerialESP32->clear();
+  SerialESP32.clear();
 #endif
   if (BNO.isActive)
     while (!BNO.read(true))

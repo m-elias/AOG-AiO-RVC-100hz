@@ -168,53 +168,54 @@ void GNS_Handler() // Rec'd GNS
 
 void GGA_GNS_PostProcess() // called by either GGA or GNS handler
 {
-  static double platold, plongold, paltold;
-  double plat = atof(GGA.latitude);
-  double plong = atof(GGA.longitude);
-  double palt = atof(GGA.altitude);
-  if (plat >= platold + 0.00001 || plat <= platold - 0.00001)
-  {
-    Serial.print("\r\nlat ");
-    Serial.print(plat, 5);
-    Serial.print(">");
-    Serial.print(platold, 5);
-    platold = plat;
-  }
-  if (plong >= plongold + 0.00001 || plong <= plongold - 0.00001)
-  {
-    Serial.print("\r\nlng ");
-    Serial.print(plong, 5);
-    Serial.print(">");
-    Serial.print(plongold, 5);
-    plongold = plong;
-  }
-  if (palt >= paltold + 0.01 || palt <= paltold - 0.01)
-  {
-    Serial.print("\r\nalt ");
-    Serial.print(palt, 2);
-    Serial.print(">");
-    Serial.print(paltold, 2);
-    paltold = palt;
-  }
+    static double platold, plongold, paltold;
+    double plat = atof(GGA.latitude);
+    double plong = atof(GGA.longitude);
+    double palt = atof(GGA.altitude);
+    if (nmeaDebug) {
+        if (plat >= platold + 0.00001 || plat <= platold - 0.00001)
+        {
+            Serial.print("\r\nlat ");
+            Serial.print(plat, 5);
+            Serial.print(">");
+            Serial.print(platold, 5);
+            platold = plat;
+        }
+        if (plong >= plongold + 0.00001 || plong <= plongold - 0.00001)
+        {
+            Serial.print("\r\nlng ");
+            Serial.print(plong, 5);
+            Serial.print(">");
+            Serial.print(plongold, 5);
+            plongold = plong;
+        }
+        if (palt >= paltold + 0.01 || palt <= paltold - 0.01)
+        {
+            Serial.print("\r\nalt ");
+            Serial.print(palt, 2);
+            Serial.print(">");
+            Serial.print(paltold, 2);
+            paltold = palt;
+        }
+    }
+    ggaReady = true; // we have new GGA or GNS sentence
+    /*Serial.print("\r\n"); Serial.print(millis());
+    Serial.print(" GGA Received ");
+    Serial.print(imuPandaSyncTimer);*/
+    imuPandaSyncTimer = 0; // reset imu timer
+    imuPandaSyncTrigger = true;
+    extraCRLF = true;
+    startup = true;
+    gps1Stats.incHzCount();
+    LEDs.setGpsLED(atoi(GGA.fixQuality));
+    aogGpsToAutoSteerLoopTimer = 0;
+    // aogGpsToAutoSteerLoopTimerEnabled = 1;  // uncomment to print "AIO GPS->AOG->Steer Data back to AIO" delay
 
-  ggaReady = true; // we have new GGA or GNS sentence
-  /*Serial.print("\r\n"); Serial.print(millis());
-  Serial.print(" GGA Received ");
-  Serial.print(imuPandaSyncTimer);*/
-  imuPandaSyncTimer = 0; // reset imu timer
-  imuPandaSyncTrigger = true;
-  extraCRLF = true;
-  startup = true;
-  gps1Stats.incHzCount();
-  LEDs.setGpsLED(atoi(GGA.fixQuality));
-  aogGpsToAutoSteerLoopTimer = 0;
-  // aogGpsToAutoSteerLoopTimerEnabled = 1;  // uncomment to print "AIO GPS->AOG->Steer Data back to AIO" delay
-
-  if (!ubxParser.useDual)
-  {                                  // if not using Dual
-    buildPandaOrPaogi(PANDA_SINGLE); // build the PANDA sentence right away
-    ggaReady = false;
-  } // otherwise wait in main loop() until relposned arrives
+    if (!ubxParser.useDual)
+    {                                  // if not using Dual
+        buildPandaOrPaogi(PANDA_SINGLE); // build the PANDA sentence right away
+        ggaReady = false;
+    } // otherwise wait in main loop() until relposned arrives
 }
 
 void GGA_Handler() // Rec'd GGA
@@ -369,13 +370,13 @@ void buildPandaOrPaogi(bool _panda) // only called by GGA_Handler (above)
   CalculateChecksum();
   strcat(nmea, "\r\n");
 
-  if (nmeaDebug) {
-  Serial.print("\r\n");
-  Serial.print(millis());
-  Serial.print(" ");
-  Serial.write(nmea);
+  // if (nmeaDebug) {
+  // Serial.print("\r\n");
+  // Serial.print(millis());
+  // Serial.print(" ");
+  // Serial.write(nmea);
   extraCRLF = false;
-  }
+  //}
 
   if (UDP.isRunning) // If ethernet running send the GPS there
   {
