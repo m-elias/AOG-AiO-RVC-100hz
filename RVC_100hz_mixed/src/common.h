@@ -6,6 +6,7 @@
 #include <AsyncWebServer_Teensy41.h>
 
 AsyncWebServer server(80); // Start web server OTA updates.
+
 bool ota_apply = 0;
 
 #include "FXUtil.h" // read_ascii_line(), hex file support
@@ -50,6 +51,12 @@ uint32_t testCounter;
 bool printCpuUsages = false;
 bool printStats = false;
 uint16_t ggaMissed;
+
+// ESP32
+bool ESP32Debug = false;
+bool ESP32gotLFCR = false;
+uint8_t ESP32incomingBytes[254];
+uint8_t ESP32incomingBytesLength = 0;
 
 // Autosteer variables
 bool autoSteerEnabled = false;
@@ -122,7 +129,7 @@ Encoder encoder(KICKOUT_D_PIN, KICKOUT_A_PIN); // read single or double input va
 #include <ADC_util.h>
 ADC *teensyADC = new ADC();                    // 16x oversampling medium speed 12 bit A/D object (set in Autosteer.ino)
 ADS1115_lite ads1115(ADS1115_DEFAULT_ADDRESS); // Use this for the 16-bit version ADS1115
-const int16_t ANALOG_TRIG_THRES = 100;
+// moved to HWv50a const int16_t WorkSWAnanlogThres = 4055;// 100;
 const uint8_t ANALOG_TRIG_HYST = 10;
 
 #include "BNO_RVC.h"
@@ -130,11 +137,11 @@ BNO_RVC BNO; // Roomba Vac mode for BNO085
 
 #include "QNEthernet.h"
 using namespace qindesign::network;
-
 #include "clsPCA9555.h" // https://github.com/nicoverduin/PCA9555
 PCA9555 outputs(0x20);  // 0x20 - I2C addr (A0-A2 grounded), interrupt pin causes boot loop
 
 #include "machine.h"
+bool SConAiO_InUse = true;
 MACHINE machine;                                                   // also used for v4 as it suppressing machine PGN debug messages
 const uint8_t pcaOutputPinNumbers[8] = {1, 0, 12, 15, 9, 8, 6, 7}; // all 8 PCA9555 section/machine output pin numbers on v5.0a
 const uint8_t pcaInputPinNumbers[] = {14, 13, 11, 10, 2, 3, 4, 5}; // all 8 PCA9555 section/machine output "sensing" pin numbers on v5.0a
@@ -144,7 +151,7 @@ Eth_UDP UDP;
 
 #include "zNMEA.h"
 NMEAParser<4> nmeaParser; // A parser is declared with 3 handlers at most
-bool nmeaDebug = 0, extraCRLF;
+bool nmeaDebug = false, extraCRLF;
 
 #include "zUBXParser.h"
 UBX_Parser ubxParser;
@@ -189,5 +196,5 @@ bool udpPassthrough = false; // False = GPS neeeds to send GGA, VTG & HPR messag
 bool gotCR = false;
 bool gotLF = false;
 bool gotDollar = false;
-char msgBuf[254];
-int msgBufLen = 0;
+byte gps1MsgBuf[254];
+int gps1MsgBufLen = 0;

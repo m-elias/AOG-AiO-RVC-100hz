@@ -1,4 +1,14 @@
 /*
+Updated 25. Aug 2024 - MTZ8302
+- PWM ramp at start, PWM accelleration softened to prevent spikes in current
+- current repley divided by PWM: easier stop autosteer at low motor speed & prevent spikes in current when turning fast
+- current from Keya x10 for finer adjustment
+- onboard Section control activated by bool SConAiO_InUse to be able to shut it down, to avoid conflicts with external SC
+- ESP32 to Teensy data moved from Teensy UDP on packet to main loop (on packet is only called when Teensy gets data)
+- changed the serialGPS from SerialGPS -> read to SerialGPS.read() don't know the difference but now there is no BNO timing conflict
+- tested on V5.0 proto with Keya and Phidgets motor, with linar WAS, Elobau WAS and OEM (Fendt) WAS
+- WiFi gateway works
+
 
 Started Feb 2024 - Matt Elias
 Updated Apr 2024

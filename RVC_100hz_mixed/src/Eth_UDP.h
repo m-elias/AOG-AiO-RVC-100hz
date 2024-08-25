@@ -171,48 +171,71 @@ public:
 
   void checkForPGNs(AsyncUDPPacket packet)
   {
-#ifdef AIOv50a
-    ESP32usage.timeIn();
-    if (SerialESP32->available())
-    {
-      static uint8_t incomingBytes[50];
-      static uint8_t incomingIndex;
-      incomingBytes[incomingIndex] = SerialESP32->read();
-      incomingIndex++;
-      /*Serial.print("\r\nindex: "); Serial.print(incomingIndex);
-      Serial.print(" ");
-      for (byte i = 0; i < incomingIndex; i++) {
-        Serial.print(incomingBytes[i]);
-        Serial.print(" ");
-      }*/
+    /*
+    #ifdef AIOv50a
+        ESP32usage.timeIn();
+        //mtz8302
+        unsigned int packetLength = 0;
+        byte incomingBytes[254];
+        byte incomingIndex = 0;
 
-      if (incomingBytes[incomingIndex - 2] == 13 && incomingBytes[incomingIndex - 1] == 10)
-      {
-        if (incomingBytes[0] == 128 && incomingBytes[1] == 129)
+        //ESP32 data?
+        while (SerialESP32.available()) {
+            packetLength = SerialESP32.available();
+            for (incomingIndex = 0; incomingIndex < packetLength; incomingIndex++) {
+                incomingBytes[incomingIndex] = SerialESP32.read();
+            }
+
+            //send via UDP to AgIO
+            if (isRunning) SendUdpByte(incomingBytes, packetLength, broadcastIP, portAgIO_9999);//mtz8302
+
+            //pass data to USB for debug
+            if (ESP32Debug) {
+                Serial.write(incomingBytes, packetLength);
+                Serial.println();
+            }
+        }
+
+       /* if (SerialESP32->available())
         {
-
-          // Modules--Wifi:9999-->ESP32--serial-->Teensy--ethernet:9999-->AgIO
-          // SendUdpByte(incomingBytes, incomingIndex - 2, broadcastIP, portAgIO_9999);
-
-          // pass data to USB for debug
-          /*Serial.print("\r\nE32-s->T41-e:9999->AgIO ");
-          for (byte i = 0; i < incomingIndex - 2; i++) {
+          static uint8_t incomingBytes[50];
+          static uint8_t incomingIndex;
+          incomingBytes[incomingIndex] = SerialESP32->read();
+          incomingIndex++;
+          /*Serial.print("\r\nindex: "); Serial.print(incomingIndex);
+          Serial.print(" ");
+          for (byte i = 0; i < incomingIndex; i++) {
             Serial.print(incomingBytes[i]);
             Serial.print(" ");
-          }
-          Serial.print((String)" (" + SerialESP32->available() + ")");
-          */
-        }
-        else
-        {
-          Serial.print("\r\n\nCR/LF detected but [0]/[1] bytes != 128/129\r\n");
-        }
-        incomingIndex = 0;
-      }
-    }
-    ESP32usage.timeOut();
-#endif // AIOv50a
+          }*/
+    /*
+          if (incomingBytes[incomingIndex - 2] == 13 && incomingBytes[incomingIndex - 1] == 10)
+          {
+            if (incomingBytes[0] == 128 && incomingBytes[1] == 129)
+            {
 
+              // Modules--Wifi:9999-->ESP32--serial-->Teensy--ethernet:9999-->AgIO
+              SendUdpByte(incomingBytes, incomingIndex - 2, broadcastIP, portAgIO_9999);//mtz8302
+
+              // pass data to USB for debug
+              /*Serial.print("\r\nE32-s->T41-e:9999->AgIO ");
+              for (byte i = 0; i < incomingIndex - 2; i++) {
+                Serial.print(incomingBytes[i]);
+                Serial.print(" ");
+              }
+              Serial.print((String)" (" + SerialESP32->available() + ")");
+              */
+    /* }
+          else
+          {
+            Serial.print("\r\n\nCR/LF detected but [0]/[1] bytes != 128/129\r\n");
+          }
+          incomingIndex = 0;
+        }
+      }
+      ESP32usage.timeOut();
+  #endif // AIOv50a
+  */
     PGNusage.timeIn();
     static uint32_t pgnCheckTime;
     uint32_t millisNow = millis();
@@ -222,29 +245,32 @@ public:
 
     if (!isRunning)
       return; // When ethernet is not running, return directly. parsePacket() will block when we don't
-    // uint16_t packet.length() = PGN.parsePacket();                 //get data from AgIO sent by 9999 to this 8888
-    // if (PGN.remotePort() != 9999 || packet.length() < 5) return;  //make sure from AgIO
+              // uint16_t packet.length() = PGN.parsePacket();                 //get data from AgIO sent by 9999 to this 8888
+              // if (PGN.remotePort() != 9999 || packet.length() < 5) return;  //make sure from AgIO
 
-    // uint8_t packet.data()[UDP_MAX_PACKET_SIZE];  // UDP_TX_PACKET_MAX_SIZE is not large enough for machine pin settings PGN
-    // PGN.read(packet.data(), UDP_MAX_PACKET_SIZE);
+      // uint8_t packet.data()[UDP_MAX_PACKET_SIZE];  // UDP_TX_PACKET_MAX_SIZE is not large enough for machine pin settings PGN
+      // PGN.read(packet.data(), UDP_MAX_PACKET_SIZE);
+
+#ifdef AIOv50a // MTZ8302 moved to top, as ESP32 WiFi may need all info, not only 80,81,7F
+    ESP32usage.timeIn();
+    SerialESP32.write(packet.data(), packet.length());
+    SerialESP32.println(); // to signal end of PGN
+    if (ESP32Debug)
+    {
+      Serial.print("\r\nAgIO-e:8888->T41-s->E32 ");
+      for (uint8_t i = 0; i < packet.length(); i++)
+      {
+        Serial.print(packet.data()[i]);
+        Serial.print(" ");
+      }
+    }
+    ESP32usage.timeOut();
+
+#endif
 
     if (packet.data()[0] != 0x80 || packet.data()[1] != 0x81 || packet.data()[2] != 0x7F)
       return; // verify first 3 PGN header bytes
     bool pgnMatched = false;
-
-#ifdef AIOv50a
-    if (packet.data()[3] != 100)
-    {
-      ESP32usage.timeIn();
-      SerialESP32->write(packet.data(), packet.length());
-      SerialESP32->println(); // to signal end of PGN
-      /*Serial.print("\r\nAgIO-e:8888->T41-s->E32 ");
-      for (uint8_t i = 0; i < packet.length(); i++) {
-        Serial.print(packet.data()[i]); Serial.print(" ");
-      }*/
-      ESP32usage.timeOut();
-    }
-#endif
 
     // changed to multiple IF statements instead of IF ELSE so that AgIO Hello and Scan Request PGNs can be pickedup by other object/classes (ie machine)
 
@@ -379,7 +405,6 @@ public:
           SendUdpByte(scanReplyIMU, sizeof(scanReplyIMU), ipDest, portAgIO_9999);
           UDP_Susage.timeOut();
         }
-
 #ifdef MACHINE_H
         if (machine.isInit)
         {
@@ -603,12 +628,12 @@ public:
       if ((bitRead(guidanceStatus, 0) == 0) || (steerState == 0))
       {                                       // || (gpsSpeed < 0.1)) {
         watchdogTimer = WATCHDOG_FORCE_VALUE; // turn off steering motor
-        // Serial.print(" OFF");
+                                              // Serial.print(" OFF");
       }
       else
       {                    // valid conditions to turn on autosteer
         watchdogTimer = 0; // reset watchdog
-        // Serial.print(" ON");
+                           // Serial.print(" ON");
       }
 
       // Bit 10 XTE
@@ -709,23 +734,26 @@ public:
     } // 0xFE (254) - Steer Data
 
 #ifdef MACHINE_H
-    PGNusage.timeOut();
-    MACHusage.timeIn();
-    // IPAddress ipDest = broadcastIP;
-    // uint8_t machineReplyData[] = { 0x80, 0x81, 123, 0, 0, 0, 0, 0, 0, 0, 0, 0, 23 };  // long enough for machine scan reply len 13, AgIO Hello reply len 11
-    // uint8_t machineReplyData[] = { 0x80, 0x81, 123, 203, 7, myIP[0], myIP[1], myIP[2], myIP[3], rem_ip[0], rem_ip[1], rem_ip[2], 23 };
-    // uint8_t machineReplyLen = 0;    // set default len of 0, which means there's no reply data to send
-
-    if (machine.parsePGN(packet.data(), packet.length())) //, machineReplyData, &machineReplyLen))//, &ipDest))    // look for Machine PGNs
+    if (SConAiO_InUse)
     {
-      pgnMatched = true;
+      PGNusage.timeOut();
+      MACHusage.timeIn();
+      // IPAddress ipDest = broadcastIP;
+      // uint8_t machineReplyData[] = { 0x80, 0x81, 123, 0, 0, 0, 0, 0, 0, 0, 0, 0, 23 };  // long enough for machine scan reply len 13, AgIO Hello reply len 11
+      // uint8_t machineReplyData[] = { 0x80, 0x81, 123, 203, 7, myIP[0], myIP[1], myIP[2], myIP[3], rem_ip[0], rem_ip[1], rem_ip[2], 23 };
+      // uint8_t machineReplyLen = 0;    // set default len of 0, which means there's no reply data to send
+
+      if (machine.parsePGN(packet.data(), packet.length())) //, machineReplyData, &machineReplyLen))//, &ipDest))    // look for Machine PGNs
+      {
+        pgnMatched = true;
+      }
+      MACHusage.timeOut();
+      PGNusage.timeIn();
     }
-    MACHusage.timeOut();
-    PGNusage.timeIn();
 #endif
 
-    if (!pgnMatched)
-      printPgnAnnoucement(packet.data()[3], (char *)"Unprocessed PGN", packet.length());
+    // if (!pgnMatched)
+    //  printPgnAnnoucement(packet.data()[3], (char*)"Unprocessed PGN", packet.length());
   }
 
   void nTrip(AsyncUDPPacket packet)
@@ -736,7 +764,7 @@ public:
     // uint8_t NTRIPData[size - 4];
     // for (int i = 4; i < size; i++) NTRIPData[i - 4] = packet.data()[i];
     // SerialGPS->write(NTRIPData, size - 4);
-    SerialGPS->write(packet.data(), packet.length());
+    SerialGPS.write(packet.data(), packet.length());
     LEDs.queueBlueFlash(LED_ID::GPS);
   }
 
