@@ -400,7 +400,7 @@ void autoSteerUpdate() {
       if (steerConfig.CytronDriver) {
         #ifdef JD_DAC_H
           jdDac.steerEnable(true);        // select IBT2 for JD DAC control
-          jdDac.ch4Enable(true);
+          //jdDac.ch4Enable(true);
         #else
           digitalWrite(SLEEP_PIN, steerConfig.IsRelayActiveHigh ? LOW : HIGH);
         #endif
@@ -423,7 +423,7 @@ void autoSteerUpdate() {
       if (steerConfig.CytronDriver) {
         #ifdef JD_DAC_H
           jdDac.steerEnable(false);
-          jdDac.ch4Enable(false);
+          //jdDac.ch4Enable(false);
         #else
           digitalWrite(SLEEP_PIN, steerConfig.IsRelayActiveHigh ? bool(!pwmDrive) : bool(pwmDrive));
         #endif

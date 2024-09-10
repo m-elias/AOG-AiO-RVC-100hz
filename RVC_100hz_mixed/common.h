@@ -76,6 +76,11 @@ bool nmeaDebug = 0, nmeaDebug2 = 0, extraCRLF;
 #include "zUBXParser.h"
 UBX_Parser ubxParser;
 
+bool USB1DTR = false;               // to track bridge mode state
+bool USB2DTR = false;
+uint32_t GPS1BAUD;                  // to track baud changes for bridge mode
+uint32_t GPS2BAUD;
+
 #define PANDA_SINGLE 1
 #define PAOGI_DUAL 0
 bool startup = false;
@@ -84,7 +89,7 @@ elapsedMillis LEDTimer;
 elapsedMillis imuPandaSyncTimer;
 bool ggaReady, imuPandaSyncTrigger;
 bool ggaTimeout, relposnedTimeout;
-bool SerialGPSactive, SerialGPS2active;
+//bool SerialGPSactive, SerialGPS2active;
 uint32_t dualTime;
 
 constexpr int buffer_size = 256;

@@ -144,7 +144,7 @@ void GNS_Handler()  // Rec'd GNS
 
 void GGA_GNS_PostProcess()  // called by either GGA or GNS handler
 {
-  static double platold, plongold, paltold;
+  /*static double platold, plongold, paltold;
   double plat = atof(GGA.latitude);
   double plong = atof(GGA.longitude);
   double palt = atof(GGA.altitude);
@@ -162,7 +162,7 @@ void GGA_GNS_PostProcess()  // called by either GGA or GNS handler
     Serial.print("\r\nalt "); Serial.print(palt, 2);
     Serial.print(">"); Serial.print(paltold, 2);
     paltold = palt;
-  }
+  }*/
 
   ggaReady = true;  // we have new GGA or GNS sentence
   /*Serial.print("\r\n"); Serial.print(millis());
@@ -272,12 +272,12 @@ void buildPandaOrPaogi(bool _panda)  // only called by GGA_Handler (above)
   strcat(nmea, "\r\n");
   
 
-  //if (nmeaDebug) {
+  if (nmeaDebug) {
     Serial.print("\r\n");
     Serial.print(millis()); Serial.print(" ");
     Serial.write(nmea);
     extraCRLF = false;
-  //}
+  }
 
   if (UDP.isRunning)  //If ethernet running send the GPS there
   {
@@ -288,7 +288,7 @@ void buildPandaOrPaogi(bool _panda)  // only called by GGA_Handler (above)
   }
   else if (!nmeaDebug)
   {
-    Serial.write(nmea);  // if Eth is !connected, send USB GPS data
+    //Serial.write(nmea);  // if Eth is !connected, send USB GPS data
   }
 }
 

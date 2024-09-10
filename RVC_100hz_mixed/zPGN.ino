@@ -31,7 +31,9 @@ void checkForUdpPackets()
     UDP.PGN_OGX.read(udpBuffer, (lenOGX >= udpBufferLength) ? udpBufferLength - 1 : lenOGX );  // make sure we don't overrun buffer size
     udpBuffer[(lenOGX >= udpBufferLength) ? udpBufferLength : lenOGX] = 0;                     // make sure string ends with NULL
 
-    grade.checkforPGNs(udpBuffer, lenOGX);
+    #ifdef OGX_H
+      grade.checkforPGNs(udpBuffer, lenOGX);
+    #endif
   }
 
 }
@@ -561,14 +563,14 @@ void udpNtrip() {
   if (UDP.isRunning) {
     if (millis() > ntripCheckTime) {  // limit update rate to save cpu time
     
-      unsigned int packetLength = UDP.RTCM.parsePacket(); // this uses most of the cpu time in this function unless SerialGPS has low baud
+      unsigned int packetLength = UDP.RTCM.parsePacket(); // this uses most of the cpu time in this function unless SerialGPS1 has low baud
       ntripCheckTime = millis();                          // make sure we wait at least 1ms before checking again to avoid excessive cpu usage
 
       if (packetLength > 0) {
         //Serial.print("\r\nNTRIP "); Serial.print(millis() - ntripUpdateTime); Serial.print(" len:"); Serial.print(packetLength);
         char RTCM_packetBuffer[buffer_size];
         UDP.RTCM.read(RTCM_packetBuffer, buffer_size);
-        SerialGPS->write(RTCM_packetBuffer, buffer_size);
+        if (!USB1DTR) SerialGPS1->write(RTCM_packetBuffer, buffer_size);
         LEDs.queueBlueFlash(LED_ID::GPS);
 
         // up to 256 byte packets are sent from AgIO and most NTRIP RTCM updates are larger so there's usually two packets per update

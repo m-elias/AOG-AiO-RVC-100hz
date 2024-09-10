@@ -8,6 +8,7 @@
       - the host microcontroller has to take care of the UDP & hardware connections
 
   to do:
+    - use callback to sent data to OGX
     - add IMU support
 */
 
@@ -22,6 +23,12 @@
 class OpenGradeX
 {
 private:
+
+  typedef void (*ExternalHandler)(void);
+  ExternalHandler Output1_Handler = NULL;
+
+  using ReplyHandler = void (*)(const uint8_t*, uint8_t, IPAddress);
+  ReplyHandler UDPReplyHandler = NULL;
 
   // version numbers to report to OGX which expects there to be two ESP32 modules instead of one AIO module
   const char *versionAnt = "2.1.3.A";
@@ -103,12 +110,6 @@ private:
   bool isAutoActive = false;
   bool isCutting = false;
 
-  char GNGGA[1000];
-  char GNVTG[1000];
-#define DEBUG_BAUD 115200
-#define RTK_BAUD 460800
-
-
   //loop time variables in milliseconds
   const uint16_t LOOP_TIME = 50;          // 20hz control loop
   elapsedMillis loopTimer;
@@ -135,7 +136,7 @@ public:
   #define GRADE_PORT 7777       // GradeControl listening Port
   //#define POSITION_PORT 7777  // Antenna listening Port, originally 8888 but interferes with AOG so changed to 7777 (combined with grade port/module)
 
-  void init(int8_t _ledPin = -1, bool _ledPol = 1, int16_t _eeAddr = -1, const uint8_t _eeSize = 10) // 10 bytes of EEPROM reserved, only 6 bytes used
+  void init(int16_t _eeAddr = -1, int8_t _ledPin = -1, bool _ledPol = 1, const uint8_t _eeSize = 10) // 10 bytes of EEPROM reserved, only 6 bytes used
   {
     ledPin = _ledPin;
     ledPol = _ledPol;
@@ -173,11 +174,41 @@ public:
     }
   }
 
+  // collect one nmea char/byte at a time until '\n' is detected, then send to OGX
+  void nmeaInput(uint8_t _gpsByte)
+  {
+    static uint8_t index = 0;
+    static char nmeaBuffer[150];
+    nmeaBuffer[index++] = _gpsByte; // build the nmea sentence
+    //Serial.write(_gpsByte);
+
+    if (_gpsByte == '\n')
+    {
+      nmeaBuffer[index + 1] = 0;
+      //Serial << "\r\nLF detected, sending buffer to OGX: " << index;
+      //Serial << "\r\n-"; Serial.write(nmeaBuffer);
+
+      UDP.PGN_OGX.beginPacket(openGradeIP, OGX_PORT);   //Initiate transmission of data
+      UDP.PGN_OGX.print(GPS_HEADER);
+      UDP.PGN_OGX.print(",");
+      UDP.PGN_OGX.print(nmeaBuffer);
+      UDP.PGN_OGX.endPacket();  // Close communication
+
+      index = sizeof(nmeaBuffer); // trigger buffer reset below
+    }
+    
+    if (index >= sizeof(nmeaBuffer) - 2)  // protect against buffer overruns & reset after sending to OGX
+    {
+      index = 0;
+      memset(nmeaBuffer, 0, sizeof(nmeaBuffer));
+    }
+  }
+
   void checkforPGNs(char* udpBuffer, uint16_t len)
   {
       bool pgnMatched = false;
 
-      Serial << "\r\nOGX packet ";
+      Serial << "\r\n" << millis() << " OGX packet ";
       //Serial.print(UDP.PGN_OGX.remoteIP()); Serial << ":";
       //Serial.print(UDP.PGN_OGX.remotePort()); Serial << " ";
       Serial << "(";
@@ -245,7 +276,7 @@ public:
         pgnMatched = true;
       }
       
-      if (header == GPS_HEADER) {  // 10003 GPS
+      if (header == GPS_HEADER) {  // 10003 GPS, should not receive this, sent from Ant module only
         printPgnAnnoucement(header, (char*)"GPS", len, numParams);
         pgnMatched = true;
       }
@@ -274,7 +305,7 @@ public:
             // send antenna module reply
             //Serial << "\r\nReply to OGX: from antenna module\r\n";
             UDP.PGN_OGX.beginPacket(openGradeIP, OGX_PORT);   //Initiate transmission of data
-            UDP.PGN_OGX.print(header);
+            UDP.PGN_OGX.print(SYSTEM_HEADER);
             UDP.PGN_OGX.print(",");
             UDP.PGN_OGX.print(155);   // antenna module ID
             UDP.PGN_OGX.print(",");
@@ -284,7 +315,7 @@ public:
             // send grade control module reply
             //Serial << "\r\nReply to OGX: from grade control module\r\n";
             UDP.PGN_OGX.beginPacket(openGradeIP, OGX_PORT);   //Initiate transmission of data
-            UDP.PGN_OGX.print(header);
+            UDP.PGN_OGX.print(SYSTEM_HEADER);
             UDP.PGN_OGX.print(",");
             UDP.PGN_OGX.print(255);   // grade control module ID
             UDP.PGN_OGX.print(",");
@@ -299,13 +330,36 @@ public:
       
       if (header == WIFI_HEADER) {  // 10102 WIFI
         printPgnAnnoucement(header, (char*)"WIFI", len, numParams);
+        if (atoi(strings[1]) == 1) { // request Wifi scan
+          UDP.PGN_OGX.beginPacket(openGradeIP, OGX_PORT);   //Initiate transmission of data
+          UDP.PGN_OGX.print(WIFI_HEADER);
+          UDP.PGN_OGX.print(",");
+          UDP.PGN_OGX.print("No WIFI: using Ethernet");
+          UDP.PGN_OGX.print(",");
+          UDP.PGN_OGX.print("AiO Teensy");
+          UDP.PGN_OGX.endPacket();  // Close communication    
+        } else if (atoi(strings[1]) == 2) { // set Wifi creds
+          Serial << "\r\n- Wifi creds: " << strings[2] << ":" << strings[3];
+        }
+
         pgnMatched = true;
       }
 
       if (!pgnMatched) printPgnAnnoucement(header, (char*)"*UNKNOWN*", len, numParams);
+  }
 
-      
 
+  void setOutput1Handler(ExternalHandler _extHandler) {
+    Output1_Handler = _extHandler;
+  }
+
+  uint16_t getAnalog1()
+  {
+    return analogOutput1;
+  }
+
+  void setUdpReplyHandler(ReplyHandler _replyHandler) {
+    UDPReplyHandler = _replyHandler;
   }
 
 private:
@@ -362,6 +416,7 @@ private:
 
     //Dac1.setVoltage(analogOutput1, false);
     //Dac2.setVoltage(analogOutput2, false);
+    Output1_Handler();
     voltage = ((double)analogOutput1/4096) * 5.0;
     voltage2 =((double)analogOutput2/4096) * 5.0;
   }

@@ -50,7 +50,7 @@ SpeedPulse speedPulse(SPEEDPULSE_PIN);     // misc.h
 // ********* Serial Assignments *********
 #define SerialRTK Serial3               // RTK radio
 HardwareSerial* SerialIMU = &Serial5;   // IMU BNO-085 in RVC serial mode
-HardwareSerial* SerialGPS = &Serial7;   // Main postion receiver (GGA & VTG)
+HardwareSerial* SerialGPS1 = &Serial7;  // Main postion receiver (GGA & VTG)
 HardwareSerial* SerialGPS2 = &Serial2;  // Dual heading receiver  (relposNED)
 
 const int32_t baudGPS = 460800;

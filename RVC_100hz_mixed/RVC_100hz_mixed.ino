@@ -17,15 +17,16 @@ const uint8_t encoderType = 1;  // 1 - single input
                                 // 3 - variable duty cycle, for future updates
 
 #include "common.h"
+
 //#include "JD_DAC.h"   // experimental JD 2 track DAC steering & SCV/remote hyd control
 //JD_DAC jdDac(Wire1, 0x60, &Serial);
 
-#include "OGX.h"
-OpenGradeX grade;
+//#include "OGX.h"
+//OpenGradeX grade;
 
 void setup()
 {
-  //Serial.begin(115200);                   // Teensy doesn't need it
+  Serial.begin(115200);                   // Teensy doesn't need it
   Serial.print("\r\n\n\n*********************\r\nStarting setup...\r\n");
   Serial.print(inoVersion);
   LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::PWR_ON);
@@ -48,20 +49,32 @@ void setup()
 
   autosteerSetup();                         // Autosteer.ino
 
-  grade.init(0, 0, 90);    // CAN2RX LED, LOW is ON
+  #ifdef JD_DAC_H
+    grade.setOutput1Handler(updateDacChannel4Output);
+    //grade.setUdpReplyHandler(OgxPgnReplies);
+    grade.init(90, 0, 0);    // CAN2RX LED, LOW/0 is ON
+  #endif
 
   Serial.println("\r\n\nEnd of setup, waiting for GPS...\r\n"); 
   delay(1);
   resetStartingTimersBuffers();             // setup.ino
 }
 
-
+#ifdef JD_DAC_H
+  void updateDacChannel4Output(){
+    jdDac.ch4Enable(true);
+    jdDac.ch4GradeOutput(grade.getAnalog1());
+    //Serial << "\r\nGrade output: " << grade.getAnalog1();
+  }
+#endif
 
 void loop()
 {
   checkForUdpPackets();
   checkForPGNs();                           // zPGN.ino, check for AgIO or SerialESP32 Sending PGNs
-  grade.updateLoop();
+  #ifdef OGX_H
+    grade.updateLoop();
+  #endif
   PGNusage.timeOut();
 
   autoSteerUpdate();                        // Autosteer.ino, update AS loop every 10ms (100hz) regardless of whether there is a BNO installed
@@ -69,8 +82,9 @@ void loop()
   udpNtrip();                               // check for RTCM via UDP (AgIO NTRIP client)
     
   if (SerialRTK.available()) {              // Check for RTK Radio RTCM data
-    SerialGPS->write(SerialRTK.read());     // send to GPS1
-    SerialGPS2->write(SerialRTK.read());    // send to GPS2
+    uint8_t rtcmByte = SerialRTK.read();
+    if (!USB1DTR) SerialGPS1->write(rtcmByte);    // send to GPS1
+    if (!USB2DTR) SerialGPS2->write(rtcmByte);    // send to GPS2
     LEDs.queueBlueFlash(LED_ID::GPS);
   }
 
@@ -99,57 +113,100 @@ void loop()
 
   // ******************* "Right" Single GPS1 (position) *******************
   GPS1usage.timeIn();
-  int16_t gps1Available = SerialGPS->available();
-  if (gps1Available)    // "if" is very crucial here, using "while" causes BNO overflow
+  if (!USB1DTR)                 // carry on like normal
   {
-    if (gps1Available > buffer_size - 50) {   // this should not trigger except maybe at boot up
-      SerialGPS->clear();
-      Serial.print((String)"\r\n" + millis() + " *** SerialGPS buffer cleared! ***");
-      return;
-    }
-    gps1Stats.update(gps1Available);
+    int16_t gps1Available = SerialGPS1->available();
+    if (gps1Available)    // "if" is very crucial here, using "while" causes BNO overflow
+    {
+      if (gps1Available > buffer_size - 50) {   // this should not trigger except maybe at boot up
+        SerialGPS1->clear();
+        Serial.print((String)"\r\n" + millis() + " *** SerialGPS1 buffer cleared! ***");
+        return;
+      }
+      gps1Stats.update(gps1Available);
 
-    uint8_t gps1Read = SerialGPS->read();
-    if (nmeaDebug) Serial.write(gps1Read);
-    nmeaParser << gps1Read;
-    
-    #ifdef AIOv50a
-      GPS1usage.timeOut();
-      RS232usage.timeIn();
-      SerialRS232->write(gps1Read);
-      RS232usage.timeOut();
-    #endif
+      uint8_t gps1Read = SerialGPS1->read();
+      if (nmeaDebug) Serial.write(gps1Read);
+      nmeaParser << gps1Read;
+      
+      #ifdef AIOv50a
+        GPS1usage.timeOut();
+        RS232usage.timeIn();
+        SerialRS232->write(gps1Read);
+        RS232usage.timeOut();
+      #endif
 
     //Serial.write(gps1Read);
-    //Serial.print((String)"\nSerialGPS update " + SerialGPS->available() + " " + millis() + " d:" + (char)gps1Read);
+    //Serial.print((String)"\nSerialGPS1 update " + SerialGPS1->available() + " " + millis() + " d:" + (char)gps1Read);
+
+    }
   }
+
+  #if defined(USB_DUAL_SERIAL) || defined(USB_TRIPLE_SERIAL)
+    else {                                // in SerialUSB1<->SerialGPS1 bridge mode, for connecting via u-center
+      if (SerialGPS1->available()) {
+        while (SerialGPS1->available()) {     // seems necessary to keep sentences/packets grouped as tight as possible
+          SerialUSB1.write(SerialGPS1->read());
+          //Serial.write(SerialGPS1->read());
+        }
+      }
+      if (SerialUSB1.available()) {           // seems necessary to ensure UBX msgs from U-Center aren't interrupted by RTCM data (xbee or ntrip)
+        while (SerialUSB1.available()) {
+          SerialGPS1->write(SerialUSB1.read());
+        }
+      }
+    }
+  #endif
+
   GPS1usage.timeOut();
 
 
   // ******************* "Left" GPS2 (OGX Blade) *******************
   GPS2usage.timeIn();
-  int16_t gps2Available = SerialGPS2->available();
-  if (gps2Available)
+  if (!USB2DTR)                 // carry on like normal
   {
-    if (gps2Available > buffer_size - 50) {   // this should not trigger except maybe at boot up
-      SerialGPS2->clear();
-      Serial.print((String)"\r\n" + millis() + " *** SerialGPS2 buffer cleared! ***");
-      return;
+    int16_t gps2Available = SerialGPS2->available();
+    if (gps2Available)
+    {
+      if (gps2Available > buffer_size - 50) {   // this should not trigger except maybe at boot up
+        SerialGPS2->clear();
+        Serial.print((String)"\r\n" + millis() + " *** SerialGPS2 buffer cleared! ***");
+        return;
+      }
+      gps2Stats.update(gps2Available);
+
+      uint8_t gps2Read = SerialGPS2->read();
+      if (nmeaDebug2) Serial.write(gps2Read);
+
+      #ifdef OGX_H
+        grade.nmeaInput(gps2Read);
+      #else
+        ubxParser.parse(gps2Read);  // no UBX in this version, GPS2 is used for OGX blade position
+      #endif
     }
-    gps2Stats.update(gps2Available);
 
-    uint8_t gps2Read = SerialGPS2->read();
-    if (nmeaDebug2) Serial.write(gps2Read);
-    //ubxParser.parse(gps2Read);  // no UBX in this version, GPS2 is used for OGX blade position
-
-
-    /*#ifdef AIOv50a
-      GPS2usage.timeOut();
-      RS232usage.timeIn();
-      SerialRS232->write(gps2Read);
-      RS232usage.timeOut();
-    #endif*/
   }
+  #if defined(USB_TRIPLE_SERIAL)
+    else {                                // in SerialUSB2<->SerialGPS2 bridge mode, for connecting via u-center
+      if (SerialGPS2->available()) {
+        while (SerialGPS2->available()) {     // seems necessary to keep sentences/packets grouped as tight as possible
+          SerialUSB2.write(SerialGPS2->read());
+        }
+      }
+      if (SerialUSB2.available()) {           // seems necessary to ensure UBX msgs from U-Center aren't interrupted by RTCM data (xbee or ntrip)
+        while (SerialUSB2.available()) {
+          SerialGPS2->write(SerialUSB2.read());
+        }
+      }
+    }
+  #endif
+
+  /*#ifdef AIOv50a
+    GPS2usage.timeOut();
+    RS232usage.timeIn();
+    SerialRS232->write(gps2Read);
+    RS232usage.timeOut();
+  #endif*/
   GPS2usage.timeOut();
 
 
@@ -219,6 +276,60 @@ void loop()
 
   checkUSBSerial();                   // debug.ino
   speedPulse.update();                // misc.h
+
+  #if defined(USB_DUAL_SERIAL) || defined(USB_TRIPLE_SERIAL)
+    static bool prevUSB1DTR;
+    USB1DTR = SerialUSB1.dtr(); 
+    if (USB1DTR != prevUSB1DTR) {
+      Serial << "\r\n**SerialUSB1 " << (USB1DTR ? "bridged with GPS1" : "disconnected");
+      if (USB1DTR) {
+        if (SerialUSB1.baud() == GPS1BAUD) Serial << ", baud set at " << baudGPS << " (default)";
+      } else {
+        if (GPS1BAUD != baudGPS){
+          SerialGPS1->begin(baudGPS);
+          GPS1BAUD = baudGPS;
+          Serial << ", baud reverted back to default " << GPS1BAUD;
+        }
+      }
+      prevUSB1DTR = USB1DTR;
+    }
+
+    if (USB1DTR) {
+      if (SerialUSB1.baud() != GPS1BAUD) {
+        SerialGPS1->begin(SerialUSB1.baud());
+        GPS1BAUD = SerialUSB1.baud();
+        Serial << "\r\n**GPS1 baud changed to " << GPS1BAUD;
+        if (GPS1BAUD == baudGPS) Serial << " (default)";
+      }
+    }
+  #endif
+
+  #if defined(USB_TRIPLE_SERIAL)
+    static bool prevUSB2DTR;
+    USB2DTR = SerialUSB2.dtr(); 
+    if (USB2DTR != prevUSB2DTR) {
+      Serial << "\r\n**SerialUSB2 " << (USB2DTR ? "bridged with GPS2" : "disconnected");
+      if (USB2DTR) {
+        if (SerialUSB2.baud() == GPS2BAUD) Serial << ", baud set at " << baudGPS << " (default)";
+      } else {
+        if (GPS2BAUD != baudGPS){
+          SerialGPS2->begin(baudGPS);
+          GPS2BAUD = baudGPS;
+          Serial << ", baud reverted back to default " << GPS2BAUD;
+        }
+      }
+      prevUSB2DTR = USB2DTR;
+    }
+
+    if (USB2DTR) {
+      if (SerialUSB2.baud() != GPS2BAUD) {
+        SerialGPS2->begin(SerialUSB2.baud());
+        GPS2BAUD = SerialUSB2.baud();
+        Serial << "\r\n**GPS2 baud changed to " << GPS2BAUD;
+        if (GPS2BAUD == baudGPS) Serial << " (default)";
+      }
+    }
+  #endif
 
   #ifdef RESET_H
     teensyReset.update();             // reset.h

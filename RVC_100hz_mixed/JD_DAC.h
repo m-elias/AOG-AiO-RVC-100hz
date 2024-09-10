@@ -69,7 +69,7 @@ public:
 		if (digitalRead(dacDevBtn) == LOW) {
 			while (digitalRead(dacDevBtn) == LOW) delay(5);
 
-    toolSteerEnable(!ch4Enabled);
+    toolSteerEnable(!ch4OutputEnabled);
 			
 		}*/
 
@@ -170,10 +170,10 @@ public:
   }
 
 	void ch4Output(int16_t _toolPWM) {
-		if (ch4Enabled) {
-      // 0.5v - 2.25v and 2.75v - 4.5v
+		if (ch4OutputEnabled) {
+      // 0.5v - 2.25v and 2.75v - 4.5v    (with slightly < 5V)
       //  430 - 1932  and  2360 - 3863
-      uint16_t ch4Output = map(_toolPWM, 0, 254, 2047, 3863);
+      uint16_t ch4Output = map(_toolPWM, 0, 255, 2047, 3863);
       ch4Output = min(ch4Output, 3863);   // limit to max of 3863/4.5v
       ch4Output = max(ch4Output, 430);    // limit to min of 430/0.5v
       dac.analogWrite(3, ch4Output, MCP4728::PWR_DOWN::NORMAL);
@@ -185,6 +185,17 @@ public:
 				if (millis() > sweepTriggerTime) sweepTriggerTime = millis() + 50;
 			}*/
 		}
+	}
+
+  void ch4GradeOutput(uint16_t _analogOutput) {
+    if (ch4OutputEnabled) {
+      // 0.525v - 2.25v and 2.75v - 4.475v  (if DAC is running at full 5V)
+      //    430 - 1843  and  2253 - 3666
+      _analogOutput = min(_analogOutput, 3863);   // limit to max of 3666/4.475v
+      _analogOutput = max(_analogOutput, 430);    // limit to min of 430/0.525v
+      dac.analogWrite(3, _analogOutput, MCP4728::PWR_DOWN::NORMAL);
+      //Serial << "\r\nGrade output: " << _analogOutput;
+    }
 	}
 
 	void steerEnable(bool _enable) {
@@ -204,14 +215,14 @@ public:
 
   void ch4Enable(bool _enable) {
     if (isInit){
-      if (_enable != ch4Enabled) {
+      if (_enable != ch4OutputEnabled) {
         if (_enable) {
           debugPrint("\r\nDAC Ch4 tool steer output enabled");
         } else {
           dac.analogWrite(3, 2047, MCP4728::PWR_DOWN::NORMAL);  // center position for JD remote SCV signal
           debugPrint("\r\nDAC Ch4 tool steer output disabled");
         }
-        ch4Enabled = _enable;
+        ch4OutputEnabled = _enable;
       }
     }
   }
@@ -417,7 +428,7 @@ private:
   elapsedMillis initRetryTimer = -2000;
 	bool isInit = false;
 	bool steerOutputEnabled = 0;
-	bool ch4Enabled = 0;
+	bool ch4OutputEnabled = 0;
   uint8_t maxPWM = 255;
 	//uint16_t left_center_right_DAC[3] = { 3512, 2019, 501 };
 	//uint16_t left_center_right_ADS[3] = { 22812, 13150, 3501 };

@@ -66,7 +66,7 @@ void motorDrive(void)
       DACusage.timeIn();
       if (gpsSpeed < (float)steerConfig.MinSpeed / 10.0) pwmDrive = 0;
       pwmDisplay = jdDac.steerOutput(pwmDrive);
-      jdDac.ch4Output(pwmDrive);
+      //jdDac.ch4Output(pwmDrive);  // now used by OGX
       DACusage.timeOut();
     #else    
       // Cytron Driver Dir + PWM Signal

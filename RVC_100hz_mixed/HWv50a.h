@@ -55,13 +55,13 @@ const uint8_t PIEZO2 = 36;
 #define SerialRTK Serial3               // RTK radio
 //HardwareSerial SerialRTK = Serial3;   // causes boot loop
 HardwareSerial* SerialIMU = &Serial6;   // IMU BNO-085 in RVC serial mode
-HardwareSerial* SerialGPS = &Serial5;   // Main postion receiver (GGA & VTG)
+HardwareSerial* SerialGPS1 = &Serial5;  // Main postion receiver (GGA & VTG)
 HardwareSerial* SerialGPS2 = &Serial8;  // Dual heading receiver  (relposNED)
 HardwareSerial* SerialRS232 = &Serial7; // RS232
 HardwareSerial* SerialESP32 = &Serial2; // ESP32
 
 //const int32_t baudGPS = 460800;
-const int32_t baudGPS = 921600;
+const int32_t baudGPS = 460800;
 const int32_t baudRTK = 460800;     // most are using Xbee radios with default of 115200
 const int32_t baudRS232 = 38400;
 const int32_t baudESP32 = 460800;

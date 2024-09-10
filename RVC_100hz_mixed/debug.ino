@@ -15,11 +15,15 @@ void checkUSBSerial()
     }
     else if (usbRead == 'n')         // output realtime GPS position update data
     {
+      uint8_t usbRead2 = 0;
       if (Serial.available()) {
-        if (Serial.read() == '2') {
-          nmeaDebug2 = !nmeaDebug2;
-          Serial.print("\r\nSetting NMEA2 debug: "); Serial.print(nmeaDebug2);
-        }
+        usbRead2 = Serial.peek();   // only peek in case it's not a 2, leave in Serial buffer for further processing other cmds
+      }
+
+      if (usbRead2 == '2') {
+        Serial.read();              // clear the 2 out of the Serial buffer
+        nmeaDebug2 = !nmeaDebug2;
+        Serial.print("\r\nSetting NMEA2 debug: "); Serial.print(nmeaDebug2);
       } else {
         nmeaDebug = !nmeaDebug;
         ubxParser.debug = nmeaDebug;
