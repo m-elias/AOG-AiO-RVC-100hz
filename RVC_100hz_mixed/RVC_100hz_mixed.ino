@@ -18,11 +18,11 @@ const uint8_t encoderType = 1;  // 1 - single input
 
 #include "common.h"
 
-//#include "JD_DAC.h"   // experimental JD 2 track DAC steering & SCV/remote hyd control
-//JD_DAC jdDac(Wire1, 0x60, &Serial);
+#include "JD_DAC.h"   // experimental JD 2 track DAC steering & SCV/remote hyd control
+JD_DAC jdDac(Wire1, 0x60, &Serial);
 
-//#include "OGX.h"
-//OpenGradeX grade;
+#include "OGX.h"
+OpenGradeX grade;
 
 void setup()
 {
