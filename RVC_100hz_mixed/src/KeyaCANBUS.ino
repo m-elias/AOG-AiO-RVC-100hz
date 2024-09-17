@@ -1,7 +1,7 @@
 // KeyaCANBUS
-
-//"Barrowed" Keya code from Matt Elias @ https://github.com/m-elias/AgOpenGPS_Boards/tree/575R-Keya/TeensyModules/V4.1"
-
+/*
+"Barrowed" Keya code from Matt Elias @ https://github.com/m-elias/AgOpenGPS_Boards/tree/575R-Keya/TeensyModules/V4.1"
+*/
 
 #define lowByte(w) ((uint8_t)((w) & 0xFF))
 #define highByte(w) ((uint8_t)((w) >> 8))
@@ -33,7 +33,7 @@ uint8_t keyaVersionResponse[] = {0x60, 0x01, 0x11, 0x11};
 
 uint64_t KeyaID = 0x06000001; // 0x01 is default ID
 
-bool KeyaDebug = false;
+const bool debugKeya = false;
 bool lnNeeded = false;
 uint32_t hbTime;
 uint32_t keyaTime;
@@ -46,7 +46,7 @@ void CAN_Setup()
   Keya_Bus.setBaudRate(250000); // for official Keya/jnky motor
   // Keya_Bus.setBaudRate(500000);  // for identical motor from JinanLanJiu store https://www.aliexpress.com/item/1005005364248561.html
   delay(100);
-  Serial.print("\r\n\n Initialised Keya CANBUS @ ");
+  Serial.print("Initialised Keya CANBUS @ ");
   Serial.print(Keya_Bus.getBaudRate());
   Serial.println("bps");
 }
@@ -92,7 +92,7 @@ void SteerKeya(int steerSpeed)
   if (steerSpeed == 0)
   {
     keyaCommand(keyaDisableCommand);
-    if (KeyaDebug)
+    if (debugKeya)
       Serial.println("steerSpeed zero - disabling");
     return; // don't need to go any further, if we're disabling, we're disabling
   }
@@ -100,9 +100,9 @@ void SteerKeya(int steerSpeed)
   if (keyaDetected)
   {
     int actualSpeed = map(steerSpeed, -255, 255, -995, 995);
-    if (KeyaDebug)
+    if (debugKeya)
       Serial.println("told to steer, with " + String(steerSpeed) + " so....");
-    if (KeyaDebug)
+    if (debugKeya)
       Serial.println("I converted that to speed " + String(actualSpeed));
 
     CAN_message_t KeyaBusSendData;
@@ -116,7 +116,7 @@ void SteerKeya(int steerSpeed)
       KeyaBusSendData.buf[5] = lowByte(actualSpeed);
       KeyaBusSendData.buf[6] = 0xff;
       KeyaBusSendData.buf[7] = 0xff;
-      if (KeyaDebug)
+      if (debugKeya)
         Serial.println("pwmDrive < zero - clockwise - steerSpeed " + String(steerSpeed));
     }
     else
@@ -125,7 +125,7 @@ void SteerKeya(int steerSpeed)
       KeyaBusSendData.buf[5] = lowByte(actualSpeed);
       KeyaBusSendData.buf[6] = 0x00;
       KeyaBusSendData.buf[7] = 0x00;
-      if (KeyaDebug)
+      if (debugKeya)
         Serial.println("pwmDrive > zero - anticlock-clockwise - steerSpeed " + String(steerSpeed));
     }
     Keya_Bus.write(KeyaBusSendData);
@@ -148,13 +148,6 @@ void KeyaBus_Receive()
         Serial.println("Keya heartbeat detected! Enabling Keya canbus & using reported motor current for disengage");
         keyaDetected = true;
         keyaCommand(keyaVersionQuery);
-        if (Keya_Bus.read(KeyaBusReceiveData)) {
-            Serial.print("Keya Version: ");
-            for (byte b = 0; b < KeyaBusReceiveData.len; b++) {
-                Serial.print(KeyaBusReceiveData.buf[b], HEX); Serial.print(" ");
-            }
-            Serial.println();
-        }
       }
       // 0-1 - Cumulative value of angle (360 def / circle)
       // 2-3 - Motor speed, signed int eg -500 or 500
@@ -162,7 +155,7 @@ void KeyaBus_Receive()
       //		is that accurate enough for us?
       // 6-7 - Control_Close (error code)
       // TODO Yeah, if we ever see something here, fire off a disable, refuse to engage autosteer or..?
-      if (KeyaDebug)
+      if (debugKeya)
       {
         uint32_t time = millis();
         Serial.print(time);
@@ -332,7 +325,7 @@ void KeyaBus_Receive()
       else if (isPatternMatch(KeyaBusReceiveData, keyaCurrentResponse, sizeof(keyaCurrentResponse)))
       {
         uint32_t time = millis();
-        if (KeyaDebug)
+        if (debugKeya)
         {
           Serial.print(time);
           Serial.print(" ");
@@ -346,10 +339,7 @@ void KeyaBus_Receive()
           Serial.print(sensorReading / 2.5); // to print ave in "amps"
         }
         keyaTime = time;
-        //KeyaCurrentSensorReading = KeyaBusReceiveData.buf[4] * 2.5; // so that AoG's display shows "amps"
-        //mtz8302 
-        KeyaCurrentSensorReading = float(KeyaBusReceiveData.buf[4]) * 25; // so that AoG's display shows "amps"
-
+        KeyaCurrentSensorReading = KeyaBusReceiveData.buf[4] * 2.5; // so that AoG's display shows "amps"
         keyaCurrentUpdateTimer -= 100;
       }
 
@@ -406,4 +396,3 @@ void KeyaBus_Receive()
     }
   }
 }
-

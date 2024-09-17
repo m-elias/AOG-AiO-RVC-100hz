@@ -11,19 +11,17 @@
      122hz = 1
      3921hz = 2
 */
-const uint8_t PWM_Frequency = 0;
+const uint8_t PWM_Frequency = 2;
 
 bool testBothWasSensors = false;
 bool adcDebug = false;
-bool workDebug = false;
 bool useInternalADC = false;
 bool useExternalADS = false;
-bool pwmDebug = false;
 
 #include <EEPROM.h>
 const int EE_Ident = 2401; // if value in eeprom does not match, overwrite with defaults
 
-uint32_t autoSteerLastTime, currentTime, steerStateONTime = 0;
+uint32_t autoSteerLastTime, currentTime;
 elapsedMillis autoSteerUpdateTimer;
 
 // Relays
@@ -32,15 +30,13 @@ uint8_t relay = 0, relayHi = 0, uTurn = 0;*/
 
 // Switches/Sensors
 uint8_t kickoutInput = 0, workInput = 0;
-float sensorSample, sensorReadingPWM;
+float sensorSample;
 
 // steering variables
 float steerAngleError = 0;
 
 // pwm variables
 int16_t pwmDrive = 0;
-float pwmDriveFloat = 0;
-// float pwmDriveOldFloat = 0;
 
 // Steer switch button  ***********************************************************************************************************
 uint8_t steerReading; // currentState = 0
@@ -147,25 +143,6 @@ void autosteerSetup()
 
   Serial.print("\r\n- AutoSteer enabled, setup complete");
   LEDs.set(LED_ID::STEER, STEER_STATE::AUTOSTEER_READY);
-
-#ifdef AIOv50a
-  uint16_t read = analogRead(WORK_PIN); // read work input
-  Serial.print("\r\n\nWorkswitch Teensy ADC: ");
-  Serial.print(read);
-  if (read > WorkSWAnanlogThres)
-  {
-    read = HIGH;
-  }
-  else
-    read = LOW;
-  Serial.print("  threshold: ");
-  Serial.print(WorkSWAnanlogThres);
-  Serial.print(" status: ");
-  Serial.println(read);
-#else
-  uint8_t read = digitalRead(WORK_PIN);
-  Serial.printf("\r\nWORK input: %s", (read == 1 ? "OFF" : "ON"));
-#endif
 } // End of autosteerSetup
 
 void autoSteerUpdate()
@@ -179,7 +156,7 @@ void autoSteerUpdate()
     // ******************************* Steer Switch/Button *******************************
     // Steer input logic all setup so that '1' (HIGH) is ON, and '0' (LOW) is OFF
     steerReading = !digitalRead(STEER_PIN); // read steer input switch/button, invert reading to match On/Off logic
-    // steerReading = analogRead(KICKOUT_A_PIN) > WorkSWAnanlogThres ? LOW : HIGH;
+    // steerReading = analogRead(KICKOUT_A_PIN) > ANALOG_TRIG_THRES ? LOW : HIGH;
 
     if (steerConfig.SteerSwitch == 1) // steer "Switch" mode (on - off)
     {
@@ -191,7 +168,6 @@ void autoSteerUpdate()
         {
           char msg[] = "AutoSteer Switch OFF";
           char msgTime = 2;
-          steerStateONTime = 0;
           UDP.SendUdpFreeForm(1, msg, strlen(msg), msgTime, UDP.broadcastIP, UDP.portAgIO_9999);
           LEDs.activateBlueFlash(LED_ID::STEER);
         }
@@ -201,7 +177,6 @@ void autoSteerUpdate()
         steerState = steerReading; // set ON
         char msg[] = "AutoSteer Switch ON";
         char msgTime = 2;
-        steerStateONTime = millis();
         UDP.SendUdpFreeForm(1, msg, strlen(msg), msgTime, UDP.broadcastIP, UDP.portAgIO_9999);
         LEDs.activateBlueFlash(LED_ID::STEER);
       }
@@ -216,15 +191,9 @@ void autoSteerUpdate()
         LEDs.activateBlueFlash(LED_ID::STEER);
         char *msg;
         if (steerState)
-        {
-          steerStateONTime = millis();
           msg = (char *)"AutoSteer Btn ON";
-        }
         else
-        {
           msg = (char *)"AutoSteer Btn OFF";
-          steerStateONTime = 0;
-        }
         char msgTime = 2;
         UDP.SendUdpFreeForm(1, msg, strlen(msg), msgTime, UDP.broadcastIP, UDP.portAgIO_9999);
       }
@@ -240,7 +209,6 @@ void autoSteerUpdate()
       if (guidanceStatusChanged && guidanceStatus == 1 && steerState == 0 && prevSteerReading == 1)
       {
         steerState = 1;
-        steerStateONTime = millis();
         prevSteerReading = !steerState;
         LEDs.activateBlueFlash(LED_ID::STEER);
       }
@@ -249,7 +217,6 @@ void autoSteerUpdate()
       if (guidanceStatusChanged && guidanceStatus == 0 && steerState == 1 && prevSteerReading == 0)
       {
         steerState = 0;
-        steerStateONTime = 0;
         prevSteerReading = !steerState;
         LEDs.activateBlueFlash(LED_ID::STEER);
       }
@@ -279,7 +246,6 @@ void autoSteerUpdate()
       if (pulseCount >= steerConfig.PulseCountMax)
       {
         steerState = 0; // reset values like it turned off
-        steerStateONTime = 0;
         prevSteerReading = !steerState;
       }
     }
@@ -300,7 +266,6 @@ void autoSteerUpdate()
       if (sensorReading >= steerConfig.PulseCountMax)
       {                 // if reading exceeds kickout setpoint
         steerState = 0; // turn OFF autoSteer
-        steerStateONTime = 0;
         prevSteerReading = !steerState;
       }
     }
@@ -310,7 +275,7 @@ void autoSteerUpdate()
     {
       if (keyaDetected)
       {
-        sensorSample = abs(KeyaCurrentSensorReading); // then use keya current data
+        sensorReading = sensorReading * 0.7 + KeyaCurrentSensorReading * 0.3; // then use keya current data
       }
       else
       { // otherwise continue using analog input on PCB
@@ -325,40 +290,18 @@ void autoSteerUpdate()
 #endif
 
         // Serial << " " << sensorSample;
-      }
-      // mtz8302
-      // set motor current in relation to PWM: PWM 100 = 1
-      sensorReadingPWM = sensorSample / (0.75 + (float(abs(pwmDrive)) / 400));
-
-      sensorReading = sensorReadingPWM * 0.25 + sensorReading * 0.75;
-      // Serial << " " << sensorReading << " max:" << steerConfig.PulseCountMax;
-      if (sensorReading >= steerConfig.PulseCountMax)
-      {
-        steerState = 0; // turn OFF autoSteer
-        steerStateONTime = 0;
-        prevSteerReading = !steerState;
+        sensorReading = sensorReading * 0.7 + sensorSample * 0.3;
+        // Serial << " " << sensorReading << " max:" << steerConfig.PulseCountMax;
+        if (sensorReading >= steerConfig.PulseCountMax)
+        {
+          steerState = 0; // turn OFF autoSteer
+          prevSteerReading = !steerState;
+        }
       }
     }
 
 #ifdef AIOv50a
-    uint16_t read = analogRead(WORK_PIN); // read work input
-    if (workDebug)
-    {
-      Serial.print("Workswitch Teensy ADC: ");
-      Serial.print(read);
-    }
-    if (read > WorkSWAnanlogThres)
-    {
-      read = HIGH;
-    }
-    else
-      read = LOW;
-    if (workDebug)
-    {
-      Serial.print("  status: ");
-      Serial.println(read);
-    }
-
+    uint8_t read = analogRead(WORK_PIN) > ANALOG_TRIG_THRES ? HIGH : LOW; // read work input
 #else
     uint8_t read = digitalRead(WORK_PIN);
 #endif
@@ -381,18 +324,12 @@ void autoSteerUpdate()
 
 #ifndef JD_DAC_H
     if (adcDebug)
-      Serial.printf("%6i", millis());
+      Serial.printf("\r\n%6i", millis());
     if (useInternalADC || testBothWasSensors)
     {
-      steeringPosition = int(float(teensyADC->adc1->analogRead(WAS_SENSOR_PIN)) * SteerAngleADCMultiplier);
+      steeringPosition = int(float(teensyADC->adc1->analogRead(WAS_SENSOR_PIN)) * 3.23);
       if (adcDebug)
-      {
-        Serial.print(" Teensy ADC(x");
-        Serial.print(SteerAngleADCMultiplier);
-        Serial.print("): ");
-        Serial.println(steeringPosition);
-        // Serial.printf(" Teensy ADC(x3.23):%5i", steeringPosition);
-      }
+        Serial.printf(" Teensy ADC(x3.23):%5i", steeringPosition);
     }
     int16_t temp = steeringPosition;
     if (useExternalADS || testBothWasSensors)
@@ -412,7 +349,7 @@ void autoSteerUpdate()
     // static int16_t oldSteer;
     int16_t newDacSteering = (jdDac.getWAS() >> 1); // read JD SWS instead to display on AoG
     // if (adcDebug && (newDacSteering > oldSteer +10 || newDacSteering < oldSteer -10)) Serial.printf("\r\n%6i  DAC_ADS-ch0(/2):%5i", millis(), newDacSteering);
-    if (adcDebug || (analogRead(WORK_PIN) > WorkSWAnanlogThres ? LOW : HIGH))
+    if (adcDebug || (analogRead(WORK_PIN) > ANALOG_TRIG_THRES ? LOW : HIGH))
       Serial.printf("\r\n%6i  DAC_ADS-ch0(/2):%5i", millis(), newDacSteering);
     steeringPosition = newDacSteering;
     // oldSteer = steeringPosition;
@@ -470,39 +407,7 @@ void autoSteerUpdate()
       }
 
       calcSteeringPID(); // do the pid
-      if (pwmDebug)
-      {
-        Serial.print("PWM (av.): ");
-        Serial.print(pwmDrive);
-        Serial.print(" PWMDispl(abs, unfilt.): ");
-        Serial.print(pwmDisplay);
-        Serial.print(" kickout current: ");
-        Serial.print(steerConfig.PulseCountMax);
-        Serial.print(" cur sensor(unfilt.): ");
-        Serial.print(sensorSample);
-        Serial.print(" sens by PWM: ");
-        Serial.print(sensorReadingPWM);
-        Serial.print(" sens by PWM av: ");
-        Serial.println(sensorReading);
-      }
-
-      // ramp up PWM at first start for about 1 sec, set in HW. Very usefull when using auto move line to center when engageing steering
-      if (steerStateONTime != 0)
-      {
-        float steerTimeSinceStart = millis() - steerStateONTime;
-        if ((steerTimeSinceStart < SteerPWMonStartRampTime) && (!steerConfig.IsDanfoss))
-        {
-          pwmDrive = pwmDrive * (steerTimeSinceStart / SteerPWMonStartRampTime);
-        }
-        else
-          steerStateONTime = 0;
-      }
-      if (gpsSpeed < 0.18)
-      {
-        pwmDrive = 0;
-      } // do not turn steering wheel under 1.8 km/h
-
-      motorDrive(); // out to motors the pwm value
+      motorDrive();      // out to motors the pwm value
 
       LEDs.set(LED_ID::STEER, STEER_STATE::AUTOSTEER_ACTIVE);
     }
@@ -609,3 +514,120 @@ void adcSetup()
     LEDs.set(LED_ID::STEER, STEER_STATE::WAS_ERROR);
   }
 } // end adcSetup()
+void calcSteeringPID(void)
+{
+#ifdef JD_DAC_H
+  float pValue = steerSettings.Kp * steerAngleSetPoint; // only use set point, not error for two track JD
+  float errorAbs = abs(steerAngleSetPoint);
+#else
+  float pValue = steerSettings.Kp * steerAngleError;
+  float errorAbs = abs(steerAngleError);
+#endif
+
+  pwmDrive = (int16_t)pValue;
+  /*Serial.print("\r\n");
+  Serial.print(" ");
+  Serial.print(pwmDrive);*/
+
+  // add min throttle factor so no delay from motor resistance.
+  if (pwmDrive < 0)
+    pwmDrive -= steerSettings.minPWM;
+  else if (pwmDrive > 0)
+    pwmDrive += steerSettings.minPWM;
+  // Serial.print(" ");
+  // Serial.print(pwmDrive);
+
+  int16_t newHighPWM = 0;
+
+  // from 0-3 deg error, scale newHighPWM from lowPWM(minPWM*1.2)-highPWM
+  if (errorAbs < LOW_HIGH_DEGREES)
+  {
+    newHighPWM = (errorAbs * highLowPerDeg) + steerSettings.lowPWM;
+  }
+  else
+    newHighPWM = steerSettings.highPWM;
+
+  // limit the pwm drive
+  //  causes oscillation in pwmDrive
+  if (pwmDrive > newHighPWM)
+    pwmDrive = newHighPWM;
+  if (pwmDrive < -newHighPWM)
+    pwmDrive = -newHighPWM;
+  // Serial.print(" ");
+  // Serial.print(pwmDrive);
+
+  if (steerConfig.MotorDriveDirection)
+    pwmDrive *= -1;
+  // Serial.print(" ");
+  // Serial.print(pwmDrive);
+
+  if (steerConfig.IsDanfoss)
+  {
+    // Danfoss: PWM 25% On = Left Position max  (below Valve=Center)
+    // Danfoss: PWM 50% On = Center Position
+    // Danfoss: PWM 75% On = Right Position max (above Valve=Center)
+    pwmDrive = (constrain(pwmDrive, -250, 250));
+
+    // Calculations below make sure pwmDrive values are between 65 and 190
+    // This means they are always positive, so in motorDrive, no need to check for
+    // steerConfig.isDanfoss anymore
+    pwmDrive = pwmDrive >> 2; // Divide by 4
+    pwmDrive += 128;          // add Center Pos.
+  }
+}
+
+// #########################################################################################
+
+void motorDrive(void)
+{
+  // Keya can bus output, always send pwmDrive to keya, SteerKeya function will deal with it
+  SteerKeya(pwmDrive); // use this for in tractor
+
+  if (steerConfig.CytronDriver)
+  {
+#ifdef JD_DAC_H
+    // For JD_DAC.h, MCP4728 QUAD DAC steering
+    // scale pwmDrive to DAC output
+    // 0 PWM (no WAS change needed) = 2048 centered DAC output (4096 / 2 to get center voltage)
+    DACusage.timeIn();
+    if (gpsSpeed < (float)steerConfig.MinSpeed / 10.0)
+      pwmDrive = 0;
+    pwmDisplay = jdDac.steerOutput(pwmDrive);
+    jdDac.ch4Output(pwmDrive);
+    DACusage.timeOut();
+#else
+    // Cytron Driver Dir + PWM Signal
+    if (pwmDrive > 0)
+    {
+      digitalWrite(DIR_PIN, HIGH);
+    }
+    else
+    {
+      digitalWrite(DIR_PIN, LOW);
+      pwmDrive = -1 * pwmDrive;
+    }
+
+    analogWrite(PWM_PIN, pwmDrive); // write out the 0 to 255 value
+    pwmDisplay = pwmDrive;
+#endif
+  }
+  else
+  {
+    // IBT 2 Driver DIR_PIN connected to BOTH enables
+    // PWM_PIN Left + SLEEP_PIN Right Signal
+    // kept in case someone hacked their AIO to use IBT2 style driver
+
+    if (pwmDrive > 0)
+    {
+      analogWrite(SLEEP_PIN, 0); // Turn off before other one on
+      analogWrite(PWM_PIN, pwmDrive);
+    }
+    else
+    {
+      pwmDrive = -1 * pwmDrive;
+      analogWrite(PWM_PIN, 0); // Turn off before other one on
+      analogWrite(SLEEP_PIN, pwmDrive);
+    }
+    pwmDisplay = pwmDrive;
+  }
+}

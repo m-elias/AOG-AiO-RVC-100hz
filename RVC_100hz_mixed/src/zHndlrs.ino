@@ -172,33 +172,31 @@ void GGA_GNS_PostProcess() // called by either GGA or GNS handler
   double plat = atof(GGA.latitude);
   double plong = atof(GGA.longitude);
   double palt = atof(GGA.altitude);
-  if (nmeaDebug)
+  if (plat >= platold + 0.00001 || plat <= platold - 0.00001)
   {
-    if (plat >= platold + 0.00001 || plat <= platold - 0.00001)
-    {
-      Serial.print("\r\nlat ");
-      Serial.print(plat, 5);
-      Serial.print(">");
-      Serial.print(platold, 5);
-      platold = plat;
-    }
-    if (plong >= plongold + 0.00001 || plong <= plongold - 0.00001)
-    {
-      Serial.print("\r\nlng ");
-      Serial.print(plong, 5);
-      Serial.print(">");
-      Serial.print(plongold, 5);
-      plongold = plong;
-    }
-    if (palt >= paltold + 0.01 || palt <= paltold - 0.01)
-    {
-      Serial.print("\r\nalt ");
-      Serial.print(palt, 2);
-      Serial.print(">");
-      Serial.print(paltold, 2);
-      paltold = palt;
-    }
+    Serial.print("\r\nlat ");
+    Serial.print(plat, 5);
+    Serial.print(">");
+    Serial.print(platold, 5);
+    platold = plat;
   }
+  if (plong >= plongold + 0.00001 || plong <= plongold - 0.00001)
+  {
+    Serial.print("\r\nlng ");
+    Serial.print(plong, 5);
+    Serial.print(">");
+    Serial.print(plongold, 5);
+    plongold = plong;
+  }
+  if (palt >= paltold + 0.01 || palt <= paltold - 0.01)
+  {
+    Serial.print("\r\nalt ");
+    Serial.print(palt, 2);
+    Serial.print(">");
+    Serial.print(paltold, 2);
+    paltold = palt;
+  }
+
   ggaReady = true; // we have new GGA or GNS sentence
   /*Serial.print("\r\n"); Serial.print(millis());
   Serial.print(" GGA Received ");
@@ -371,13 +369,13 @@ void buildPandaOrPaogi(bool _panda) // only called by GGA_Handler (above)
   CalculateChecksum();
   strcat(nmea, "\r\n");
 
-  // if (nmeaDebug) {
-  // Serial.print("\r\n");
-  // Serial.print(millis());
-  // Serial.print(" ");
-  // Serial.write(nmea);
+  if (nmeaDebug) {
+  Serial.print("\r\n");
+  Serial.print(millis());
+  Serial.print(" ");
+  Serial.write(nmea);
   extraCRLF = false;
-  //}
+  }
 
   if (UDP.isRunning) // If ethernet running send the GPS there
   {
