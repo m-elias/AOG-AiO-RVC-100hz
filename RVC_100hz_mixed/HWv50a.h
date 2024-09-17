@@ -54,11 +54,20 @@ const uint8_t PIEZO2 = 36;
 // ********* Serial Assignments *********
 #define SerialRTK Serial3               // RTK radio
 //HardwareSerial SerialRTK = Serial3;   // causes boot loop
+
 HardwareSerial* SerialIMU = &Serial6;   // IMU BNO-085 in RVC serial mode
-HardwareSerial* SerialGPS1 = &Serial5;  // Main postion receiver (GGA & VTG)
-HardwareSerial* SerialGPS2 = &Serial8;  // Dual heading receiver  (relposNED)
-HardwareSerial* SerialRS232 = &Serial7; // RS232
-HardwareSerial* SerialESP32 = &Serial2; // ESP32
+
+// HardwareSerial *SerialGPS = &Serial5;   // Main postion receiver (GGA & VTG)
+#define SerialGPS1 Serial5
+
+// HardwareSerial *SerialGPS2 = &Serial8; // Dual heading receiver  (relposNED)
+#define SerialGPS2 Serial8
+
+// HardwareSerial *SerialRS232 = &Serial7; // RS232
+#define SerialRS232 Serial7
+
+// HardwareSerial *SerialESP32 = &Serial2; // ESP32
+#define SerialESP32 Serial2
 
 //const int32_t baudGPS = 921600;
 const int32_t baudGPS = 460800;

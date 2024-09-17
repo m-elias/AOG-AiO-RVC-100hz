@@ -9,7 +9,7 @@
 #define UDP_MAX_PACKET_SIZE 40         // Buffer size For Receiving UDP PGN Data
 //uint32_t pgn254Time, pgn254MaxDelay, pgn254AveDelay, pgn254MinDelay = 99999;
 
-void checkForUdpPackets()
+void checkForOGXPackets()
 {
   if (!UDP.isRunning) return;      // When ethernet is not running, return directly. parsePacket() will block with no ethernet
 
@@ -44,18 +44,18 @@ void checkForPGNs()
 
   #ifdef AIOv50a
   ESP32usage.timeIn();
-  if (SerialESP32->available())
+  if (SerialESP32.available())
   {
     static uint8_t incomingBytes[50];
     static uint8_t incomingIndex;
-    incomingBytes[incomingIndex] = SerialESP32->read();
+    incomingBytes[incomingIndex] = SerialESP32.read();
     incomingIndex++;
-    /*Serial.print("\r\nindex: "); Serial.print(incomingIndex);
-    Serial.print(" ");
-    for (byte i = 0; i < incomingIndex; i++) {
-      Serial.print(incomingBytes[i]);
-      Serial.print(" ");
-    }*/
+    //Serial.print("\r\nindex: "); Serial.print(incomingIndex);
+    //Serial.print(" ");
+    //for (byte i = 0; i < incomingIndex; i++) {
+      //Serial.print(incomingBytes[i]);
+      //Serial.print(" ");
+    //}
 
     if (incomingBytes[incomingIndex - 2] == 13 && incomingBytes[incomingIndex - 1] == 10)
     {
@@ -66,13 +66,13 @@ void checkForPGNs()
         UDP.SendUdpByte(incomingBytes, incomingIndex - 2, UDP.broadcastIP, UDP.portAgIO_9999);
 
         //pass data to USB for debug
-        /*Serial.print("\r\nE32-s->T41-e:9999->AgIO ");
-        for (byte i = 0; i < incomingIndex - 2; i++) {
-          Serial.print(incomingBytes[i]);
-          Serial.print(" ");
-        }
-        Serial.print((String)" (" + SerialESP32->available() + ")");
-        */
+        //Serial.print("\r\nE32-s->T41-e:9999->AgIO ");
+        //for (byte i = 0; i < incomingIndex - 2; i++) {
+          //Serial.print(incomingBytes[i]);
+          //Serial.print(" ");
+        //}
+        //Serial.print((String)" (" + SerialESP32->available() + ")");
+        
       } else {
         Serial.print("\r\n\nCR/LF detected but [0]/[1] bytes != 128/129\r\n");
       }
@@ -102,12 +102,12 @@ void checkForPGNs()
   #ifdef AIOv50a
   if (udpData[3] != 100) {
     ESP32usage.timeIn();
-    SerialESP32->write(udpData, len);
-    SerialESP32->println();   // to signal end of PGN
-    /*Serial.print("\r\nAgIO-e:8888->T41-s->E32 ");
-    for (uint8_t i = 0; i < len; i++) {
-      Serial.print(udpData[i]); Serial.print(" ");
-    }*/
+    SerialESP32.write(udpData, len);
+    SerialESP32.println();   // to signal end of PGN
+    //Serial.print("\r\nAgIO-e:8888->T41-s->E32 ");
+    //for (uint8_t i = 0; i < len; i++) {
+      //Serial.print(udpData[i]); Serial.print(" ");
+    //}
     ESP32usage.timeOut();
   }
   #endif
@@ -117,8 +117,8 @@ void checkForPGNs()
   if (udpData[3] == 100 && len == 22)  // 0x64 (100) - Corrected Position
   {
     //printPgnAnnoucement(udpData[3], (char*)"Corrected Position", len);
-    /*
-    union {           // both variables in the union share the same memory space
+    
+    /*union {           // both variables in the union share the same memory space
       byte array[8];  // fill "array" from an 8 byte array converted in AOG from the "double" precision number we want to send
       double number;  // and the double "number" has the original "double" precision number from AOG
     } lat, lon;
@@ -128,10 +128,10 @@ void checkForPGNs()
       lon.array[i] = udpData[i+5];
       lat.array[i] = udpData[i+13];
     }*/
-    /*Serial.print("\r\n");
-    Serial.print(lat.number, 13);
-    Serial.print(" ");
-    Serial.print(lon.number, 13);*/
+    //Serial.print("\r\n");
+    //Serial.print(lat.number, 13);
+    //Serial.print(" ");
+    //Serial.print(lon.number, 13);
 
     //buildNMEA(lat.number, lon.number);
 
@@ -242,6 +242,20 @@ void checkForPGNs()
         UDP_Susage.timeOut();
       }
 
+      if (gpsActive) {
+        uint8_t scanReplyGPS[] = { 128, 129, 120, 203, 7,
+                                UDP.myIP[0], UDP.myIP[1], UDP.myIP[2], UDP.myIP[3],
+                                rem_ip[0], rem_ip[1], rem_ip[2], 23 };
+        CK_A = 0;
+        for (uint8_t i = 2; i < sizeof(scanReplyGPS) - 1; i++) {
+          CK_A = (CK_A + scanReplyGPS[i]);
+        }
+        scanReplyGPS[sizeof(scanReplyGPS) - 1] = CK_A;
+        UDP_Susage.timeIn();
+        UDP.SendUdpByte(scanReplyGPS, sizeof(scanReplyGPS), ipDest, UDP.portAgIO_9999);
+        UDP_Susage.timeOut();
+      }
+
       #ifdef MACHINE_H
       if (machine.isInit) {
         uint8_t scanReplyMachine[] = { 128, 129, 123, 203, 7,
@@ -262,20 +276,20 @@ void checkForPGNs()
       Serial.print("\r\nAgIO IP:   "); Serial.print(rem_ip);
       Serial.print("\r\nModule IP: "); Serial.print(UDP.myIP);
 
-      /*if (!Autosteer_running) Serial.println("\r\n!! Autosteer disabled... Check ADS1115");
-      else if (PWM_Frequency == 0) Serial.println("\r\nAutosteer running, PWM Frequency = 490hz");
-      else if (PWM_Frequency == 1) Serial.println("\r\nAutosteer running, PWM Frequency = 122hz");
-      else if (PWM_Frequency == 2) Serial.println("\r\nAutosteer running, PWM Frequency = 3921hz");*/
+      //if (!Autosteer_running) Serial.println("\r\n!! Autosteer disabled... Check ADS1115");
+      //else if (PWM_Frequency == 0) Serial.println("\r\nAutosteer running, PWM Frequency = 490hz");
+      //else if (PWM_Frequency == 1) Serial.println("\r\nAutosteer running, PWM Frequency = 122hz");
+      //else if (PWM_Frequency == 2) Serial.println("\r\nAutosteer running, PWM Frequency = 3921hz");
 
       if (BNO.isActive) Serial.print("\r\nBNO08x available via Serial/RVC Mode");
       else Serial.print("\r\n* No IMU available *");
 
-      /*if (GGA_Available == false) Serial.println("\r\n!! GPS Data Missing... Check F9P Config");
-      else if (!useDual) Serial.println("\r\nGPS Single GPS mode");
-      else if (useDual && !dualDataFail && !dualRTKFail && !dualBaselineFail) Serial.println("\r\nGPS Dual GPS mode");
-      else if (dualDataFail) Serial.println("\r\n!! Dual Data Checksum Failed");
-      else if (dualRTKFail) Serial.println("\r\n!! Dual RTK/Quality Failed... Check Antennas");
-      else if (dualBaselineFail) Serial.println("\r\n!! Dual Baseline Moving Too Much... Check Antennas");*/
+      //if (GGA_Available == false) Serial.println("\r\n!! GPS Data Missing... Check F9P Config");
+      //else if (!useDual) Serial.println("\r\nGPS Single GPS mode");
+      //else if (useDual && !dualDataFail && !dualRTKFail && !dualBaselineFail) Serial.println("\r\nGPS Dual GPS mode");
+      //else if (dualDataFail) Serial.println("\r\n!! Dual Data Checksum Failed");
+      //else if (dualRTKFail) Serial.println("\r\n!! Dual RTK/Quality Failed... Check Antennas");
+      //else if (dualBaselineFail) Serial.println("\r\n!! Dual Baseline Moving Too Much... Check Antennas");
       
       Serial.println("\r\r\n ---------");
     }
@@ -379,14 +393,14 @@ void checkForPGNs()
       aogGpsToAutoSteerLoopTimerEnabled = false;
       Serial.print((String)"\r\nGPS out to Steer Data in delay: " + aogGpsToAutoSteerLoopTimer);
     }
-    /*Serial.printf(" %6i", micros() - pgn254Time);
-    pgn254Time = micros();
-    uint32_t pgn254Delay = pgn254Time - nmeaPgnSendTime;
-    if (pgn254Delay < pgn254MinDelay) pgn254MinDelay = pgn254Delay;
-    if (pgn254Delay > pgn254MaxDelay) pgn254MaxDelay = pgn254Delay;
-    if (pgn254AveDelay == 0) pgn254AveDelay = pgn254Delay;
-    else pgn254AveDelay = pgn254AveDelay * 0.99 + pgn254Delay * 0.01;
-    Serial.printf("->PGN254 delay: %4iuS  %4i %4i %4i", pgn254Delay, pgn254MinDelay, pgn254AveDelay, pgn254MaxDelay);*/
+    //Serial.printf(" %6i", micros() - pgn254Time);
+    //pgn254Time = micros();
+    //uint32_t pgn254Delay = pgn254Time - nmeaPgnSendTime;
+    //if (pgn254Delay < pgn254MinDelay) pgn254MinDelay = pgn254Delay;
+    //if (pgn254Delay > pgn254MaxDelay) pgn254MaxDelay = pgn254Delay;
+    //if (pgn254AveDelay == 0) pgn254AveDelay = pgn254Delay;
+    //else pgn254AveDelay = pgn254AveDelay * 0.99 + pgn254Delay * 0.01;
+    //Serial.printf("->PGN254 delay: %4iuS  %4i %4i %4i", pgn254Delay, pgn254MinDelay, pgn254AveDelay, pgn254MaxDelay);
     gpsSpeed = ((float)(udpData[5] | udpData[6] << 8)) * 0.1;   // speed data comes in as km/hr x10
     //Serial << "\r\n speed:" << gpsSpeed << " "; Serial.print(udpData[5], BIN); Serial << " "; Serial.print(udpData[6], BIN);
     speedPulse.updateSpeed(gpsSpeed);
@@ -452,30 +466,30 @@ void checkForPGNs()
     UDP_Susage.timeOut();
 
     //Steer Data 2 -------------------------------------------------
-    /*if (steerConfig.PressureSensor || steerConfig.CurrentSensor) {
-      if (aog2Count++ > 2) {                                // send 1/3 of Steer Data rate (GPS hz / 3)
-        // fromAutoSteerData FD 250 - sensor values etc
-        uint8_t PGN_250[] = { 0x80, 0x81, 126, 0xFA, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0xCC };
+    // if (steerConfig.PressureSensor || steerConfig.CurrentSensor) {
+    //   if (aog2Count++ > 2) {                                // send 1/3 of Steer Data rate (GPS hz / 3)
+    //     // fromAutoSteerData FD 250 - sensor values etc
+    //     uint8_t PGN_250[] = { 0x80, 0x81, 126, 0xFA, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0xCC };
 
-        //Send fromAutosteer2
-        PGN_250[5] = (byte)sensorReading;
+    //     //Send fromAutosteer2
+    //     PGN_250[5] = (byte)sensorReading;
 
-        //add the checksum for AOG2
-        CK_A = 0;
+    //     //add the checksum for AOG2
+    //     CK_A = 0;
 
-        for (uint8_t i = 2; i < sizeof(PGN_250) - 1; i++) {
-          CK_A = (CK_A + PGN_250[i]);
-        }
+    //     for (uint8_t i = 2; i < sizeof(PGN_250) - 1; i++) {
+    //       CK_A = (CK_A + PGN_250[i]);
+    //     }
 
-        PGN_250[sizeof(PGN_250) - 1] = CK_A;
+    //     PGN_250[sizeof(PGN_250) - 1] = CK_A;
 
-        //off to AOG
-        UDP_Susage.timeIn();
-        UDP.SendUdpByte(PGN_250, sizeof(PGN_250), UDP.broadcastIP, UDP.portAgIO_9999);
-        UDP_Susage.timeOut();
-        aog2Count = 0;
-      }
-    }*/
+    //     //off to AOG
+    //     UDP_Susage.timeIn();
+    //     UDP.SendUdpByte(PGN_250, sizeof(PGN_250), UDP.broadcastIP, UDP.portAgIO_9999);
+    //     UDP_Susage.timeOut();
+    //     aog2Count = 0;
+    //   }
+    // }
 
     if (aog2Count++ > 1) {                                // send 1/2 of Steer Data rate (GPS hz / 2)
       // fromAutoSteerData FD 250 - sensor values etc
@@ -552,7 +566,6 @@ void udpNMEA() {
   }
 }
 
-
 /*
 *  To receive RTCM sent via UDP from AgIO NTRIP client - listen on port 2233 RTCM
 */
@@ -568,16 +581,17 @@ void udpNtrip() {
 
       if (packetLength > 0) {
         //Serial.print("\r\nNTRIP "); Serial.print(millis() - ntripUpdateTime); Serial.print(" len:"); Serial.print(packetLength);
-        char RTCM_packetBuffer[buffer_size];
-        UDP.RTCM.read(RTCM_packetBuffer, buffer_size);
-        if (!USB1DTR) SerialGPS1->write(RTCM_packetBuffer, buffer_size);
+        char RTCM_packetBuffer[256];
+        UDP.RTCM.read(RTCM_packetBuffer, sizeof(RTCM_packetBuffer));
+        if (!USB1DTR) SerialGPS1.write(RTCM_packetBuffer, sizeof(RTCM_packetBuffer));
+        if (!USB2DTR) SerialGPS2.write(RTCM_packetBuffer, sizeof(RTCM_packetBuffer));
         LEDs.queueBlueFlash(LED_ID::GPS);
 
         // up to 256 byte packets are sent from AgIO and most NTRIP RTCM updates are larger so there's usually two packets per update
         // this doesn't seem necessary, the above 1ms update limit already reduces cpu usage enough
-        /*if (packetLength < buffer_size){    // if buffer was not full, then end of NTRIP packet, can wait 800ms until we start checking again
-          ntripCheckTime = millis() + 800;  // most base stations send updates every 1000ms
-        }*/
+        //if (packetLength < buffer_size){    // if buffer was not full, then end of NTRIP packet, can wait 800ms until we start checking again
+          //ntripCheckTime = millis() + 800;  // most base stations send updates every 1000ms
+        //}
           
         //ntripUpdateTime = millis();   // only used in Serial debug above, AgIO always delays sequential ntrip packets by about 52-70ms
       }
@@ -585,4 +599,3 @@ void udpNtrip() {
   }
   NTRIPusage.timeOut();
 }
-

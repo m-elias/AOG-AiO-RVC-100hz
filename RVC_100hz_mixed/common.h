@@ -70,11 +70,14 @@ const uint8_t pcaOutputPinNumbers[8] = { 1, 0, 12, 15, 9, 8, 6, 7 };    // all 8
 const uint8_t pcaInputPinNumbers[]  = { 14, 13, 11, 10, 2, 3, 4, 5 };   // all 8 PCA9555 section/machine output "sensing" pin numbers on v5.0a
 
 #include "zNMEA.h"
-NMEAParser<3> nmeaParser;                               // A parser is declared with 3 handlers at most
-bool nmeaDebug = 0, nmeaDebug2 = 0, extraCRLF;
+NMEAParser<4> nmeaParser;
+bool nmeaDebug = 1, nmeaDebug2 = 0, extraCRLF;
 
 #include "zUBXParser.h"
 UBX_Parser ubxParser;
+
+#include "zFUSEImu.h"
+FUSE_Imu fuseImu;
 
 bool USB1DTR = false;               // to track bridge mode state
 bool USB2DTR = false;
@@ -87,22 +90,22 @@ bool startup = false;
 //elapsedMillis gpsLostTimer;
 elapsedMillis LEDTimer;
 elapsedMillis imuPandaSyncTimer;
-bool ggaReady, imuPandaSyncTrigger;
+bool posReady, gpsActive, imuPandaSyncTrigger;
 bool ggaTimeout, relposnedTimeout;
 //bool SerialGPSactive, SerialGPS2active;
 uint32_t dualTime;
 
-constexpr int buffer_size = 256;
-uint8_t GPSrxbuffer[buffer_size];       // Extra GPS1 serial rx buffer
-uint8_t GPStxbuffer[buffer_size];       // Extra GPS1 serial tx buffer
-uint8_t GPS2rxbuffer[buffer_size];      // Extra GPS2 serial rx buffer
-uint8_t GPS2txbuffer[buffer_size];      // Extra GPS2 serial tx buffer
-uint8_t RTKrxbuffer[buffer_size];       // Extra RTK serial rx buffer
+//constexpr int buffer_size = 512;
+uint8_t GPS1rxbuffer[128];      // seems large enough
+uint8_t GPS1txbuffer[256];      // large enough for 256 byte AgIO NTRIP packet
+uint8_t GPS2rxbuffer[128];      // seems large enough
+uint8_t GPS2txbuffer[256];      // large enough for 256 byte AgIO NTRIP packet
+uint8_t RTKrxbuffer[64];        // don't know what size is needed, larger buffer if GPS baud is lower then RTK radio baud
 #ifdef AIOv50a
-  uint8_t RS232txbuffer[buffer_size];     // Extra RS232 serial tx buffer
-  //uint8_t RS232rxbuffer[buffer_size];   // Extra RS232 serial rx buffer (not needed unless custom rs232 rx code is added)
-  uint8_t ESP32rxbuffer[buffer_size];     // Extra ESP32 serial rx buffer
-  uint8_t ESP32txbuffer[buffer_size];     // Extra ESP32 serial tx buffer
+  uint8_t RS232txbuffer[256];   // large enough to hold a few NMEA sentences as ext terminal bauds are usually slow
+  //uint8_t RS232rxbuffer[256]; // not needed unless custom rs232 rx code is added
+  uint8_t ESP32rxbuffer[256];   // don't know what size is needed
+  uint8_t ESP32txbuffer[256];   // don't know what size is needed
 #endif
 
 extern "C" uint32_t set_arm_clock(uint32_t frequency);  // required prototype to set CPU speed

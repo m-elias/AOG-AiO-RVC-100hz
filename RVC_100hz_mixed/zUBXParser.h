@@ -315,7 +315,7 @@ public:
       this->state = GOT_CLASS;
       this->msgclass = b;
       this->addchk(b);
-      if (debug) { Serial.print(" "); Serial.print(b,HEX); }
+      if (debug) { Serial.print(" 0x"); Serial.print(b,HEX); }
     }
 
     else if (this->state == GOT_CLASS) {
@@ -323,7 +323,7 @@ public:
       this->state = GOT_ID;
       this->msgid = b;
       this->addchk(b);
-      if (debug) { Serial.print(" "); Serial.print(b,HEX); }
+      if (debug) { Serial.print(" 0x"); Serial.print(b,HEX); }
     }
 
     else if (this->state == GOT_ID) {

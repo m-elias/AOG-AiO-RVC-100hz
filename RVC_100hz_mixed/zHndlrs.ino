@@ -4,7 +4,6 @@ const char* asciiHex = "0123456789ABCDEF";
 // the new PANDA sentence buffer
 char nmea[100];
 
-// GGA
 struct GGA_DATA {
   char fixTime[12];
   char latitude[15];
@@ -19,14 +18,19 @@ struct GGA_DATA {
 };
 GGA_DATA GGA;
 
-// VTG
 struct VTG_DATA {
   char heading[12];
   char speedKnots[10];
 };
 VTG_DATA VTG;
 
-// IMU
+struct HPR_DATA {
+  char heading[8];
+  char roll[8];
+  int solQuality;
+};
+HPR_DATA HPR;
+
 struct IMU_DATA {
   char heading[6];
   char roll[6];
@@ -42,7 +46,7 @@ bool aogGpsToAutoSteerLoopTimerEnabled;
 
 // If odd characters showed up
 void errorHandler() {
-  if (!startup) Serial.print("\r\n*** Unexpected characters in NMEA parser ***");
+  if (startup) Serial.print("\r\n*** Unexpected characters in NMEA parser ***");
 }
 
 void prepImuPandaData()  // run after GGA update + 40ms (timing for PANDA), for next GGA
@@ -131,10 +135,11 @@ void GNS_Handler()  // Rec'd GNS
   nmeaParser.getArg(10, GGA.ageDGPS);  // time of last DGPS update
 
   if (nmeaDebug) {
-    Serial.print("\r\n"); Serial.print(millis());
+    //Serial.print("\r\n");
+    Serial.print(millis());
     Serial.printf(" GNS update (%i)", ggaMissed);
     Serial.print(imuPandaSyncTimer); Serial.print(" ");
-    Serial.print(atoi(&GGA.fixTime[strlen(GGA.fixTime)-2]));
+    Serial.println(atoi(&GGA.fixTime[strlen(GGA.fixTime)-2]));
   }
   GGA_GNS_PostProcess();
   LEDs.toggleTeensyLED();
@@ -164,14 +169,13 @@ void GGA_GNS_PostProcess()  // called by either GGA or GNS handler
     paltold = palt;
   }*/
 
-  ggaReady = true;  // we have new GGA or GNS sentence
+  posReady = true;  // we have new GGA or GNS sentence
   /*Serial.print("\r\n"); Serial.print(millis());
   Serial.print(" GGA Received ");
   Serial.print(imuPandaSyncTimer);*/
   imuPandaSyncTimer = 0;  // reset imu timer
   imuPandaSyncTrigger = true;
   extraCRLF = true;
-  startup = true;
   gps1Stats.incHzCount();
   LEDs.setGpsLED(atoi(GGA.fixQuality));
   aogGpsToAutoSteerLoopTimer = 0;
@@ -179,7 +183,7 @@ void GGA_GNS_PostProcess()  // called by either GGA or GNS handler
 
   if (!ubxParser.useDual) {    // if not using Dual
     buildPandaOrPaogi(PANDA_SINGLE);  // build the PANDA sentence right away
-    ggaReady = false;
+    posReady = false;
   }  // otherwise wait in main loop() until relposned arrives
 }
 
@@ -199,10 +203,11 @@ void GGA_Handler()  // Rec'd GGA
   nmeaParser.getArg(12, GGA.ageDGPS);    // time of last DGPS update
 
   if (nmeaDebug) {
-    Serial.print("\r\n"); Serial.print(millis());
+    //Serial.print("\r\n");
+    Serial.print(millis());
     Serial.printf(" GGA update (%i)", ggaMissed);
     Serial.print(imuPandaSyncTimer); Serial.print(" ");
-    Serial.print(atoi(&GGA.fixTime[strlen(GGA.fixTime)-2]));
+    Serial.println(atoi(&GGA.fixTime[strlen(GGA.fixTime)-2]));
   }
   GGA_GNS_PostProcess();
   LEDs.toggleTeensyLED();
@@ -215,8 +220,82 @@ void VTG_Handler() {
   nmeaParser.getArg(4, VTG.speedKnots);  // vtg Speed knots
 }
 
+void PVT_Handler() {
+  Serial << "\r\n" << millis() << " PVT received\r\n";
+}
+
+void HPR_Handler()
+{
+  NMEA_Pusage.timeIn();
+
+  nmeaParser.getArg(1, HPR.heading);    // UM982 heading
+  nmeaParser.getArg(2, HPR.roll);       // UM982 roll (pitch)
+  nmeaParser.getArg(4, HPR.solQuality); // UM982 heading solution quality
+  char fixTime[12];
+  nmeaParser.getArg(0, fixTime);   // fix time
+
+  // Keep ubx stuff in main loop happy
+  ubxParser.relPosNedReady = true;
+  ubxParser.useDual = true;
+  ubxParser.relPosTimer = 0;
+
+  if (fuseImu.fuseData.useFUSEImu)
+  { // Three separate if/else cluases for clarity. Can be one.
+    // Send data to FUSEImu
+    fuseImu.fuseData.rollDual = atof(HPR.roll);
+    fuseImu.fuseData.heading = atof(HPR.heading);
+    fuseImu.fuseData.correctionHeading = BNO.rvcData.yawX10;
+    fuseImu.fuseData.rollImu = BNO.rvcData.pitchX10;
+    fuseImu.imuDualDelta();
+  }
+
+  if (fuseImu.fuseData.useFUSEImu)
+  { // Three separate if/else cluases for clarity. Can be one.
+    ubxParser.ubxData.baseRelH = fuseImu.fuseData.imuCorrected;
+  }
+  else
+  {
+    ubxParser.ubxData.baseRelH = atof(HPR.heading);
+  }
+
+  if (fuseImu.fuseData.useFUSEImu)
+  { // Three separate if/else cluases for clarity. Can be one.
+    // if ( HPR.solQuality == 4 ) {
+    ubxParser.ubxData.baseRelRoll = fuseImu.fuseData.rollDeltaSmooth;
+    // } else {
+    //   ubxParser.ubxData.baseRelRoll *= 0.9;     // "level off" dual roll
+    // }
+  }
+  else
+  {
+    if (HPR.solQuality == 4)
+    {
+      ubxParser.ubxData.baseRelRoll = atof(HPR.roll);
+    }
+    else
+    {
+      ubxParser.ubxData.baseRelRoll *= 0.9; // "level off" dual roll
+    }
+  }
+
+  if (nmeaDebug) {
+    //Serial.print("\r\n");
+    Serial.print(millis());
+    Serial.printf(" HPR update ");//(%i)", headingMissed);
+    //Serial.print(headingTimer); Serial.print(" ");
+    Serial.println(atoi(&fixTime[strlen(fixTime)-2]));
+  }
+
+  //headingTimer = 0;
+  //hprReady = 1;
+
+  NMEA_Pusage.timeOut();
+}
+
 void buildPandaOrPaogi(bool _panda)  // only called by GGA_Handler (above)
 {
+  gpsActive = true;
+
   if (_panda) strcpy(nmea, "$PANDA,");
   else strcpy(nmea, "$PAOGI,");
 
@@ -273,9 +352,10 @@ void buildPandaOrPaogi(bool _panda)  // only called by GGA_Handler (above)
   
 
   if (nmeaDebug) {
-    Serial.print("\r\n");
+    //Serial.print("\r\n");
     Serial.print(millis()); Serial.print(" ");
     Serial.write(nmea);
+    Serial.println();
     extraCRLF = false;
   }
 

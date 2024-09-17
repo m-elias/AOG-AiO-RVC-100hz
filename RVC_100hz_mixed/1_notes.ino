@@ -13,18 +13,21 @@ Single Operation Logic
 - Save BNO reading 60ms before next GGA/GNS (40ms after last GGA, comes from F9P pole swing test)
 	- roll/heading will be ready for PANDA later
 	- if no BNO, prep vars with 0xFFFF heading, 0 roll/yaw/pitch
+  - for UM982 I expect the timing should be different
 - Once GGA/GNS arrives (if !useDual)
 	- build PANDA msg and send out
-	- Otherwise if useDual, wait for relposned in main loop()
+	- Otherwise if useDual, wait for heading (relposned from F9P or HPR from UM982) in main loop()
 
 Dual Operation Logic
-- if relposned arrives
+- if heading arrives
 	- set useDual for duration of runtime
-- Each time new GGA/GNS & relposned arrive
+- Each time new GGA/GNS & heading arrive
 	- if fix/diffsol/posvalid all good
-		- calc roll from dual baseline/relposD
+		- calc roll from dual baseline/heading data
 			- if carrsoln is not full RTK "wind down" dual roll by x0.9 each GPS update
 	- Send PAOGI
+
+Autosteer updates at 100hz but should maybe only be at the old 40hz?
 
 
 Machine/Section outputs
@@ -35,6 +38,9 @@ Machine/Section outputs
 
 
 To-do
+- Adafruit NeoPixel (WS2811) library disabled interrupts which causes lost Serial data
+  - ints are currently disabled, LEDs don't blink quite 100%
+- send more data to ESP32, such as speed and roll correction position
 - set ADS1115 single/dual according to config struct setting (saved in eeprom)
 - consolidate all EEPROM addrs in one place?
     - Ethernet, Autosteer, machine

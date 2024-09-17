@@ -15,29 +15,27 @@ void serialSetup()
   #endif
 
   // setup GPS serial ports here
-  SerialGPS1->begin(baudGPS);
+  SerialGPS1.begin(baudGPS);
   GPS1BAUD = baudGPS;
-  SerialGPS1->addMemoryForRead(GPSrxbuffer, buffer_size);
-  SerialGPS1->addMemoryForWrite(GPStxbuffer, buffer_size);
+  SerialGPS1.addMemoryForRead(GPS1rxbuffer, sizeof(GPS1rxbuffer));
+  SerialGPS1.addMemoryForWrite(GPS1txbuffer, sizeof(GPS1txbuffer));
 
-  //delay(10);
   SerialRTK.begin(baudRTK);
-  SerialRTK.addMemoryForRead(RTKrxbuffer, buffer_size);
+  SerialRTK.addMemoryForRead(RTKrxbuffer, sizeof(RTKrxbuffer));
 
-  //delay(10);
-  SerialGPS2->begin(baudGPS);
+  SerialGPS2.begin(baudGPS);
   GPS2BAUD = baudGPS;
-  SerialGPS2->addMemoryForRead(GPS2rxbuffer, buffer_size);
-  SerialGPS2->addMemoryForWrite(GPS2txbuffer, buffer_size);
+  SerialGPS2.addMemoryForRead(GPS2rxbuffer, sizeof(GPS2rxbuffer));
+  SerialGPS2.addMemoryForWrite(GPS2txbuffer, sizeof(GPS2txbuffer));
 
   #ifdef AIOv50a
-    SerialRS232->begin(baudRS232);
-    SerialRS232->addMemoryForWrite(RS232txbuffer, buffer_size);
-    //SerialRS232->addMemoryForRead(RS232rxbuffer, buffer_size);    // not needed unless custom rs232 rx code is added
+    SerialRS232.begin(baudRS232);
+    //SerialRS232.addMemoryForRead(RS232rxbuffer, sizeof(RS232rxbuffer));    // not needed unless custom rs232 rx code is added
+    SerialRS232.addMemoryForWrite(RS232txbuffer, sizeof(RS232txbuffer));
 
-    SerialESP32->begin(baudESP32);
-    SerialESP32->addMemoryForRead(ESP32rxbuffer, buffer_size);
-    SerialESP32->addMemoryForWrite(ESP32txbuffer, buffer_size);
+    SerialESP32.begin(baudESP32);
+    SerialESP32.addMemoryForRead(ESP32rxbuffer, sizeof(ESP32rxbuffer));
+    SerialESP32.addMemoryForWrite(ESP32txbuffer, sizeof(ESP32txbuffer));
   #endif
 }
 
@@ -48,15 +46,19 @@ void parserSetup()
   nmeaParser.addHandler("G-GGA", GGA_Handler);
   nmeaParser.addHandler("G-GNS", GNS_Handler);
   nmeaParser.addHandler("G-VTG", VTG_Handler);
+  nmeaParser.addHandler("G-HPR", HPR_Handler);
+  //const char pvtID[5] = {181, 98, 1, 7, 92};
+  //nmeaParser.addHandler(pvtID, PVT_Handler);
+  //const char relID = {181, 98, 1, 60, 64};
 }
 
 void resetStartingTimersBuffers()
 {
   //machine.watchdogTimer = 0;
-  SerialGPS1->clear();
-  SerialGPS2->clear();
+  SerialGPS1.clear();
+  SerialGPS2.clear();
   #ifdef AIOv50a
-  SerialESP32->clear();
+  SerialESP32.clear();
   #endif
   if (BNO.isActive) while (!BNO.read(true));
   machine.watchdogTimer = 0;
