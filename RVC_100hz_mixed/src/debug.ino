@@ -12,42 +12,12 @@ void checkUSBSerial()
       relTtrStats.resetAll();
       bnoStats.resetAll();
     }
-    else if (usbRead == 'a') // output WAS adc data
-    {
-      adcDebug = !adcDebug;
-      Serial.print("\r\nSetting WAS ADC value debug: ");
-      Serial.print(adcDebug);
-    }
-    else if (usbRead == 'e') // output ESP32 data
-    {
-      ESP32Debug = !ESP32Debug;
-      Serial.print("\r\nSetting ESP32 debug: ");
-      Serial.print(ESP32Debug);
-    }
-    else if (usbRead == 'k') // output Keya data
-    {
-      KeyaDebug = !KeyaDebug;
-      Serial.print("\r\nSetting Keya debug: ");
-      Serial.print(KeyaDebug);
-    }
-    else if (usbRead == 'w') // output workswitch analog data
-    {
-      workDebug = !workDebug;
-      Serial.print("\r\nSetting workswitch debug: ");
-      Serial.print(workDebug);
-    }
     else if (usbRead == 'n') // output realtime GPS update data
     {
       nmeaDebug = !nmeaDebug;
       ubxParser.debug = nmeaDebug;
       Serial.print("\r\nSetting NMEA debug: ");
       Serial.print(nmeaDebug);
-    }
-    else if (usbRead == 'p') // output PWM and current sensor data
-    {
-      pwmDebug = !pwmDebug;
-      Serial.print("\r\nSetting PWM / current sensor debug: ");
-      Serial.print(pwmDebug);
     }
     else if (usbRead == 'c') // output cpu usage stats
     {
