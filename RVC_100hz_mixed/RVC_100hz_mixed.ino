@@ -135,12 +135,8 @@ void loop()
         SerialRS232.write(gps1Read);
         RS232usage.timeOut();
       #endif
-    GPS1usage.timeOut();
-
-    //Serial.write(gps1Read);
-    //Serial.print((String)"\nSerialGPS1 update " + SerialGPS1.available() + " " + millis() + " d:" + (char)gps1Read);
-
     }
+    GPS1usage.timeOut();
   }
 
   #if defined(USB_DUAL_SERIAL) || defined(USB_TRIPLE_SERIAL)
@@ -159,7 +155,6 @@ void loop()
     }
   #endif
 
-  GPS1usage.timeOut();
 
 
   // ******************* "Left" GPS2 (OGX Blade) *******************
@@ -179,6 +174,7 @@ void loop()
       uint8_t gps2Read = SerialGPS2.read();
       if (nmeaDebug2) Serial << "(" << byte(gps2Read) << ")";
 
+      ubxParser.parse(gps2Read);
       //nmeaParser << gps2Read;
       #ifdef OGX_H
         grade.nmeaInput(gps2Read);  // no UBX in this version, GPS2 outputs nmea which is sent to OGX for blade position
@@ -186,8 +182,8 @@ void loop()
         ubxParser.parse(gps2Read);
       #endif
     }
-
   }
+
   #if defined(USB_TRIPLE_SERIAL)
     else {                                // in SerialUSB2<->SerialGPS2 bridge mode, for connecting via u-center
       if (SerialGPS2.available()) {
@@ -211,11 +207,12 @@ void loop()
   #endif*/
   GPS2usage.timeOut();
 
+
   // ******************* For SINGLE/RIGHT *******************
-  if (imuPandaSyncTimer > 50) {   // to make sure old data isn't sent to AOG
+  if (imuPandaSyncTimer > 50 && startup) {   // to make sure old data isn't sent to AOG
     if (posReady) {
       posReady = 0;
-      Serial.print("\r\n**Position data expired\r\n**");
+      Serial.print("\r\n**Position data expired**\r\n");
     }
   
     if (extraCRLF && nmeaDebug) {
@@ -224,7 +221,7 @@ void loop()
     }
   }
 
-  if (imuPandaSyncTimer > 150) {
+  if (imuPandaSyncTimer > 150 && startup) {
     imuPandaSyncTimer -= 100;
     ggaMissed++;
     if (nmeaDebug) Serial.println();
@@ -242,12 +239,15 @@ void loop()
     posReady = false;
   }
 
-  if (ubxParser.relPosTimer > 50 && ubxParser.relPosNedReady) {    // to make sure old data isn't sent to AOG
+  if (ubxParser.relPosTimer > 50 && ubxParser.relPosNedReady && startup) {    // to make sure old data isn't sent to AOG
     ubxParser.relPosNedReady = 0;
-    Serial.print("\r\n**Heading data expired\r\n**");
+    if (!ubxParser.firstHeadingDetected) {
+      Serial.print("\r\n**Heading data expired**\r\n");
+      ubxParser.firstHeadingDetected = 0;
+    }
   }
 
-  if (ubxParser.relPosTimer > 150 && ubxParser.useDual) {
+  if (ubxParser.relPosTimer > 150 && ubxParser.useDual && startup) {
     ubxParser.relPosTimer -= 100;
     ubxParser.relMissed++;
     if (nmeaDebug) Serial.println();

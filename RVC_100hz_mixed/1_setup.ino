@@ -55,12 +55,13 @@ void parserSetup()
 void resetStartingTimersBuffers()
 {
   //machine.watchdogTimer = 0;
+  if (BNO.isActive) while (!BNO.read(true));
   SerialGPS1.clear();
   SerialGPS2.clear();
   #ifdef AIOv50a
   SerialESP32.clear();
   #endif
-  if (BNO.isActive) while (!BNO.read(true));
   machine.watchdogTimer = 0;
+  imuPandaSyncTimer = 0;
   startup = true;
 }

@@ -71,7 +71,7 @@ const uint8_t pcaInputPinNumbers[]  = { 14, 13, 11, 10, 2, 3, 4, 5 };   // all 8
 
 #include "zNMEA.h"
 NMEAParser<4> nmeaParser;
-bool nmeaDebug = 1, nmeaDebug2 = 0, extraCRLF;
+bool nmeaDebug = 0, nmeaDebug2 = 0, extraCRLF;
 
 #include "zUBXParser.h"
 UBX_Parser ubxParser;

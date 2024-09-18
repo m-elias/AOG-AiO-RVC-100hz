@@ -184,7 +184,7 @@ void GGA_GNS_PostProcess()  // called by either GGA or GNS handler
   if (!ubxParser.useDual) {    // if not using Dual
     buildPandaOrPaogi(PANDA_SINGLE);  // build the PANDA sentence right away
     posReady = false;
-  }  // otherwise wait in main loop() until relposned arrives
+  }  // otherwise wait in main loop() until relposned(f9p) or hpr(um982) arrives
 }
 
 void GGA_Handler()  // Rec'd GGA
@@ -236,8 +236,10 @@ void HPR_Handler()
 
   // Keep ubx stuff in main loop happy
   ubxParser.relPosNedReady = true;
+  if (!ubxParser.useDual) ubxParser.firstHeadingDetected = 1;
   ubxParser.useDual = true;
   ubxParser.relPosTimer = 0;
+  
 
   if (fuseImu.fuseData.useFUSEImu)
   { // Three separate if/else cluases for clarity. Can be one.

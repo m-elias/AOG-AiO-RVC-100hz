@@ -39,13 +39,13 @@ Machine/Section outputs
 
 To-do
 - Adafruit NeoPixel (WS2811) library disabled interrupts which causes lost Serial data
-  - ints are currently disabled, LEDs don't blink quite 100%
+  - this has been overriden to keep interrupts on, LEDs don't blink quite 100%
 - send more data to ESP32, such as speed and roll correction position
 - set ADS1115 single/dual according to config struct setting (saved in eeprom)
 - consolidate all EEPROM addrs in one place?
     - Ethernet, Autosteer, machine
 - test/fix autosteer watch dog timeout from lost comms
-- write piezo class for v5.0a
+- write piezo class
 - expand machine/PCA9555 to monitor outputs with PCA's extra input pins
 - add analog PCB ID input
 - use 2nd Eth jack LED for something?
