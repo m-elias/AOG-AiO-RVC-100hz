@@ -272,7 +272,9 @@ void autosteerLoop() {
     if (steerConfig.SteerSwitch == 1)  //steer switch on - off
     {
       steerSwitch = digitalRead(STEERSW_PIN);  //read auto steer enable switch open = 0n closed = Off
-    } else if (steerConfig.SteerButton == 1)   //steer Button momentary
+    }
+    
+    else if (steerConfig.SteerButton == 1)   //steer Button momentary
     {
       reading = digitalRead(STEERSW_PIN);
       if (reading == LOW && previous == HIGH) {
