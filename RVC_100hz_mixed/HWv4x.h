@@ -27,7 +27,7 @@
 #define Hardware_H
 
 #define AIOv4x
-const char inoVersion[] = "RVC 100hz AiO v4.x alpha - " __DATE__;
+const char inoVersion[] = "AiO v4.x OGX - " __DATE__;
 
 // ********* IO Defines *********
 const uint8_t WAS_SENSOR_PIN = A0;      // WAS input
@@ -50,7 +50,7 @@ SpeedPulse speedPulse(SPEEDPULSE_PIN);     // misc.h
 // ********* Serial Assignments *********
 #define SerialRTK Serial3               // RTK radio
 HardwareSerial* SerialIMU = &Serial5;   // IMU BNO-085 in RVC serial mode
-HardwareSerial* SerialGPS = &Serial7;   // Main postion receiver (GGA & VTG)
+HardwareSerial* SerialGPS1 = &Serial7;  // Main postion receiver (GGA & VTG)
 HardwareSerial* SerialGPS2 = &Serial2;  // Dual heading receiver  (relposNED)
 
 const int32_t baudGPS = 460800;

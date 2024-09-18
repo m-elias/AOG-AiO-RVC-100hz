@@ -27,7 +27,7 @@
 #define Hardware_H
 
 #define AIOv50a
-const char inoVersion[] = "RVC 100hz AiO v5.0a alpha - " __DATE__;
+const char inoVersion[] = "AiO v5.0a OGX - " __DATE__;
 
 // ********* IO Defines *********
 const uint8_t WAS_SENSOR_PIN = A15;     // WAS input
@@ -39,10 +39,10 @@ SpeedPulse speedPulse(SPEEDPULSE_PIN, SPEEDPULSE10_PIN);     // misc.h
 const uint8_t PIEZO1 = 37;
 const uint8_t PIEZO2 = 36;
 
-// Cytron
-#define DIR_PIN           6     // IBT2 Enable pin (IBT not really used on these AIO)
-#define PWM_PIN           9     // IBT2 Left pin
-#define SLEEP_PIN         4     // IBT2 Right pin
+// Cytron/DRV8701
+#define DIR_PIN           6     // DRV Dir pin
+#define PWM_PIN           9     // DRV PWM pin
+#define SLEEP_PIN         4     // DRV Sleep pin, LOCK output
 
 // Switches/Sensors
 #define STEER_PIN         2
@@ -54,14 +54,23 @@ const uint8_t PIEZO2 = 36;
 // ********* Serial Assignments *********
 #define SerialRTK Serial3               // RTK radio
 //HardwareSerial SerialRTK = Serial3;   // causes boot loop
-HardwareSerial* SerialIMU = &Serial6;   // IMU BNO-085 in RVC serial mode
-HardwareSerial* SerialGPS = &Serial5;   // Main postion receiver (GGA & VTG)
-HardwareSerial* SerialGPS2 = &Serial8;  // Dual heading receiver  (relposNED)
-HardwareSerial* SerialRS232 = &Serial7; // RS232
-HardwareSerial* SerialESP32 = &Serial2; // ESP32
 
-//const int32_t baudGPS = 460800;
-const int32_t baudGPS = 921600;
+HardwareSerial* SerialIMU = &Serial6;   // IMU BNO-085 in RVC serial mode
+
+// HardwareSerial *SerialGPS = &Serial5;   // Main postion receiver (GGA & VTG)
+#define SerialGPS1 Serial5
+
+// HardwareSerial *SerialGPS2 = &Serial8; // Dual heading receiver  (relposNED)
+#define SerialGPS2 Serial8
+
+// HardwareSerial *SerialRS232 = &Serial7; // RS232
+#define SerialRS232 Serial7
+
+// HardwareSerial *SerialESP32 = &Serial2; // ESP32
+#define SerialESP32 Serial2
+
+//const int32_t baudGPS = 921600;
+const int32_t baudGPS = 460800;
 const int32_t baudRTK = 460800;     // most are using Xbee radios with default of 115200
 const int32_t baudRS232 = 38400;
 const int32_t baudESP32 = 460800;

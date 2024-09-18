@@ -28,6 +28,7 @@ public:
 	unsigned int portSteer_8888 = 8888;    // UDP port that Modules (like this one) listen to
 	EthernetUDP PGN;                       // UDP object for PGNs on port 8888
 	unsigned int portAgIO_9999 = 9999;     // UDP port that AgIO listens to, send data here
+  EthernetUDP PGN_OGX;                   // UDP object for PGNs on port 7777 from OGX
 
 	bool isRunning = false;                // set true with successful Eth Start()
   int8_t linkStatus = -1;                // 0 - Unknown, 1 - LinkON, 2 - LinkOFF
@@ -110,8 +111,12 @@ public:
 
     // init UPD Port getting AutoSteer (8888) data from AGIO
     if (PGN.begin(portSteer_8888)) {
-      Serial.print("\r\n- Ethernet UDP PGN listening to port: ");
-      Serial.print(portSteer_8888);
+      Serial << "\r\n- Ethernet UDP listening to port: " << portSteer_8888 << " for AOG PGNs";
+
+    }
+
+    if (PGN_OGX.begin(7777)) {
+      Serial << "\r\n- Ethernet UDP listening to port: " << 7777 << " for OGX PGNs";
     }
 
     isRunning = true;

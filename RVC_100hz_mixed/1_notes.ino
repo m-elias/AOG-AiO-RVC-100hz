@@ -1,7 +1,7 @@
 /*
 
 Started Feb 2024 - Matt Elias
-Updated Apr 2024
+Updated Sep 2024
 
 Used Ace repo code and adapted for AiO v4.x/5.0a RVC 100hz
 - Started with code from Teensy "Nav" Ace module https://github.com/farmerbriantee/Ace/tree/master/Hardware/Ace
@@ -13,18 +13,21 @@ Single Operation Logic
 - Save BNO reading 60ms before next GGA/GNS (40ms after last GGA, comes from F9P pole swing test)
 	- roll/heading will be ready for PANDA later
 	- if no BNO, prep vars with 0xFFFF heading, 0 roll/yaw/pitch
+  - for UM982 I expect the timing should be different
 - Once GGA/GNS arrives (if !useDual)
 	- build PANDA msg and send out
-	- Otherwise if useDual, wait for relposned in main loop()
+	- Otherwise if useDual, wait for heading (relposned from F9P or HPR from UM982) in main loop()
 
 Dual Operation Logic
-- if relposned arrives
+- if heading arrives
 	- set useDual for duration of runtime
-- Each time new GGA/GNS & relposned arrive
+- Each time new GGA/GNS & heading arrive
 	- if fix/diffsol/posvalid all good
-		- calc roll from dual baseline/relposD
+		- calc roll from dual baseline/heading data
 			- if carrsoln is not full RTK "wind down" dual roll by x0.9 each GPS update
 	- Send PAOGI
+
+Autosteer updates at 100hz but should maybe only be at the old 40hz?
 
 
 Machine/Section outputs
@@ -35,11 +38,14 @@ Machine/Section outputs
 
 
 To-do
+- Adafruit NeoPixel (WS2811) library disabled interrupts which causes lost Serial data
+  - this has been overriden to keep interrupts on, LEDs don't blink quite 100%
+- send more data to ESP32, such as speed and roll correction position
 - set ADS1115 single/dual according to config struct setting (saved in eeprom)
 - consolidate all EEPROM addrs in one place?
     - Ethernet, Autosteer, machine
 - test/fix autosteer watch dog timeout from lost comms
-- write piezo class for v5.0a
+- write piezo class
 - expand machine/PCA9555 to monitor outputs with PCA's extra input pins
 - add analog PCB ID input
 - use 2nd Eth jack LED for something?

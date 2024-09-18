@@ -162,6 +162,7 @@ private:
     msgPeriod = millis() - prevRelposnedMsgTime;
     prevRelposnedMsgTime = millis();
     relPosTimer = 0;
+    if (!useDual) firstHeadingDetected = 1;
     relPosNedRcvd = true;
     useDual = true;             // set true for the rest of runtime
 
@@ -196,7 +197,6 @@ private:
       if (ubxData.baseRelL == 0) ubxData.baseRelL += 0.01;    // to prevent 0 division error
       ubxData.baseRelRoll = (asin(ubxData.baseRelD / ubxData.baseRelL)) * -RAD_TO_DEG;
       relPosNedReady = true;      // RelPos ready is true so PAOGI will send when the GGA is also ready
-      useDual = true;             // set true for the rest of runtime
     } else {
       if (!debug) Serial.print("\r\n");
       Serial.print("    carrSoln: "); Serial.print(ubxData.carrSoln);
@@ -271,7 +271,7 @@ public:
   };
   UBX_Data ubxData;
 
-  bool relPosNedReady, useDual, relPosNedRcvd, debug;
+  bool relPosNedReady, useDual, relPosNedRcvd, debug, firstHeadingDetected;
   uint32_t msgPeriod, msgReadTime;
   elapsedMillis relPosTimer, pvtTimer;
   uint16_t relMissed;
@@ -315,7 +315,7 @@ public:
       this->state = GOT_CLASS;
       this->msgclass = b;
       this->addchk(b);
-      if (debug) { Serial.print(" "); Serial.print(b,HEX); }
+      if (debug) { Serial.print(" 0x"); Serial.print(b,HEX); }
     }
 
     else if (this->state == GOT_CLASS) {
@@ -323,7 +323,7 @@ public:
       this->state = GOT_ID;
       this->msgid = b;
       this->addchk(b);
-      if (debug) { Serial.print(" "); Serial.print(b,HEX); }
+      if (debug) { Serial.print(" 0x"); Serial.print(b,HEX); }
     }
 
     else if (this->state == GOT_ID) {
