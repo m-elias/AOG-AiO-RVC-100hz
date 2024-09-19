@@ -99,7 +99,7 @@ void checkForPGNs()
   bool pgnMatched = false;
 
   #ifdef AIOv5
-  if (udpData[3] != 100) {
+  //if (udpData[3] != 100) {    // uncomment to omit roll corrected data from ESP32
     ESP32usage.timeIn();
     SerialESP32.write(udpData, len);
     SerialESP32.println();   // to signal end of PGN
@@ -108,7 +108,7 @@ void checkForPGNs()
       //Serial.print(udpData[i]); Serial.print(" ");
     //}
     ESP32usage.timeOut();
-  }
+  //}
   #endif
 
   // changed to multiple IF statements instead of IF ELSE so that AgIO Hello and Scan Request PGNs can be pickedup by other object/classes (ie machine)
