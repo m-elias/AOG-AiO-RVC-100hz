@@ -1,3 +1,8 @@
+// using JD_DAC still causes some lost serial data
+// try this library for I2C, supposed to be non-blocking(?)
+// https://github.com/Richard-Gemmell/teensy4_i2c
+
+
 #include <stdint.h>
 #ifndef JD_DAC_H
 #define JD_DAC_H
