@@ -17,6 +17,7 @@ public:
     i2cPort = &_wirePort;
     dacAddr = _dacAddr;
     stream = _stream;
+    dac_ads.setWirePort(_wirePort);
     //dacSetCenterIO = _dacSetCenterIO;
     //dacDevBtn = _dacPrintIO;
     //pinMode(dacSetCenterIO, INPUT_PULLUP);

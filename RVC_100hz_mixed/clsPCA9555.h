@@ -14,6 +14,8 @@
 #include "WProgram.h"
 #endif
 
+#include <Wire.h>
+
 /** enum with names of ports ED0 - ED15 */
 enum {
     ED0, ED1, ED2 , ED3 , ED4 , ED5 , ED6 , ED7 ,
@@ -43,7 +45,7 @@ public:
     void digitalWrite(uint16_t value );                  // bulk/fast digitalWrite
     uint8_t stateOfPin(uint8_t pin);                     // Actual ISR
     void setClock(uint32_t clockFrequency);              // Clock speed
-    bool begin();                                        // Checks if PCA is responsive
+    bool begin(TwoWire& _wirePort);                      // Checks if PCA is responsive
     void printBinary(uint16_t var);                      // to print binary with leading zeros
     bool enabled;
     //const uint8_t outputPins[8] = { 1, 0, 12, 15, 9, 8, 6, 7 };   // for v5.0
@@ -51,6 +53,7 @@ public:
 
 private:
     static PCA9555* instancePointer;
+    TwoWire* i2cPort;
     static void alertISR(void); // Function pointing to actual ISR
     void pinStates();           // Function tied to interrupt
 

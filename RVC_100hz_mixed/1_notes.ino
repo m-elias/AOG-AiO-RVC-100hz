@@ -31,8 +31,8 @@ Autosteer updates at 100hz but should maybe only be at the old 40hz?
 
 
 Machine/Section outputs
-- only supported by v5.0a
-- uses Wire1 (I2C1) to connect to PCA9555
+- only supported by v5.0
+- uses Wire1/I2C1 (v5.0a-c) or Wire/I2C (v5.0d) to connect to PCA9555
   - v4.x uses Wire1 to connect to ADS1115
 
 
@@ -40,6 +40,7 @@ Machine/Section outputs
 To-do
 - Adafruit NeoPixel (WS2811) library disabled interrupts which causes lost Serial data
   - this has been overriden to keep interrupts on, LEDs don't blink quite 100%
+  - for v5.0d, add code for WS2812Serial library for nonblock RGB control
 - send more data to ESP32, such as speed and roll correction position
 - set ADS1115 single/dual according to config struct setting (saved in eeprom)
 - consolidate all EEPROM addrs in one place?

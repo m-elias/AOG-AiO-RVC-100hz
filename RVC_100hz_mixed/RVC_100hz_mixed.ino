@@ -8,9 +8,11 @@ See notes.ino for additional information
 
 */
 
-// pick only one or the other board file
-#include "HWv50a.h"
+
+// pick only one board file
 //#include "HWv4x.h"
+#include "HWv50a.h"
+//#include "HWv50d.h"
 
 const uint8_t encoderType = 1;  // 1 - single input
                                 // 2 - dual input (quadrature encoder), uses Kickout_A (Pressure) & Kickout_D (Remote) inputs
@@ -19,14 +21,13 @@ const uint8_t encoderType = 1;  // 1 - single input
 #include "common.h"
 
 //#include "JD_DAC.h"   // experimental JD 2 track DAC steering & SCV/remote hyd control
-//JD_DAC jdDac(Wire1, 0x60, &Serial);
-
+//JD_DAC jdDac(I2C_WIRE, 0x60, &Serial);
 //#include "OGX.h"
 //OpenGradeX grade;
 
 void setup()
 {
-  Serial.begin(115200);                   // Teensy doesn't need it
+  //Serial.begin(115200);                   // Teensy doesn't need it
   Serial.print("\r\n\n\n*********************\r\nStarting setup...\r\n");
   Serial.print(inoVersion);
   LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::PWR_ON);
@@ -37,7 +38,7 @@ void setup()
   BNO.begin(SerialIMU);                     // BNO_RVC.cpp
 
   // v5 has machine outputs, v4 fails outputs.begin so machine is also not init'd
-  if (outputs.begin()) {                    // clsPCA9555.cpp
+  if (outputs.begin(I2C_WIRE)) {            // clsPCA9555.cpp
     Serial.print("\r\nSection outputs (PCA9555) detected (8 channels, low side switching)");
     machine.init(&outputs, pcaOutputPinNumbers, pcaInputPinNumbers, 100); // mach.h
   }
@@ -49,7 +50,7 @@ void setup()
 
   autosteerSetup();                         // Autosteer.ino
 
-  #ifdef JD_DAC_H
+  #ifdef OGX_H
     grade.setOutput1Handler(updateDacChannel4Output);
     //grade.setUdpReplyHandler(OgxPgnReplies);
     grade.init(90, 0, 0);    // CAN2RX LED, LOW/0 is ON
@@ -60,7 +61,7 @@ void setup()
   resetStartingTimersBuffers();             // setup.ino
 }
 
-#ifdef JD_DAC_H
+#ifdef OGX_H
   void updateDacChannel4Output(){
     jdDac.ch4Enable(true);
     jdDac.ch4GradeOutput(grade.getAnalog1());
@@ -70,9 +71,9 @@ void setup()
 
 void loop()
 {
-  checkForOGXPackets();
   checkForPGNs();                           // zPGN.ino, check for AgIO or SerialESP32 Sending PGNs
   #ifdef OGX_H
+    checkForOGXPackets();
     grade.updateLoop();
   #endif
   PGNusage.timeOut();
@@ -88,7 +89,7 @@ void loop()
     LEDs.queueBlueFlash(LED_ID::GPS);
   }
 
-  #ifdef AIOv50a
+  #ifdef AIOv5
     RS232usage.timeIn();
     if (SerialRS232.available()) {           // Check for RS232 data
       Serial.write(SerialRS232.read());      // just print to USB for testing
@@ -129,7 +130,7 @@ void loop()
       if (nmeaDebug) Serial.write(gps1Read);
       nmeaParser << gps1Read;
       
-      #ifdef AIOv50a
+      #ifdef AIOv5
         GPS1usage.timeOut();
         RS232usage.timeIn();
         SerialRS232.write(gps1Read);
@@ -199,7 +200,7 @@ void loop()
     }
   #endif
 
-  /*#ifdef AIOv50a
+  /*#ifdef AIOv5
     GPS2usage.timeOut();
     RS232usage.timeIn();
     SerialRS232.write(gps2Read);

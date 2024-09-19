@@ -18,7 +18,7 @@
 #include <Arduino.h>
 #include <EEPROM.h>
 #include "elapsedMillis.h"
-//#include "IPAddress.h"
+#include "IPAddress.h"
 
 class OpenGradeX
 {

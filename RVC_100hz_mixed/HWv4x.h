@@ -47,11 +47,13 @@ SpeedPulse speedPulse(SPEEDPULSE_PIN);     // misc.h
 #define CURRENT_PIN     A17     // ACS CURRENT input from Cytron module
 #define KICKOUT_A_PIN   A10     // PRESSURE input
 
+#define I2C_WIRE Wire1          // used for ADS1115 wheel angle sensor
+
 // ********* Serial Assignments *********
-#define SerialRTK Serial3               // RTK radio
 HardwareSerial* SerialIMU = &Serial5;   // IMU BNO-085 in RVC serial mode
-HardwareSerial* SerialGPS1 = &Serial7;  // Main postion receiver (GGA & VTG)
-HardwareSerial* SerialGPS2 = &Serial2;  // Dual heading receiver  (relposNED)
+#define SerialRTK  Serial3               // RTK radio
+#define SerialGPS1 Serial7              // Main postion receiver (GGA & VTG)
+#define SerialGPS2 Serial2              // Dual heading receiver  (relposNED)
 
 const int32_t baudGPS = 460800;
 const int32_t baudRTK = 115200;     // most are using Xbee radios with default of 115200

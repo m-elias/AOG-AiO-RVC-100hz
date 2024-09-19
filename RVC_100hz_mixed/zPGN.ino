@@ -9,6 +9,7 @@
 #define UDP_MAX_PACKET_SIZE 40         // Buffer size For Receiving UDP PGN Data
 //uint32_t pgn254Time, pgn254MaxDelay, pgn254AveDelay, pgn254MinDelay = 99999;
 
+#ifdef OGX_H
 void checkForOGXPackets()
 {
   if (!UDP.isRunning) return;      // When ethernet is not running, return directly. parsePacket() will block with no ethernet
@@ -31,18 +32,16 @@ void checkForOGXPackets()
     UDP.PGN_OGX.read(udpBuffer, (lenOGX >= udpBufferLength) ? udpBufferLength - 1 : lenOGX );  // make sure we don't overrun buffer size
     udpBuffer[(lenOGX >= udpBufferLength) ? udpBufferLength : lenOGX] = 0;                     // make sure string ends with NULL
 
-    #ifdef OGX_H
-      grade.checkforPGNs(udpBuffer, lenOGX);
-    #endif
+    grade.checkforPGNs(udpBuffer, lenOGX);
   }
-
 }
+#endif
 
 void checkForPGNs()
 {
   if (!UDP.isRunning) return;                           // When ethernet is not running, return directly. parsePacket() will block with no ethernet
 
-  #ifdef AIOv50a
+  #ifdef AIOv5
   ESP32usage.timeIn();
   if (SerialESP32.available())
   {
@@ -80,7 +79,7 @@ void checkForPGNs()
     }
   }
   ESP32usage.timeOut();
-  #endif  // AIOv50a
+  #endif  // AIOv5
 
 
   PGNusage.timeIn();
@@ -99,7 +98,7 @@ void checkForPGNs()
   if (udpData[0] != 0x80 || udpData[1] != 0x81 || udpData[2] != 0x7F) return;  // verify first 3 PGN header bytes
   bool pgnMatched = false;
 
-  #ifdef AIOv50a
+  #ifdef AIOv5
   if (udpData[3] != 100) {
     ESP32usage.timeIn();
     SerialESP32.write(udpData, len);

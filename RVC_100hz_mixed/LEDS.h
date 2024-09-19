@@ -65,8 +65,14 @@ private:
     const uint8_t NUM_LEDS = 4;
   #endif
 
-  const uint8_t WS2811_PIN = 33;    // unused IO on v4
+  #ifdef AIOv50d
+    const uint8_t WS2811_PIN = 17;  // Serial4 TX pin
+  #else
+    const uint8_t WS2811_PIN = 33;  // used by v5.0a-c, unused pin on v4.x
+  #endif
+
   Adafruit_NeoPixel WS2811 = Adafruit_NeoPixel(NUM_LEDS, WS2811_PIN, NEO_BGR + NEO_KHZ800);
+
   #define GGA_LED    13  // Teensy built-in LED
     
   uint8_t mainBrightness       = 255;     // main brightness level, 0-255, controls all RGB LEDs

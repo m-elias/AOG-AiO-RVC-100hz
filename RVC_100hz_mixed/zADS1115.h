@@ -90,8 +90,13 @@ class ADS1115_lite
     uint16_t	_mux;
     uint8_t		_rate;
 
+  private:
+    TwoWire* _i2cPort;
+
   public:
     ADS1115_lite(uint8_t i2cAddress = ADS1115_DEFAULT_ADDRESS);
+    void setWirePort(TwoWire& wirePort);
+
     bool	testConnection(); //returns 1 if ADS1115 is properly connected, 0 if not connected.  There is no point in calling any other function is this doesn't return a 1
 
     void	setGain(uint16_t gain); //Sets protected property and immediatly returns
