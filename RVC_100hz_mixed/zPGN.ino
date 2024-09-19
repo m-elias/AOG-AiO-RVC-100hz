@@ -92,24 +92,24 @@ void checkForPGNs()
   uint16_t len = UDP.PGN.parsePacket();                 //get data from AgIO sent by 9999 to this 8888
   if (UDP.PGN.remotePort() != 9999 || len < 5) return;  //make sure from AgIO
 
-  uint8_t udpData[UDP_MAX_PACKET_SIZE];  // UDP_TX_PACKET_MAX_SIZE is not large enough for machine pin settings PGN
+  uint8_t udpData[UDP_MAX_PACKET_SIZE];           // make sure it's large enough
   UDP.PGN.read(udpData, UDP_MAX_PACKET_SIZE);
-
-  if (udpData[0] != 0x80 || udpData[1] != 0x81 || udpData[2] != 0x7F) return;  // verify first 3 PGN header bytes
-  bool pgnMatched = false;
 
   #ifdef AIOv5
   //if (udpData[3] != 100) {    // uncomment to omit roll corrected data from ESP32
     ESP32usage.timeIn();
     SerialESP32.write(udpData, len);
     SerialESP32.println();   // to signal end of PGN
-    //Serial.print("\r\nAgIO-e:8888->T41-s->E32 ");
-    //for (uint8_t i = 0; i < len; i++) {
-      //Serial.print(udpData[i]); Serial.print(" ");
-    //}
+    /*Serial.print("\r\nAgIO-e:8888->T41-s->E32 ");
+    for (uint8_t i = 0; i < len; i++) {
+      Serial.print(udpData[i]); Serial.print(" ");
+    }*/
     ESP32usage.timeOut();
   //}
   #endif
+
+  if (udpData[0] != 0x80 || udpData[1] != 0x81 || udpData[2] != 0x7F) return;  // verify first 3 PGN header bytes
+  bool pgnMatched = false;
 
   // changed to multiple IF statements instead of IF ELSE so that AgIO Hello and Scan Request PGNs can be pickedup by other object/classes (ie machine)
 
