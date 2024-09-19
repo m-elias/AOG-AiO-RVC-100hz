@@ -47,46 +47,40 @@
 #include "clsPCA9555.h"
 #include <Wire.h>
 
-PCA9555 *PCA9555::instancePointer = 0;
+PCA9555* PCA9555::instancePointer = 0;
 /**
  * @name PCA9555 constructor
  * @param address I2C address of the IO Expander
  * Creates the class interface and sets the I2C Address of the port
  */
-PCA9555::PCA9555(uint8_t address, int interruptPin)
-{
-  _address = address; // save the address id
-  _valueRegister = 0;
+PCA9555::PCA9555(uint8_t address, int interruptPin) {
+    _address         = address;        // save the address id
+    _valueRegister   = 0;
 
-  if (interruptPin >= 0)
-  {
-    instancePointer = this;
-    attachInterrupt(digitalPinToInterrupt(interruptPin), PCA9555::alertISR, LOW); // Set to low for button presses
-  }
+    if(interruptPin >= 0) {
+      instancePointer = this;
+      attachInterrupt(digitalPinToInterrupt(interruptPin), PCA9555::alertISR, LOW); // Set to low for button presses
+    }
 }
 
 // Checks if PCA9555 is responsive. Refer to Wire.endTransmission() from Arduino for details.
-bool PCA9555::begin()
-{
-  Wire1.begin(); // start I2C communication
-  Wire1.beginTransmission(_address);
-  Wire1.write(0x02); // Test Address
-  _error = Wire1.endTransmission();
+bool PCA9555::begin() {
+    Wire1.begin();                      // start I2C communication
+    Wire1.beginTransmission(_address);
+    Wire1.write(0x02); // Test Address
+    _error = Wire1.endTransmission();
 
-  if (_error != 0)
-  {
-    return false;
-  }
-  else
-  {
-    Wire1.setClock(400000);
-    // for (uint8_t i = 0; i < 8; i++){
-    // pinMode(outputPins[i], OUTPUT);   // set in machine.h
-    // pinMode(inputPins[i], INPUT);
-    //}
-    enabled = true;
-    return true;
-  }
+    if(_error != 0){
+      return false;
+    }else{
+      Wire1.setClock(400000);
+      //for (uint8_t i = 0; i < 8; i++){    
+        //pinMode(outputPins[i], OUTPUT);   // set in machine.h
+        //pinMode(inputPins[i], INPUT);
+      //}
+      enabled = true;
+      return true;
+    }
 }
 /**
  * @name pinMode
@@ -94,25 +88,20 @@ bool PCA9555::begin()
  * @param IOMode    mode of pin INPUT or OUTPUT
  * sets the mode of this IO pin
  */
-void PCA9555::pinMode(uint8_t pin, uint8_t IOMode)
-{
-  if (pin <= 15)
-  { // check if valid pin first
-    if (IOMode == OUTPUT)
-    { // now set the correct bit in the configuration register
-      // mask correct bit to 0 by inverting x so that only
-      // the correct bit is LOW. The rest stays HIGH
-      _configurationRegister = _configurationRegister & ~(1 << pin);
+void PCA9555::pinMode(uint8_t pin, uint8_t IOMode) {
+    if (pin <= 15) {             // check if valid pin first
+        if (IOMode == OUTPUT) {  // now set the correct bit in the configuration register
+            // mask correct bit to 0 by inverting x so that only
+            // the correct bit is LOW. The rest stays HIGH
+            _configurationRegister = _configurationRegister & ~(1 << pin);
+        } else {
+            // or just the required bit to 1
+            _configurationRegister = _configurationRegister | (1 << pin);
+        }
+        // write configuration register to chip
+        I2CSetValue(_address, NXP_CONFIG    , _configurationRegister_low);
+        I2CSetValue(_address, NXP_CONFIG + 1, _configurationRegister_high);
     }
-    else
-    {
-      // or just the required bit to 1
-      _configurationRegister = _configurationRegister | (1 << pin);
-    }
-    // write configuration register to chip
-    I2CSetValue(_address, NXP_CONFIG, _configurationRegister_low);
-    I2CSetValue(_address, NXP_CONFIG + 1, _configurationRegister_high);
-  }
 }
 /**
  * @name digitalRead Reads the high/low value of specified pin
@@ -120,95 +109,77 @@ void PCA9555::pinMode(uint8_t pin, uint8_t IOMode)
  * @return value of pin
  * Reads the selected pin.
  */
-uint8_t PCA9555::digitalRead(uint8_t pin)
-{
-  uint16_t _inputData = 0;
-  //
-  // we wil only process pins <= 15
-  //
-  if (pin > 15)
-    return 255;
-  _inputData = I2CGetValue(_address, NXP_INPUT);
-  _inputData |= I2CGetValue(_address, NXP_INPUT + 1) << 8;
-  //
-  // now mask the bit required and see if it is a HIGH
-  //
-  if ((_inputData & (1 << pin)) > 0)
-  {
+uint8_t PCA9555::digitalRead(uint8_t pin) {
+    uint16_t _inputData = 0;
     //
-    // the bit is HIGH otherwise we would return a LOW value
+    // we wil only process pins <= 15
     //
-    return HIGH;
-  }
-  else
-  {
-    return LOW;
-  }
+    if (pin > 15 ) return 255;
+    _inputData  = I2CGetValue(_address, NXP_INPUT);
+    _inputData |= I2CGetValue(_address, NXP_INPUT + 1) << 8;
+    //
+    // now mask the bit required and see if it is a HIGH
+    //
+    if ((_inputData & (1 << pin)) > 0){
+        //
+        // the bit is HIGH otherwise we would return a LOW value
+        //
+        return HIGH;
+    } else {
+        return LOW;
+    }
 }
 
-void PCA9555::digitalWrite(uint8_t pin, uint8_t value)
-{
-  if (pin > 15)
-  {               // check valid pin first
-    _error = 255; // invalid pin
-    return;       // exit
-  }
+void PCA9555::digitalWrite(uint8_t pin, uint8_t value) {
+    if (pin > 15 ){              // check valid pin first
+        _error = 255;            // invalid pin
+        return;                  // exit
+    }
 
-  // if the value is LOW we will AND the register value with correct bit set to zero
-  // if the value is HIGH we will OR the register value with correct bit set to HIGH
-  if (value > 0)
-  {                                               // this is a HIGH value so...
-    _valueRegister = _valueRegister | (1 << pin); // we will OR it with the value register
-  }
-  else
-  {                                                // this is a LOW value so...
-    _valueRegister = _valueRegister & ~(1 << pin); // we have to AND it with 0 into the _valueRegister
-  }
-  // printBinary(_valueRegister);
-  // Serial.print(_valueRegister);
-  I2CSetValue(_address, NXP_OUTPUT, _valueRegister_low);
-  I2CSetValue(_address, NXP_OUTPUT + 1, _valueRegister_high);
+    // if the value is LOW we will AND the register value with correct bit set to zero
+    // if the value is HIGH we will OR the register value with correct bit set to HIGH
+    if (value > 0) {                                     // this is a HIGH value so...
+        _valueRegister = _valueRegister | (1 << pin);    // we will OR it with the value register
+    } else {                                             // this is a LOW value so...
+        _valueRegister = _valueRegister & ~(1 << pin);   // we have to AND it with 0 into the _valueRegister
+    }
+    //printBinary(_valueRegister);
+    //Serial.print(_valueRegister);
+    I2CSetValue(_address, NXP_OUTPUT    , _valueRegister_low);
+    I2CSetValue(_address, NXP_OUTPUT + 1, _valueRegister_high);
 }
 
-void PCA9555::digitalWrite(uint16_t value)
-{
+void PCA9555::digitalWrite(uint16_t value) {
   _valueRegister = value;
-  // printBinary(_valueRegister);
-  // Serial.print(_valueRegister);
-  I2CSetValue(_address, NXP_OUTPUT, _valueRegister_low);
+  //printBinary(_valueRegister);
+  //Serial.print(_valueRegister);
+  I2CSetValue(_address, NXP_OUTPUT    , _valueRegister_low);
   I2CSetValue(_address, NXP_OUTPUT + 1, _valueRegister_high);
 }
 
-void PCA9555::printBinary(uint16_t var)
-{
+void PCA9555::printBinary(uint16_t var) {
   Serial.print("\nB");
-  for (uint16_t mask = 32768; mask; mask >>= 1)
-  { // prints 4 bits/digits, set mask to the number of bits you want to print, B10000000 << 8 | B10000000
-    Serial.write(var & mask ? '1' : '0');
+  for (uint16_t mask = 32768; mask; mask >>= 1) {    // prints 4 bits/digits, set mask to the number of bits you want to print, B10000000 << 8 | B10000000
+    Serial.write(var  & mask ? '1' : '0');
   }
   Serial.print(" >");
 }
 
 // This is the actual ISR
 // Stores states of all pins in _stateOfPins
-void PCA9555::pinStates()
-{
+void PCA9555::pinStates(){
   _stateOfPins = I2CGetValue(_address, NXP_INPUT);
-  _stateOfPins |= I2CGetValue(_address, NXP_INPUT + 1) << 8;
+  _stateOfPins|= I2CGetValue(_address, NXP_INPUT + 1) << 8;
 }
 
 // Returns to user the state of desired pin
-uint8_t PCA9555::stateOfPin(uint8_t pin)
-{
-  if ((_stateOfPins & (1 << pin)) > 0)
-  {
+uint8_t PCA9555::stateOfPin(uint8_t pin){
+  if ((_stateOfPins & (1 << pin)) > 0){
     //
     // the bit is HIGH otherwise we would return a LOW value
     //
     return HIGH;
-  }
-  else
-  {
+  } else {
     return LOW;
   }
 }
@@ -223,8 +194,7 @@ uint8_t PCA9555::stateOfPin(uint8_t pin)
  *    100000, standard mode
  *    400000, fast mode
  */
-void PCA9555::setClock(uint32_t clockFrequency)
-{
+void PCA9555::setClock(uint32_t clockFrequency){
   Wire1.setClock(clockFrequency);
 }
 
@@ -250,30 +220,29 @@ void PCA9555::alertISR()
  * error codes : \n
  * 256 = either 0 or more than one byte is received from the chip
  */
-uint16_t PCA9555::I2CGetValue(uint8_t address, uint8_t reg)
-{
-  uint16_t _inputData;
-  //
-  // read the address input register
-  //
-  Wire1.beginTransmission(address); // setup read registers
-  Wire1.write(reg);
-  _error = Wire1.endTransmission();
-  //
-  // ask for 2 bytes to be returned
-  //
-  if (Wire1.requestFrom((int)address, 1) != 1)
-  {
+uint16_t PCA9555::I2CGetValue(uint8_t address, uint8_t reg) {
+    uint16_t _inputData;
     //
-    // we are not receing the bytes we need
+    // read the address input register
     //
-    return 256; // error code is above normal data range
-  };
-  //
-  // read both bytes
-  //
-  _inputData = Wire1.read();
-  return _inputData;
+    Wire1.beginTransmission(address);          // setup read registers
+    Wire1.write(reg);
+    _error = Wire1.endTransmission();
+    //
+    // ask for 2 bytes to be returned
+    //
+    if (Wire1.requestFrom((int)address, 1) != 1)
+    {
+        //
+        // we are not receing the bytes we need
+        //
+        return 256;                            // error code is above normal data range
+    };
+    //
+    // read both bytes
+    //
+    _inputData = Wire1.read();
+    return _inputData;
 }
 
 /**
@@ -283,13 +252,12 @@ uint16_t PCA9555::I2CGetValue(uint8_t address, uint8_t reg)
  * @param value    value to write to register
  * Write the value given to the register set to selected chip.
  */
-void PCA9555::I2CSetValue(uint8_t address, uint8_t reg, uint8_t value)
-{
-  //
-  // write output register to chip
-  //
-  Wire1.beginTransmission(address); // setup direction registers
-  Wire1.write(reg);                 // pointer to configuration register address 0
-  Wire1.write(value);               // write config register low byte
-  _error = Wire1.endTransmission();
+void PCA9555::I2CSetValue(uint8_t address, uint8_t reg, uint8_t value){
+    //
+    // write output register to chip
+    //
+    Wire1.beginTransmission(address);              // setup direction registers
+    Wire1.write(reg);                              // pointer to configuration register address 0
+    Wire1.write(value);                            // write config register low byte
+    _error = Wire1.endTransmission();
 }

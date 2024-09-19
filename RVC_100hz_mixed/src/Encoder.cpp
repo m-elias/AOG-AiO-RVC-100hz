@@ -5,4 +5,6 @@
 // configure options with #define (before they include it), and
 // to facilitate some crafty optimizations!
 
-Encoder_internal_state_t *Encoder::interruptArgs[];
+Encoder_internal_state_t * Encoder::interruptArgs[];
+
+
