@@ -8,7 +8,7 @@
       - the host microcontroller has to take care of the UDP & hardware connections
 
   to do:
-    - use callback to sent data to OGX
+    - use callback to sent data to OGX via UDP
     - add IMU support
 */
 
@@ -25,14 +25,17 @@ class OpenGradeX
 private:
 
   typedef void (*ExternalHandler)(void);
-  ExternalHandler Output1_Handler = NULL;
+  ExternalHandler Output1Handler = NULL;
 
   using ReplyHandler = void (*)(const uint8_t*, uint8_t, IPAddress);
   ReplyHandler UDPReplyHandler = NULL;
 
+  using NtripHandler = void (*)(char*, uint16_t);
+  NtripHandler NtripDataHandler = NULL;
+
   // version numbers to report to OGX which expects there to be two ESP32 modules instead of one AIO module
-  const char *versionAnt = "2.1.3.A";
-  const char *versionGrade = "1.4.2.G";
+  const char *versionAnt = "240923"; // original Black Ace version 2.1.3
+  const char *versionGrade = "240813"; // original Black Ace versions 1.4.2
 
   //EEPROM
   #define EE_ID 17   // Change this number to reset and reload default parameters To EEPROM
@@ -42,8 +45,8 @@ private:
   // changed IPs to match AOG enviro
   // using one AIO module instead of two ESP32 for OGX so they share the same module IP
   const IPAddress openGradeIP = { 192, 168, 5, 9 };       //OpenGradeX Server
-  const IPAddress gradeControlIP = { 192, 168, 5, 126 };  // GradeControl Module IP
-  const IPAddress antennaIP = { 192, 168, 5, 126 };       // Antenna Module IP
+  //const IPAddress gradeControlIP = { 192, 168, 5, 126 };  // GradeControl Module IP
+  //const IPAddress antennaIP = { 192, 168, 5, 126 };       // Antenna Module IP
 
   //UDP HEADERS
   #define DATA_HEADER 10001
@@ -54,6 +57,7 @@ private:
   #define RESET_HEADER 10100
   #define SYSTEM_HEADER 10101
   #define WIFI_HEADER 10102
+  bool isRtcmNext;
 
   // Valve Definitions
   #define VALVE_NEUTRAL 2048
@@ -123,18 +127,18 @@ private:
   const uint32_t OGXTimeout = 20;   // 1 sec timeout at 20hz loop
 
 public:
-  uint8_t debugLevel = 5;
+  uint8_t debugLevel = 3;
     // 0 - debug prints OFF
     // 1 - alerts/errors only
     // 2 - init info
-    // 3 - config PGN announcements (only sent when changing settings in AOG)
+    // 3 - config PGN announcements (only sent when changing settings in OGX)
     // 4 - all PGN announcements
     // 5 - all PGN data
 
-  // OGX sends from 9998
-  #define OGX_PORT 9997         // OpenGradeX Server listening Port, originally 9999 but that interferes with AOG so changed to 9997
-  #define GRADE_PORT 7777       // GradeControl listening Port
-  //#define POSITION_PORT 7777  // Antenna listening Port, originally 8888 but interferes with AOG so changed to 7777 (combined with grade port/module)
+  // OGX sends from 9997
+  #define OGX_PORT 9997         // OpenGradeX App listening Port, originally 9999 but that interferes with AOG so changed to 9997
+  #define GRADE_PORT 7777       // GradeControl module listening Port
+  //#define POSITION_PORT 7777  // Antenna module listening Port, originally 8888 but interferes with AOG so changed to 7777 (combined with grade port/module)
 
   void init(int16_t _eeAddr = -1, int8_t _ledPin = -1, bool _ledPol = 1, const uint8_t _eeSize = 10) // 10 bytes of EEPROM reserved, only 6 bytes used
   {
@@ -206,151 +210,165 @@ public:
 
   void checkforPGNs(char* udpBuffer, uint16_t len)
   {
-      bool pgnMatched = false;
+    bool pgnMatched = false;
 
+    if (isRtcmNext) {
+      if (debugLevel > 3) Serial << " (" << len << ") bytes";
+      NtripDataHandler(udpBuffer, len);
+      isRtcmNext = false;
+      pgnMatched = true;
+      return;
+    }
+
+    if (debugLevel > 4) {
       Serial << "\r\n" << millis() << " OGX packet ";
       //Serial.print(UDP.PGN_OGX.remoteIP()); Serial << ":";
       //Serial.print(UDP.PGN_OGX.remotePort()); Serial << " ";
       Serial << "(";
       if (len < 10) Serial << "0";
       Serial << len << ") ";//" << UDP.PGN_OGX.available() << ") ";
+    }
 
-      char *ptr = strtok(udpBuffer, ",");  // takes a list of delimiters
-      byte numParams = 0;
-      char *strings[1460] = { };
+    char *ptr = strtok(udpBuffer, ",");  // takes a list of delimiters
+    byte numParams = 0;
+    char *strings[1460] = { };
 
-      while(ptr != NULL){
-        strings[numParams] = ptr;
-        //Serial.print(ptr); Serial.print(" ");
-        //Serial.print(strings[numParams]); Serial.print(" ");
-        numParams++;
-        ptr = strtok(NULL, ",");  // split comma delimited char arrays
-      }
+    while(ptr != NULL){
+      strings[numParams] = ptr;
+      //Serial.print(ptr); Serial.print(" ");
+      //Serial.print(strings[numParams]); Serial.print(" ");
+      numParams++;
+      ptr = strtok(NULL, ",");  // split comma delimited char arrays
+    }
 
-      if (numParams == 0) return;
+    if (numParams == 0) return;
 
-      uint16_t header = atoi(strings[0]);
+    uint16_t header = atoi(strings[0]);
+    if (debugLevel > 4) {
       Serial << "PGN " << header << " (" << numParams << ") ";
-
       for(int n = 0; n < numParams; n++){ 
         Serial.print(strings[n]); Serial.print(" ");
       }
+    }
 
-      if (header == DATA_HEADER) {  // 10001 DATA
-        //printPgnAnnoucement(header, (char*)"DATA", len, numParams);
-        watchdogTimer = 0;
-        b_deltaDir =  atoi(strings[1]);       // Cut Dir
-        b_autoState = atoi(strings[2]);       // Auto State
-        b_cutDelta =  atoi(strings[3]) * 0.1; // Cut Delta
+    if (header == DATA_HEADER) {  // 10001 DATA
+      if (debugLevel > 3) printPgnAnnoucement(header, (char*)"DATA", len, numParams);
+      watchdogTimer = 0;
+      b_deltaDir =  atoi(strings[1]);       // Cut Dir
+      b_autoState = atoi(strings[2]);       // Auto State
+      b_cutDelta =  atoi(strings[3]) * 0.1; // Cut Delta
 
-        /*Serial << "\r\n- Blade Dir   " << b_deltaDir;
+      if (debugLevel > 4) {
+        Serial << "\r\n- Blade Dir   " << b_deltaDir;
         Serial << "\r\n- Auto State  " << b_autoState;
-        Serial << "\r\n- Blade Delta " << b_cutDelta;*/
-
-        if (b_deltaDir == 3) isCutting = false;
-        else isCutting = true;
-
-        if (b_autoState == 1) isAutoActive = true;
-        else isAutoActive = false;
-
-        pgnMatched = true;
+        Serial << "\r\n- Blade Delta " << b_cutDelta;
       }
 
-      if (header == SETTINGS_HEADER) {  // 10002 SETTINGS
-        printPgnAnnoucement(header, (char*)"SETTINGS", len, numParams);
+      if (b_deltaDir == 3) isCutting = false;
+      else isCutting = true;
 
-        Valve oldConfig = config;
+      if (b_autoState == 1) isAutoActive = true;
+      else isAutoActive = false;
 
-        config.Kp = atoi(strings[1]);
-        config.Ki = atoi(strings[2]);
-        config.Kd = atoi(strings[3]);
-        config.retDeadband = atoi(strings[4]);
-        config.extDeadband = atoi(strings[5]);
-        config.type = atoi(strings[6]);
+      pgnMatched = true;
+    }
 
-        setWorkingVars();
+    if (header == SETTINGS_HEADER) {  // 10002 SETTINGS
+      if (debugLevel > 2) printPgnAnnoucement(header, (char*)"SETTINGS", len, numParams);
 
-        printConfig();
+      Valve oldConfig = config;
 
-        if (config != oldConfig) saveToEeprom();
-        pgnMatched = true;
-      }
-      
-      if (header == GPS_HEADER) {  // 10003 GPS, should not receive this, sent from Ant module only
-        printPgnAnnoucement(header, (char*)"GPS", len, numParams);
-        pgnMatched = true;
-      }
-      
-      if (header == IMU_HEADER) {  // 10004 IMU
-        printPgnAnnoucement(header, (char*)"IMU zero", len, numParams);
-        pgnMatched = true;
-      }
-      
-      if (header == NTRIP_HEADER) {  // 10005 NTRIP
-        printPgnAnnoucement(header, (char*)"NTRIP", len, numParams);
-        pgnMatched = true;
-      }
-      
-      if (header == RESET_HEADER) {  // 10100 RESET
-        printPgnAnnoucement(header, (char*)"RESET", len, numParams);
-        pgnMatched = true;
-      }
-      
-      if (header == SYSTEM_HEADER) {   // 10101 PING/SYSTEM
-        //printPgnAnnoucement(header, (char*)"PING", len, numParams);
-        if (atoi(strings[1]) != 0) { // module ping
-          static bool moduleReplyToggle = 0;
+      config.Kp = atoi(strings[1]);
+      config.Ki = atoi(strings[2]);
+      config.Kd = atoi(strings[3]);
+      config.retDeadband = atoi(strings[4]);
+      config.extDeadband = atoi(strings[5]);
+      config.type = atoi(strings[6]);
 
-          if (moduleReplyToggle) {    // OGX sends ping to two ESP32 modules but I've combined it into one so we alternate replies
-            // send antenna module reply
-            //Serial << "\r\nReply to OGX: from antenna module\r\n";
-            UDP.PGN_OGX.beginPacket(openGradeIP, OGX_PORT);   //Initiate transmission of data
-            UDP.PGN_OGX.print(SYSTEM_HEADER);
-            UDP.PGN_OGX.print(",");
-            UDP.PGN_OGX.print(155);   // antenna module ID
-            UDP.PGN_OGX.print(",");
-            UDP.PGN_OGX.print(versionAnt);     
-            UDP.PGN_OGX.endPacket();  // Close communication
-          } else {
-            // send grade control module reply
-            //Serial << "\r\nReply to OGX: from grade control module\r\n";
-            UDP.PGN_OGX.beginPacket(openGradeIP, OGX_PORT);   //Initiate transmission of data
-            UDP.PGN_OGX.print(SYSTEM_HEADER);
-            UDP.PGN_OGX.print(",");
-            UDP.PGN_OGX.print(255);   // grade control module ID
-            UDP.PGN_OGX.print(",");
-            UDP.PGN_OGX.print(versionGrade);     
-            UDP.PGN_OGX.endPacket();  // Close communication    
-          }
-          moduleReplyToggle = !moduleReplyToggle;
+      setWorkingVars();
 
-          pgnMatched = true;
-        }
-      }
-      
-      if (header == WIFI_HEADER) {  // 10102 WIFI
-        printPgnAnnoucement(header, (char*)"WIFI", len, numParams);
-        if (atoi(strings[1]) == 1) { // request Wifi scan
+      if (debugLevel > 2) printConfig();
+
+      if (config != oldConfig) saveToEeprom();
+      pgnMatched = true;
+    }
+    
+    if (header == GPS_HEADER) {  // 10003 GPS, should not receive this, sent from Ant module only
+      if (debugLevel > 3) printPgnAnnoucement(header, (char*)"GPS", len, numParams);
+      pgnMatched = true;
+    }
+    
+    if (header == IMU_HEADER) {  // 10004 IMU
+      if (debugLevel > 3) printPgnAnnoucement(header, (char*)"IMU zero", len, numParams);
+      pgnMatched = true;
+    }
+    
+    if (header == NTRIP_HEADER) {  // 10005 NTRIP
+      if (debugLevel > 3) printPgnAnnoucement(header, (char*)"NTRIP", len, numParams);
+      isRtcmNext = true;
+      pgnMatched = true;
+    }
+    
+    if (header == RESET_HEADER) {  // 10100 RESET
+      if (debugLevel > 3) printPgnAnnoucement(header, (char*)"RESET", len, numParams);
+      pgnMatched = true;
+    }
+    
+    if (header == SYSTEM_HEADER) {   // 10101 PING/SYSTEM
+      if (debugLevel > 3) printPgnAnnoucement(header, (char*)"PING", len, numParams);
+      if (atoi(strings[1]) != 0) { // module ping
+        static bool moduleReplyToggle = 0;
+
+        if (moduleReplyToggle) {    // OGX sends ping to two ESP32 modules but I've combined it into one so we alternate replies
+          // send antenna module reply
+          if (debugLevel > 4) Serial << "\r\n - Reply to OGX: from antenna module\r\n";
           UDP.PGN_OGX.beginPacket(openGradeIP, OGX_PORT);   //Initiate transmission of data
-          UDP.PGN_OGX.print(WIFI_HEADER);
+          UDP.PGN_OGX.print(SYSTEM_HEADER);
           UDP.PGN_OGX.print(",");
-          UDP.PGN_OGX.print("No WIFI: using Ethernet");
+          UDP.PGN_OGX.print(155);   // antenna module ID
           UDP.PGN_OGX.print(",");
-          UDP.PGN_OGX.print("AiO Teensy");
+          UDP.PGN_OGX.print(versionAnt);     
+          UDP.PGN_OGX.endPacket();  // Close communication
+        } else {
+          // send grade control module reply
+          if (debugLevel > 4) Serial << "\r\n - Reply to OGX: from grade control module\r\n";
+          UDP.PGN_OGX.beginPacket(openGradeIP, OGX_PORT);   //Initiate transmission of data
+          UDP.PGN_OGX.print(SYSTEM_HEADER);
+          UDP.PGN_OGX.print(",");
+          UDP.PGN_OGX.print(255);   // grade control module ID
+          UDP.PGN_OGX.print(",");
+          UDP.PGN_OGX.print(versionGrade);     
           UDP.PGN_OGX.endPacket();  // Close communication    
-        } else if (atoi(strings[1]) == 2) { // set Wifi creds
-          Serial << "\r\n- Wifi creds: " << strings[2] << ":" << strings[3];
         }
+        moduleReplyToggle = !moduleReplyToggle;
 
         pgnMatched = true;
       }
+    }
+    
+    if (header == WIFI_HEADER) {  // 10102 WIFI
+      if (debugLevel > 3) printPgnAnnoucement(header, (char*)"WIFI", len, numParams);
+      if (atoi(strings[1]) == 1) { // request Wifi scan
+        UDP.PGN_OGX.beginPacket(openGradeIP, OGX_PORT);   //Initiate transmission of data
+        UDP.PGN_OGX.print(WIFI_HEADER);
+        UDP.PGN_OGX.print(",");
+        UDP.PGN_OGX.print("No WIFI: using Ethernet");
+        UDP.PGN_OGX.print(",");
+        UDP.PGN_OGX.print("AiO Teensy");
+        UDP.PGN_OGX.endPacket();  // Close communication    
+      } else if (atoi(strings[1]) == 2) { // set Wifi creds
+        Serial << "\r\n- Wifi creds: " << strings[2] << ":" << strings[3];
+      }
 
-      if (!pgnMatched) printPgnAnnoucement(header, (char*)"*UNKNOWN*", len, numParams);
+      pgnMatched = true;
+    }
+
+    if (!pgnMatched) printPgnAnnoucement(header, (char*)"*UNKNOWN*", len, numParams);
   }
 
 
   void setOutput1Handler(ExternalHandler _extHandler) {
-    Output1_Handler = _extHandler;
+    Output1Handler = _extHandler;
   }
 
   uint16_t getAnalog1()
@@ -360,6 +378,10 @@ public:
 
   void setUdpReplyHandler(ReplyHandler _replyHandler) {
     UDPReplyHandler = _replyHandler;
+  }
+
+  void setNtripDataHandler(NtripHandler _ntripHandler) {
+    NtripDataHandler = _ntripHandler;
   }
 
 private:
@@ -416,7 +438,7 @@ private:
 
     //Dac1.setVoltage(analogOutput1, false);
     //Dac2.setVoltage(analogOutput2, false);
-    Output1_Handler();
+    Output1Handler();
     voltage = ((double)analogOutput1/4096) * 5.0;
     voltage2 =((double)analogOutput2/4096) * 5.0;
   }
@@ -427,7 +449,8 @@ private:
   // ***************************************************************************************************************************************************
   void printPgnAnnoucement(uint16_t _pgnNum, char* _pgnName, uint8_t _len, uint8_t _numParams)
   {
-    Serial << "\r\n" << millis() << " OGX " << _pgnNum;
+    Serial << "\r\n-" << millis() << " OGX " << _pgnNum;
+    //Serial << "\r\n- " << _pgnNum;
     Serial << " " << _pgnName << "(" << _len << ":" << _numParams << ") ";
   }
 
@@ -454,10 +477,10 @@ private:
     if (EEread != EE_ID) {              // check on first start and write EEPROM
       EEPROM.put(eeAddr + 0, EE_ID);
       EEPROM.put(eeAddr + 2, config);      // +2 to leave room for EE_IDENT
-      Serial.print("\r\n\n* EEPROM version doesn't match, OpenGradeX config reset to default *");
+      if (debugLevel > 0) Serial.print("\r\n\n* EEPROM version doesn't match, OpenGradeX config reset to default *");
     } else {
       EEPROM.get(eeAddr + 2, config);
-      Serial.print("\r\n\nOpenGradeX config loaded from EEPROM");
+      if (debugLevel > 1) Serial.print("\r\n\nOpenGradeX config loaded from EEPROM");
     }
     setWorkingVars();
     if (debugLevel > 1) printConfig();

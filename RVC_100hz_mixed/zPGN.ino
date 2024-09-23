@@ -20,8 +20,8 @@ void checkForOGXPackets()
   //Serial.print((String)"\r\n" + microsNow + " PGN check " + udpCheckTime);
   udpCheckTime = microsNow + 100;     // allow check every 0.1 ms
 
-  const uint8_t udpBufferLength = 100; // large enough for all OGX packets?
-  char udpBuffer[udpBufferLength];     // longest I know of is 22 chars (SETTINGS) except RTCM can be huge, we're ignoring it in this class, the host microcontroller takes care of RTCM
+  const uint16_t udpBufferLength = 512; // 100 is large enough for all OGX packets except NTRIP
+  char udpBuffer[udpBufferLength];      // longest I know of is 22 chars (SETTINGS) except RTCM can be huge, we're ignoring it in this class, the host microcontroller takes care of RTCM
 
   // check OGX UDP
   uint16_t lenOGX = UDP.PGN_OGX.parsePacket();     // get data from OGX:9998 to this:7777

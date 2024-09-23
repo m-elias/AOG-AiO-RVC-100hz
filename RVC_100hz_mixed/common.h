@@ -96,11 +96,11 @@ bool ggaTimeout, relposnedTimeout;
 uint32_t dualTime;
 
 //constexpr int buffer_size = 512;
-uint8_t GPS1rxbuffer[128];      // seems large enough
+uint8_t GPS1rxbuffer[256];      // seems large enough
 uint8_t GPS1txbuffer[256];      // large enough for 256 byte AgIO NTRIP packet
-uint8_t GPS2rxbuffer[128];      // seems large enough
+uint8_t GPS2rxbuffer[256];      // seems large enough
 uint8_t GPS2txbuffer[256];      // large enough for 256 byte AgIO NTRIP packet
-uint8_t RTKrxbuffer[64];        // don't know what size is needed, larger buffer if GPS baud is lower then RTK radio baud
+uint8_t RTKrxbuffer [128];      // don't know what size is needed, larger buffer if GPS baud is lower then RTK radio baud
 #ifdef AIOv5
   uint8_t RS232txbuffer[256];   // large enough to hold a few NMEA sentences as ext terminal bauds are usually slow
   //uint8_t RS232rxbuffer[256]; // not needed unless custom rs232 rx code is added

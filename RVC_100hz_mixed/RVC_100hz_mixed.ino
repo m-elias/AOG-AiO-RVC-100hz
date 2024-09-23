@@ -20,10 +20,10 @@ const uint8_t encoderType = 1;  // 1 - single input
 
 #include "common.h"
 
-//#include "JD_DAC.h"   // experimental JD 2 track DAC steering & SCV/remote hyd control
-//JD_DAC jdDac(I2C_WIRE, 0x60, &Serial);
-//#include "OGX.h"
-//OpenGradeX grade;
+#include "JD_DAC.h"   // experimental JD 2 track DAC steering & SCV/remote hyd control
+JD_DAC jdDac(I2C_WIRE, 0x60, &Serial);
+#include "OGX.h"
+OpenGradeX grade;
 
 void setup()
 {
@@ -52,6 +52,7 @@ void setup()
 
   #ifdef OGX_H
     grade.setOutput1Handler(updateDacChannel4Output);
+    grade.setNtripDataHandler(forwardNtripData);
     //grade.setUdpReplyHandler(OgxPgnReplies);
     grade.init(90, 0, 0);    // CAN2RX LED, LOW/0 is ON
   #endif
@@ -62,26 +63,32 @@ void setup()
 }
 
 #ifdef OGX_H
-  void updateDacChannel4Output(){
+  void updateDacChannel4Output() {
     jdDac.ch4Enable(true);
     jdDac.ch4GradeOutput(grade.getAnalog1());
     //Serial << "\r\nGrade output: " << grade.getAnalog1();
+  }
+
+  void forwardNtripData(char* _ntripBuffer, uint16_t _len) {
+    if (!USB1DTR) SerialGPS1.write(_ntripBuffer, _len);    // send to GPS1
+    if (!USB2DTR) SerialGPS2.write(_ntripBuffer, _len);    // send to GPS2
   }
 #endif
 
 void loop()
 {
   checkForPGNs();                           // zPGN.ino, check for AgIO or SerialESP32 Sending PGNs
+  PGNusage.timeOut();
+
   #ifdef OGX_H
     checkForOGXPackets();
     grade.updateLoop();
   #endif
-  PGNusage.timeOut();
 
   autoSteerUpdate();                        // Autosteer.ino, update AS loop every 10ms (100hz) regardless of whether there is a BNO installed
   udpNMEA();                                // check for NMEA via UDP
   udpNtrip();                               // check for RTCM via UDP (AgIO NTRIP client)
-    
+
   if (SerialRTK.available()) {              // Check for RTK Radio RTCM data
     uint8_t rtcmByte = SerialRTK.read();
     if (!USB1DTR) SerialGPS1.write(rtcmByte);    // send to GPS1
@@ -101,6 +108,7 @@ void loop()
   if (BNO.read()) {                         // there should be new data every 10ms (100hz)
     bnoStats.incHzCount();
     bnoStats.update(1);                     // 1 dummy value
+    //LEDs.setScheduler(PORT_ID::IMU_ID, 0, 9);
   }
   BNOusage.timeOut();
 
@@ -128,7 +136,15 @@ void loop()
 
       uint8_t gps1Read = SerialGPS1.read();
       if (nmeaDebug) Serial.write(gps1Read);
-      nmeaParser << gps1Read;
+      
+      #ifdef OGX_H
+        //grade.nmeaInput(gps1Read);  // GPS1 needs to output GGA/GNS & VTG which is sent to OGX for blade position
+        nmeaParser << gps1Read; // for normal, autosteer setup
+      #else
+        nmeaParser << gps1Read; // for normal, autosteer setup
+      #endif
+
+      //LEDs.setScheduler(PORT_ID::GPS1_ID, 5, 35);
       
       #ifdef AIOv5
         GPS1usage.timeOut();
@@ -174,13 +190,11 @@ void loop()
 
       uint8_t gps2Read = SerialGPS2.read();
       if (nmeaDebug2) Serial << "(" << byte(gps2Read) << ")";
-
-      ubxParser.parse(gps2Read);
-      //nmeaParser << gps2Read;
+      //nmeaParser << gps2Read;   // for experimenting
       #ifdef OGX_H
-        grade.nmeaInput(gps2Read);  // no UBX in this version, GPS2 outputs nmea which is sent to OGX for blade position
+        grade.nmeaInput(gps2Read);  // no UBX in this version, GPS2 outputs GGA/GNS & VTG which is sent to OGX for blade position
       #else
-        ubxParser.parse(gps2Read);
+        ubxParser.parse(gps2Read);  // for dual F9P autosteer
       #endif
     }
   }
@@ -222,7 +236,7 @@ void loop()
     }
   }
 
-  if (imuPandaSyncTimer > 150 && startup) {
+  if (imuPandaSyncTimer > 150 && startup && gpsActive) {
     imuPandaSyncTimer -= 100;
     ggaMissed++;
     if (nmeaDebug) Serial.println();

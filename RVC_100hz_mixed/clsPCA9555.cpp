@@ -160,7 +160,7 @@ void PCA9555::digitalWrite(uint16_t value) {
 
 void PCA9555::printBinary(uint16_t var) {
   Serial.print("\nB");
-  for (uint16_t mask = 32768; mask; mask >>= 1) {    // prints 4 bits/digits, set mask to the number of bits you want to print, B10000000 << 8 | B10000000
+  for (uint16_t mask = 32768; mask; mask >>= 1) {   // 32768 (B1000000000000000) is for 16 bit numbers, 128 (B10000000) for 8 bit
     Serial.write(var  & mask ? '1' : '0');
   }
   Serial.print(" >");
