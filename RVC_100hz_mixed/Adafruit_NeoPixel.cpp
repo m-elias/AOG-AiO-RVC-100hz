@@ -147,7 +147,7 @@ void Adafruit_NeoPixel::show(void) {
 
   // NRF52 may use PWM + DMA (if available), may not need to disable interrupt
 #if !( defined(NRF52) || defined(NRF52_SERIES) )
-  //noInterrupts(); // Need 100% focus on instruction timing
+  noInterrupts(); // Need 100% focus on instruction timing
   //Serial.print("\r\nnoInts");
 #endif
 
@@ -2045,7 +2045,7 @@ void Adafruit_NeoPixel::show(void) {
 // END ARCHITECTURE SELECT ------------------------------------------------
 
 #if !( defined(NRF52) || defined(NRF52_SERIES) )
-  //interrupts();
+  interrupts();
   //Serial.print("\r\nints back on");
 #endif
 
