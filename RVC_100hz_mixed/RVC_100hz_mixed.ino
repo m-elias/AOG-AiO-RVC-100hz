@@ -51,7 +51,12 @@ void setup()
   autosteerSetup();                         // Autosteer.ino
 
   #ifdef OGX_H
-    grade.setOutput1Handler(updateDacChannel4Output);
+    #ifdef JD_DAC_H
+      grade.setOutput1Handler(updateDacChannel4Output);
+    #else
+      grade.setOutput1Handler(updatePwmOutput);
+    #endif
+
     grade.setNtripDataHandler(forwardNtripData);
     //grade.setUdpReplyHandler(OgxPgnReplies);
     grade.init(90, 0, 0);    // CAN2RX LED, LOW/0 is ON
@@ -63,11 +68,17 @@ void setup()
 }
 
 #ifdef OGX_H
-  void updateDacChannel4Output() {
-    jdDac.ch4Enable(true);
-    jdDac.ch4GradeOutput(grade.getAnalog1());
-    //Serial << "\r\nGrade output: " << grade.getAnalog1();
-  }
+  #ifdef JD_DAC_H
+    void updateDacChannel4Output() {
+      jdDac.ch4Enable(true);
+      jdDac.ch4GradeOutput(grade.getAnalog1());
+      //Serial << "\r\nGrade output: " << grade.getAnalog1();
+    }
+  #else
+    void updatePwmOutput() {
+      // add code here to output PWM to Cytron
+    }
+  #endif
 
   void forwardNtripData(char* _ntripBuffer, uint16_t _len) {
     if (!USB1DTR) SerialGPS1.write(_ntripBuffer, _len);    // send to GPS1
@@ -137,11 +148,11 @@ void loop()
       uint8_t gps1Read = SerialGPS1.read();
       if (nmeaDebug) Serial.write(gps1Read);
       
-      #ifdef OGX_H
-        //grade.nmeaInput(gps1Read);  // GPS1 needs to output GGA/GNS & VTG which is sent to OGX for blade position
+      #ifndef OGX_H
         nmeaParser << gps1Read; // for normal, autosteer setup
       #else
-        nmeaParser << gps1Read; // for normal, autosteer setup
+        grade.nmeaInput(gps1Read);  // GPS1 needs to output GGA/GNS & VTG which is sent to OGX for blade position
+        //nmeaParser << gps1Read; // for normal, autosteer setup
       #endif
 
       //LEDs.setScheduler(PORT_ID::GPS1_ID, 5, 35);
@@ -190,11 +201,12 @@ void loop()
 
       uint8_t gps2Read = SerialGPS2.read();
       if (nmeaDebug2) Serial << "(" << byte(gps2Read) << ")";
-      //nmeaParser << gps2Read;   // for experimenting
-      #ifdef OGX_H
-        grade.nmeaInput(gps2Read);  // no UBX in this version, GPS2 outputs GGA/GNS & VTG which is sent to OGX for blade position
-      #else
+      //nmeaParser << gps2Read;   // autosteer with GPS2
+      #ifndef OGX_H
         ubxParser.parse(gps2Read);  // for dual F9P autosteer
+      #else
+        //grade.nmeaInput(gps2Read);  // no UBX in this version, GPS2 outputs GGA/GNS & VTG which is sent to OGX for blade position
+        nmeaParser << gps2Read; // autosteer with GPS2
       #endif
     }
   }
@@ -227,7 +239,7 @@ void loop()
   if (imuPandaSyncTimer > 50 && startup) {   // to make sure old data isn't sent to AOG
     if (posReady) {
       posReady = 0;
-      Serial.print("\r\n**Position data expired**\r\n");
+      Serial << "\r\n" << millis() << " **Position data expired**\r\n";
     }
   
     if (extraCRLF && nmeaDebug) {
@@ -240,8 +252,7 @@ void loop()
     imuPandaSyncTimer -= 100;
     ggaMissed++;
     if (nmeaDebug) Serial.println();
-    Serial.print("\r\n"); Serial.print(millis()); Serial.print(" ");
-    Serial.printf("                 *** GGA was missed or late! *** (%i)\r\n", ggaMissed);
+    Serial << "\r\n" << millis() << " *** position was missed or late! *** (" << ggaMissed << ")\r\n";
     posReady = false;
     ubxParser.relPosNedReady = false;
   }
@@ -266,8 +277,7 @@ void loop()
     ubxParser.relPosTimer -= 100;
     ubxParser.relMissed++;
     if (nmeaDebug) Serial.println();
-    Serial.print("\r\n"); Serial.print(millis()); Serial.print(" ");
-    Serial.printf("                   *** relposNED was missed or late! *** (%i)\r\n", ubxParser.relMissed);
+    Serial << "\r\n" << millis() << " *** heading was missed or late! *** (" << ubxParser.relMissed << ")\r\n";
     ubxParser.clearCount();
     posReady = false;
     ubxParser.relPosNedReady = false;

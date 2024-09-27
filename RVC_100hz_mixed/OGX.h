@@ -307,6 +307,7 @@ public:
       if (debugLevel > 3) printPgnAnnoucement(header, (char*)"NTRIP", len, numParams);
       isRtcmNext = true;
       pgnMatched = true;
+      LEDs.queueBlueFlash(LED_ID::GPS);
     }
     
     if (header == RESET_HEADER) {  // 10100 RESET
