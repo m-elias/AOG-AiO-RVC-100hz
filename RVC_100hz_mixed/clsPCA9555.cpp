@@ -64,7 +64,7 @@ PCA9555::PCA9555(uint8_t address, int interruptPin) {
 }
 
 // Checks if PCA9555 is responsive. Refer to Wire.endTransmission() from Arduino for details.
-bool PCA9555::begin() {
+bool PCA9555::begin(TwoWire& _wirePort) {
     i2cPort = &_wirePort;
     i2cPort->begin();                      // start I2C communication
     i2cPort->beginTransmission(_address);
@@ -74,7 +74,7 @@ bool PCA9555::begin() {
     if(_error != 0){
       return false;
     }else{
-      Wire1.setClock(400000);
+      i2cPort->setClock(400000);
       //for (uint8_t i = 0; i < 8; i++){    
         //pinMode(outputPins[i], OUTPUT);   // set in machine.h
         //pinMode(inputPins[i], INPUT);
@@ -160,7 +160,7 @@ void PCA9555::digitalWrite(uint16_t value) {
 
 void PCA9555::printBinary(uint16_t var) {
   Serial.print("\nB");
-  for (uint16_t mask = 32768; mask; mask >>= 1) {    // prints 4 bits/digits, set mask to the number of bits you want to print, B10000000 << 8 | B10000000
+  for (uint16_t mask = 32768; mask; mask >>= 1) {   // 32768 (B1000000000000000) is for 16 bit numbers, 128 (B10000000) for 8 bit
     Serial.write(var  & mask ? '1' : '0');
   }
   Serial.print(" >");
@@ -196,7 +196,7 @@ uint8_t PCA9555::stateOfPin(uint8_t pin){
  *    400000, fast mode
  */
 void PCA9555::setClock(uint32_t clockFrequency){
-  i2cPort.setClock(clockFrequency);
+  i2cPort->setClock(clockFrequency);
 }
 
 void PCA9555::alertISR()
@@ -226,13 +226,13 @@ uint16_t PCA9555::I2CGetValue(uint8_t address, uint8_t reg) {
     //
     // read the address input register
     //
-    i2cPort.beginTransmission(address);          // setup read registers
-    i2cPort.write(reg);
-    _error = i2cPort.endTransmission();
+    i2cPort->beginTransmission(address);          // setup read registers
+    i2cPort->write(reg);
+    _error = i2cPort->endTransmission();
     //
     // ask for 2 bytes to be returned
     //
-    if (i2cPort.requestFrom((int)address, 1) != 1)
+    if (i2cPort->requestFrom((int)address, 1) != 1)
     {
         //
         // we are not receing the bytes we need
@@ -242,7 +242,7 @@ uint16_t PCA9555::I2CGetValue(uint8_t address, uint8_t reg) {
     //
     // read both bytes
     //
-    _inputData = i2cPort.read();
+    _inputData = i2cPort->read();
     return _inputData;
 }
 
@@ -257,8 +257,8 @@ void PCA9555::I2CSetValue(uint8_t address, uint8_t reg, uint8_t value){
     //
     // write output register to chip
     //
-    i2cPort.beginTransmission(address);              // setup direction registers
-    i2cPort.write(reg);                              // pointer to configuration register address 0
-    i2cPort.write(value);                            // write config register low byte
-    _error = i2cPort.endTransmission();
+    i2cPort->beginTransmission(address);              // setup direction registers
+    i2cPort->write(reg);                              // pointer to configuration register address 0
+    i2cPort->write(value);                            // write config register low byte
+    _error = i2cPort->endTransmission();
 }

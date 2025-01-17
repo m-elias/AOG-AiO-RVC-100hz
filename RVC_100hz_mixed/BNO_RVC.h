@@ -67,7 +67,9 @@ public:
   {
     if (timeoutTimer > timeoutPeriod && isActive) {
       isActive = false;
-      if (!_clear) Serial.print("\r\n*** BNO missed update ***");
+      if (!_clear) {
+        Serial.print("\r\n"); Serial.print(millis()); Serial.print(" *** BNO missed update ***");
+      }
       /*rvcData.pitchX10 = 0;
       rvcData.rollX10 = 0;
       rvcData.yawX10 = 65535;

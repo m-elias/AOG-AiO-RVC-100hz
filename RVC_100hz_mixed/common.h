@@ -63,7 +63,7 @@ BNO_RVC BNO;                                            // Roomba Vac mode for B
 Eth_UDP UDP = Eth_UDP();
 
 #include "clsPCA9555.h" // https://github.com/nicoverduin/PCA9555
-PCA9555 outputs(0x20);  // 0x20 - I2C addr (A0-A2 grounded), interrupt pin causes boot loop
+PCA9555 outputs(0x20);  // 0x20 - I2C addr (A0-A2 grounded), using interrupt pin causes boot loop
 #include "machine.h"
 MACHINE machine;      // also used for v4 as it suppresses machine PGN debug messages
 const uint8_t pcaOutputPinNumbers[8] = { 1, 0, 12, 15, 9, 8, 6, 7 };    // all 8 PCA9555 section/machine output pin numbers on v5.0a
@@ -96,12 +96,12 @@ bool ggaTimeout, relposnedTimeout;
 uint32_t dualTime;
 
 //constexpr int buffer_size = 512;
-uint8_t GPS1rxbuffer[128];      // seems large enough
+uint8_t GPS1rxbuffer[256];      // seems large enough
 uint8_t GPS1txbuffer[256];      // large enough for 256 byte AgIO NTRIP packet
-uint8_t GPS2rxbuffer[128];      // seems large enough
+uint8_t GPS2rxbuffer[256];      // seems large enough
 uint8_t GPS2txbuffer[256];      // large enough for 256 byte AgIO NTRIP packet
-uint8_t RTKrxbuffer[64];        // don't know what size is needed, larger buffer if GPS baud is lower then RTK radio baud
-#ifdef AIOv50
+uint8_t RTKrxbuffer [128];      // don't know what size is needed, larger buffer if GPS baud is lower then RTK radio baud
+#ifdef AIOv5
   uint8_t RS232txbuffer[256];   // large enough to hold a few NMEA sentences as ext terminal bauds are usually slow
   //uint8_t RS232rxbuffer[256]; // not needed unless custom rs232 rx code is added
   uint8_t ESP32rxbuffer[256];   // don't know what size is needed

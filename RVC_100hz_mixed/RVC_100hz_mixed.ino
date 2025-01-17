@@ -1,18 +1,18 @@
 /*
 
 See HWv??.h for hardware (board specfic) definitions (IO & Serial)
-See common.h for library & other variable definitions
+See common.h for library & other variable definitions common to all boards
 See debug.ino for optional debug commands
 See PGN.ino for PGN parsing
 See notes.ino for additional information
 
 */
 
+
 // pick only one board file
 //#include "HWv4x.h"
 #include "HWv50a.h"
 //#include "HWv50d.h"
-
 
 const uint8_t encoderType = 1;  // 1 - single input
                                 // 2 - dual input (quadrature encoder), uses Kickout_A (Pressure) & Kickout_D (Remote) inputs
@@ -22,10 +22,12 @@ const uint8_t encoderType = 1;  // 1 - single input
 
 //#include "JD_DAC.h"   // experimental JD 2 track DAC steering & SCV/remote hyd control
 //JD_DAC jdDac(I2C_WIRE, 0x60, &Serial);
+//#include "OGX.h"
+//OpenGradeX grade;
 
 void setup()
 {
-  Serial.begin(115200);                   // Teensy doesn't need it
+  //Serial.begin(115200);                   // Teensy doesn't need it
   Serial.print("\r\n\n\n*********************\r\nStarting setup...\r\n");
   Serial.print(inoVersion);
   LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::PWR_ON);
@@ -48,6 +50,10 @@ void setup()
 
   autosteerSetup();                         // Autosteer.ino
 
+  #ifdef OGX_H
+    OGX_Setup();
+  #endif
+
   Serial.println("\r\n\nEnd of setup, waiting for GPS...\r\n"); 
   delay(1);
   resetStartingTimersBuffers();             // setup.ino
@@ -58,10 +64,15 @@ void loop()
   checkForPGNs();                           // zPGN.ino, check for AgIO or SerialESP32 Sending PGNs
   PGNusage.timeOut();
 
+  #ifdef OGX_H
+    checkForOGXPackets();
+    grade.updateLoop();
+  #endif
+
   autoSteerUpdate();                        // Autosteer.ino, update AS loop every 10ms (100hz) regardless of whether there is a BNO installed
   udpNMEA();                                // check for NMEA via UDP
   udpNtrip();                               // check for RTCM via UDP (AgIO NTRIP client)
-    
+
   if (SerialRTK.available()) {              // Check for RTK Radio RTCM data
     uint8_t rtcmByte = SerialRTK.read();
     if (!USB1DTR) SerialGPS1.write(rtcmByte);    // send to GPS1
@@ -69,7 +80,7 @@ void loop()
     LEDs.queueBlueFlash(LED_ID::GPS);
   }
 
-  #ifdef AIOv50
+  #ifdef AIOv5
     RS232usage.timeIn();
     if (SerialRS232.available()) {           // Check for RS232 data
       Serial.write(SerialRS232.read());      // just print to USB for testing
@@ -81,6 +92,7 @@ void loop()
   if (BNO.read()) {                         // there should be new data every 10ms (100hz)
     bnoStats.incHzCount();
     bnoStats.update(1);                     // 1 dummy value
+    //LEDs.setScheduler(PORT_ID::IMU_ID, 0, 9);
   }
   BNOusage.timeOut();
 
@@ -108,9 +120,17 @@ void loop()
 
       uint8_t gps1Read = SerialGPS1.read();
       if (nmeaDebug) Serial.write(gps1Read);
-      nmeaParser << gps1Read;
       
-      #ifdef AIOv50
+      #ifndef OGX_H
+        nmeaParser << gps1Read; // for normal, autosteer setup
+      #else
+        //grade.nmeaInput(gps1Read);  // GPS1 needs to output GGA/GNS & VTG which is sent to OGX for blade position
+        nmeaParser << gps1Read; // for normal, autosteer setup
+      #endif
+
+      //LEDs.setScheduler(PORT_ID::GPS1_ID, 5, 35);
+      
+      #ifdef AIOv5
         GPS1usage.timeOut();
         RS232usage.timeIn();
         SerialRS232.write(gps1Read);
@@ -154,8 +174,12 @@ void loop()
 
       uint8_t gps2Read = SerialGPS2.read();
       if (nmeaDebug2) Serial << "(" << byte(gps2Read) << ")";
-      ubxParser.parse(gps2Read);
-      //nmeaParser << gps2Read;
+      #ifndef OGX_H
+        ubxParser.parse(gps2Read);  // for dual F9P autosteer
+      #else
+        grade.nmeaInput(gps2Read);  // no UBX in this version, GPS2 outputs GGA/GNS & VTG which is sent to OGX for blade position
+        //nmeaParser << gps2Read; // autosteer with GPS2
+      #endif
     }
   }
 
@@ -174,7 +198,7 @@ void loop()
     }
   #endif
 
-  /*#ifdef AIOv50a
+  /*#ifdef AIOv5
     GPS2usage.timeOut();
     RS232usage.timeIn();
     SerialRS232.write(gps2Read);
@@ -187,7 +211,7 @@ void loop()
   if (imuPandaSyncTimer > 50 && startup) {   // to make sure old data isn't sent to AOG
     if (posReady) {
       posReady = 0;
-      Serial.print("\r\n**Position data expired**\r\n");
+      Serial << "\r\n" << millis() << " **Position data expired**\r\n";
     }
   
     if (extraCRLF && nmeaDebug) {
@@ -196,12 +220,11 @@ void loop()
     }
   }
 
-  if (imuPandaSyncTimer > 150 && startup) {
+  if (imuPandaSyncTimer > 150 && startup && gpsActive) {
     imuPandaSyncTimer -= 100;
     ggaMissed++;
     if (nmeaDebug) Serial.println();
-    Serial.print("\r\n"); Serial.print(millis()); Serial.print(" ");
-    Serial.printf("                 *** GGA was missed or late! *** (%i)\r\n", ggaMissed);
+    Serial << "\r\n" << millis() << " *** position was missed or late! *** (" << ggaMissed << ")\r\n";
     posReady = false;
     ubxParser.relPosNedReady = false;
   }
@@ -226,8 +249,7 @@ void loop()
     ubxParser.relPosTimer -= 100;
     ubxParser.relMissed++;
     if (nmeaDebug) Serial.println();
-    Serial.print("\r\n"); Serial.print(millis()); Serial.print(" ");
-    Serial.printf("                   *** relposNED was missed or late! *** (%i)\r\n", ubxParser.relMissed);
+    Serial << "\r\n" << millis() << " *** heading was missed or late! *** (" << ubxParser.relMissed << ")\r\n";
     ubxParser.clearCount();
     posReady = false;
     ubxParser.relPosNedReady = false;
@@ -331,6 +353,23 @@ void loop()
 
 } // end of loop()
 
+#ifdef OGX_H
+  #ifdef JD_DAC_H
+    void updateDacChannel4Output() {
+      jdDac.ch4Enable(true);
+      jdDac.ch4GradeOutput(grade.getAnalog1());
+      //Serial << "\r\nGrade output: " << grade.getAnalog1();
+    }
+  #else
+    void updatePwmOutput() {
+      // add code here to output PWM to Cytron
+    }
+  #endif
 
+  void forwardNtripData(char* _ntripBuffer, uint16_t _len) {
+    if (!USB1DTR) SerialGPS1.write(_ntripBuffer, _len);    // send to GPS1
+    if (!USB2DTR) SerialGPS2.write(_ntripBuffer, _len);    // send to GPS2
+  }
+#endif
 
 

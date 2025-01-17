@@ -15,8 +15,8 @@
 */
 /**************************************************************************/
 ADS1115_lite::ADS1115_lite(uint8_t i2cAddress) {
-	//_i2cPort->.end();      // causes boot loop in Teensyduino v1.58+
-	//_i2cPort->.begin();
+	//_i2cPort->end();      // causes boot loop in Teensyduino v1.58+
+	//_i2cPort->begin();
 	_i2cAddress = i2cAddress;
 	_gain = ADS1115_REG_CONFIG_PGA_6_144V; /* +/- 6.144V range (limited to VDD +0.3V max!) */
 	_mux = ADS1115_REG_CONFIG_MUX_DIFF_0_1; /* to default */
@@ -33,11 +33,11 @@ void ADS1115_lite::setWirePort(TwoWire& wirePort) {
 */
 /**************************************************************************/
 bool ADS1115_lite::testConnection() {
-  _i2cPort.beginTransmission(_i2cAddress);
-  _i2cPort.write(ADS1115_REG_POINTER_CONVERT);
-  _i2cPort.endTransmission();
-  _i2cPort.requestFrom(_i2cAddress, (uint8_t)2);
-  if (_i2cPort.available()) {
+  _i2cPort->beginTransmission(_i2cAddress);
+  _i2cPort->write(ADS1115_REG_POINTER_CONVERT);
+  _i2cPort->endTransmission();
+  _i2cPort->requestFrom(_i2cAddress, (uint8_t)2);
+  if (_i2cPort->available()) {
     return 1;
   }
   return 0;
@@ -121,11 +121,11 @@ void ADS1115_lite::triggerConversion(bool _continuous = false) {
   config |= ADS1115_REG_CONFIG_OS_SINGLE;
 
   // Write config register to the ADC
-  _i2cPort.beginTransmission(_i2cAddress);
-  _i2cPort.write(ADS1115_REG_POINTER_CONFIG);
-  _i2cPort.write((uint8_t)(config >> 8));
-  _i2cPort.write((uint8_t)(config & 0xFF));
-  _i2cPort.endTransmission();
+  _i2cPort->beginTransmission(_i2cAddress);
+  _i2cPort->write(ADS1115_REG_POINTER_CONFIG);
+  _i2cPort->write((uint8_t)(config >> 8));
+  _i2cPort->write((uint8_t)(config & 0xFF));
+  _i2cPort->endTransmission();
 }
 
 /**************************************************************************/
@@ -138,12 +138,12 @@ int16_t ADS1115_lite::getConversion() {  // Wait for the conversion to complete
   //  } while(!isConversionDone());  Brian Tee - no waiting
 
   // Read the conversion results
-  _i2cPort.beginTransmission(_i2cAddress); //Sets the Address of the ADS1115.
-  _i2cPort.write(ADS1115_REG_POINTER_CONVERT); //queue the data to be sent, in this case modify the pointer register so that the following RequestFrom reads the conversion register
-  _i2cPort.endTransmission(); //Send the data
+  _i2cPort->beginTransmission(_i2cAddress); //Sets the Address of the ADS1115.
+  _i2cPort->write(ADS1115_REG_POINTER_CONVERT); //queue the data to be sent, in this case modify the pointer register so that the following RequestFrom reads the conversion register
+  _i2cPort->endTransmission(); //Send the data
 
-  _i2cPort.requestFrom(_i2cAddress, (uint8_t)2); //Request the 2 byte conversion register
-  return ((_i2cPort.read() << 8) | _i2cPort.read()); //Read each byte.  Shift the first byte read 8 bits to the left and OR it with the second byte.
+  _i2cPort->requestFrom(_i2cAddress, (uint8_t)2); //Request the 2 byte conversion register
+  return ((_i2cPort->read() << 8) | _i2cPort->read()); //Read each byte.  Shift the first byte read 8 bits to the left and OR it with the second byte.
 
 }
 /**************************************************************************/
@@ -153,10 +153,10 @@ int16_t ADS1115_lite::getConversion() {  // Wait for the conversion to complete
 /**************************************************************************/
 bool ADS1115_lite::isConversionDone() {
 
-  _i2cPort.beginTransmission(_i2cAddress); //Sets the Address of the ADS1115.
-  _i2cPort.write(ADS1115_REG_POINTER_CONFIG); //queue the data to be sent, in this case modify the pointer register so that the following RequestFrom reads the config register
-  _i2cPort.endTransmission(); //Set the stop bit
+  _i2cPort->beginTransmission(_i2cAddress); //Sets the Address of the ADS1115.
+  _i2cPort->write(ADS1115_REG_POINTER_CONFIG); //queue the data to be sent, in this case modify the pointer register so that the following RequestFrom reads the config register
+  _i2cPort->endTransmission(); //Set the stop bit
 
-  _i2cPort.requestFrom(_i2cAddress, (uint8_t)2); //Request 2 byte config register
-  return ((_i2cPort.read() << 8) | _i2cPort.read()) >> 15 ; //Read 2 bytes.  Return the most signifagant bit
+  _i2cPort->requestFrom(_i2cAddress, (uint8_t)2); //Request 2 byte config register
+  return ((_i2cPort->read() << 8) | _i2cPort->read()) >> 15 ; //Read 2 bytes.  Return the most signifagant bit
 }

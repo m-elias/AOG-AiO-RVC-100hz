@@ -1,7 +1,7 @@
 /*
 
 Started Feb 2024 - Matt Elias
-Updated Jan 2025
+Updated Apr 2024
 
 Used Ace repo code and adapted for AiO v4.x/5.0a RVC 100hz
 - Started with code from Teensy "Nav" Ace module https://github.com/farmerbriantee/Ace/tree/master/Hardware/Ace
@@ -32,15 +32,16 @@ Autosteer updates at 100hz but should maybe only be at the old 40hz?
 
 Machine/Section outputs
 - only supported by AiO v5.0 Proto
-- v5.0a-c uses Wire1 (I2C1) to connect to PCA9555
-  - v4.x uses Wire1 to connect to ADS1115
-- v5.0d uses Wire to connect to PCA9685 for Machine/Sections and RGB LEDs
+  - v5.0a-c uses Wire1 (I2C1) to connect to PCA9555
+    - v4.x uses Wire1 to connect to ADS1115
+  - v5.0d uses Wire to connect to PCA9685 for Machine/Sections and RGB LEDs
 
 
 
 To-do
 - Adafruit NeoPixel (WS2811) library disabled interrupts which causes lost Serial data
   - this has been overriden to keep interrupts on, LEDs don't blink quite 100%
+  - for v5.0d, add code for WS2812Serial library for nonblock RGB control
 - send more data to ESP32, such as speed and roll correction position
 - set ADS1115 single/dual according to config struct setting (saved in eeprom)
 - consolidate all EEPROM addrs in one place?
@@ -53,6 +54,7 @@ To-do
 - intelligently detect Eth link status?
   - Ethernet.linkStatus doesn't work until after the correct Ethernet.begin has started
   - probably need to use diff Ethernet library like AsyncUDP_Teensy41
+- fix steer on/off oscillation
 
 - Testing !!!
   - pressure/current inputs should be scaled the same as old firmware, only bench tested by Matt

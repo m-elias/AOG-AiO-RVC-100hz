@@ -40,15 +40,15 @@ void checkUSBSerial()
       printStats = !printStats;
       Serial.print("\r\nSetting Print Stats: "); Serial.print(printStats);
     }
-    #ifdef AIOv50
-    else if (usbRead == 'm' && Serial.available() > 0)    // set machine debug level
-    {
-      usbRead = Serial.read();
-      if (usbRead >= '0' && usbRead <= '5') {
-        machine.debugLevel = usbRead - '0';   // convert ASCII numerical char to byte
+    #ifdef AIOv5
+      else if (usbRead == 'm' && Serial.available() > 0)    // set machine debug level
+      {
+        usbRead = Serial.read();
+        if (usbRead >= '0' && usbRead <= '5') {
+          machine.debugLevel = usbRead - '0';   // convert ASCII numerical char to byte
+        }
+        Serial.print((String)"\r\nMachine debugLevel: " + machine.debugLevel);
       }
-      Serial.print((String)"\r\nMachine debugLevel: " + machine.debugLevel);
-    }
     #endif
     else if (usbRead == 'g' && Serial.available() > 0)    // temporarily set GPS fix state according to standard GGA fix numbers (see LEDS.h, setGpsLED())
     {
@@ -69,10 +69,20 @@ void checkUSBSerial()
     {
       // do nothing
     }
+    #ifdef OGX_H
+      else if (usbRead == 'o' && Serial.available() > 0)    // set OGX debug level
+      {
+        usbRead = Serial.read();
+        if (usbRead >= '0' && usbRead <= '5') {
+          grade.debugLevel = usbRead - '0';   // convert ASCII numerical char to byte
+        }
+        Serial.print((String)"\r\nOGX debugLevel: " + grade.debugLevel);
+      }
+    #endif
     else
     {
       // USB serial data not recognized
-      Serial << "\r\n\n*** Unrecognized USB serial input: \"" << usbRead << "\" ";
+      Serial << "\r\n\n*** Unrecognized USB serial input: "; Serial.write(usbRead); Serial << " #" << usbRead << "";
       while (Serial.available()) Serial.read();
     }
   }
@@ -118,7 +128,7 @@ void printTelem()
     Serial.print("\r\nMach   cpu: "); printCpuPercent(MACHusage.reportAve(baselineProcUsage));
     Serial.print("\r\nESP32  cpu: "); printCpuPercent(ESP32usage.reportAve(baselineProcUsage));
     
-    #ifdef AIOv50
+    #ifdef AIOv5
       Serial.print("\r\nRS232  cpu: "); printCpuPercent(RS232usage.reportAve(baselineProcUsage));
     #endif
 

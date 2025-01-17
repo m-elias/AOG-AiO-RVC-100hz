@@ -45,7 +45,7 @@ public:
     void digitalWrite(uint16_t value );                  // bulk/fast digitalWrite
     uint8_t stateOfPin(uint8_t pin);                     // Actual ISR
     void setClock(uint32_t clockFrequency);              // Clock speed
-    bool begin(TwoWire& _wirePort);                                        // Checks if PCA is responsive
+    bool begin(TwoWire& _wirePort);                      // Checks if PCA is responsive
     void printBinary(uint16_t var);                      // to print binary with leading zeros
     bool enabled;
     //const uint8_t outputPins[8] = { 1, 0, 12, 15, 9, 8, 6, 7 };   // for v5.0

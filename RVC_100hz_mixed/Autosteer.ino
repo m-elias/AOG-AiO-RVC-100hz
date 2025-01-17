@@ -139,7 +139,7 @@ void autosteerSetup() {
   pinMode(KICKOUT_D_PIN, INPUT_PULLUP);  // also set by Encoder library
 
 // Disable pullup/down resistors for analog input pins
-#ifdef AIOv50
+#ifdef AIOv5
   pinMode(WORK_PIN, INPUT_DISABLE);
 #else
   pinMode(WORK_PIN, INPUT_PULLUP);
@@ -294,7 +294,7 @@ void autoSteerUpdate() {
       sensorSample = (float)analogRead(CURRENT_PIN);
       // Serial << "\r\n" << sensorSample;
 
-#ifdef AIOv50
+#ifdef AIOv5
       // sensorSample = abs((sensorSample - ???)) * 0.0625;       // for v5.0a ACS711 (untested), output is not inverted
       sensorSample = abs(sensorSample - 240) * 0.0625;  // for v5.0a DRV8701, output is not inverted
 #else
@@ -310,7 +310,7 @@ void autoSteerUpdate() {
       }
     }
 
-#ifdef AIOv50
+#ifdef AIOv5
     uint8_t read = analogRead(WORK_PIN) > ANALOG_TRIG_THRES ? HIGH : LOW;  // read work input
 #else
     uint8_t read = digitalRead(WORK_PIN);

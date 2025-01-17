@@ -28,7 +28,7 @@ void serialSetup()
   SerialGPS2.addMemoryForRead(GPS2rxbuffer, sizeof(GPS2rxbuffer));
   SerialGPS2.addMemoryForWrite(GPS2txbuffer, sizeof(GPS2txbuffer));
 
-  #ifdef AIOv50
+  #ifdef AIOv5
     SerialRS232.begin(baudRS232);
     //SerialRS232.addMemoryForRead(RS232rxbuffer, sizeof(RS232rxbuffer));    // not needed unless custom rs232 rx code is added
     SerialRS232.addMemoryForWrite(RS232txbuffer, sizeof(RS232txbuffer));
@@ -47,6 +47,9 @@ void parserSetup()
   nmeaParser.addHandler("G-GNS", GNS_Handler);
   nmeaParser.addHandler("G-VTG", VTG_Handler);
   nmeaParser.addHandler("G-HPR", HPR_Handler);
+  //const char pvtID[5] = {181, 98, 1, 7, 92};
+  //nmeaParser.addHandler(pvtID, PVT_Handler);
+  //const char relID = {181, 98, 1, 60, 64};
 }
 
 void resetStartingTimersBuffers()
@@ -55,10 +58,24 @@ void resetStartingTimersBuffers()
   if (BNO.isActive) while (!BNO.read(true));
   SerialGPS1.clear();
   SerialGPS2.clear();
-  #ifdef AIOv50
-  SerialESP32.clear();
+  #ifdef AIOv5
+    SerialESP32.clear();
   #endif
   machine.watchdogTimer = 0;
   imuPandaSyncTimer = 0;
   startup = true;
 }
+
+#ifdef OGX_H
+  void OGX_Setup(){
+    #ifdef JD_DAC_H
+      grade.setOutput1Handler(updateDacChannel4Output);
+    #else
+      grade.setOutput1Handler(updatePwmOutput);
+    #endif
+
+    grade.setNtripDataHandler(forwardNtripData);
+    //grade.setUdpReplyHandler(OgxPgnReplies);
+    grade.init(90, 0, 0);    // CAN2RX LED, LOW/0 is ON
+  }
+#endif

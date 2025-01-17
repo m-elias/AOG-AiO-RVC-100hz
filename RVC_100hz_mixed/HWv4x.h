@@ -1,6 +1,5 @@
 //
-// Connection Map:
-//
+// connection plan:
 // Teensy Serial 7 RX (28) to F9P Position receiver TX1 (Position data)
 // Teensy Serial 7 TX (29) to F9P Position receiver RX1 (RTCM data for RTK)
 // Teensy Serial 2 RX (07) to F9P Heading receiver TX1 (Relative position from left antenna to right antenna)
@@ -51,10 +50,10 @@ SpeedPulse speedPulse(SPEEDPULSE_PIN);     // misc.h
 #define I2C_WIRE Wire1          // used for ADS1115 wheel angle sensor
 
 // ********* Serial Assignments *********
-#define SerialRTK Serial3               // RTK radio
 HardwareSerial* SerialIMU = &Serial5;   // IMU BNO-085 in RVC serial mode
-HardwareSerial* SerialGPS1 = &Serial7;  // Main postion receiver (GGA & VTG)
-HardwareSerial* SerialGPS2 = &Serial2;  // Dual heading receiver  (relposNED)
+#define SerialRTK  Serial3               // RTK radio
+#define SerialGPS1 Serial7              // Main postion receiver (GGA & VTG)
+#define SerialGPS2 Serial2              // Dual heading receiver  (relposNED)
 
 const int32_t baudGPS = 460800;
 const int32_t baudRTK = 115200;     // most are using Xbee radios with default of 115200

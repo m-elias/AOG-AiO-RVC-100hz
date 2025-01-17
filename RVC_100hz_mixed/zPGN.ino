@@ -9,11 +9,39 @@
 #define UDP_MAX_PACKET_SIZE 40         // Buffer size For Receiving UDP PGN Data
 //uint32_t pgn254Time, pgn254MaxDelay, pgn254AveDelay, pgn254MinDelay = 99999;
 
+#ifdef OGX_H
+void checkForOGXPackets()
+{
+  if (!UDP.isRunning) return;      // When ethernet is not running, return directly. parsePacket() will block with no ethernet
+
+  static uint32_t udpCheckTime = 0;
+  uint32_t microsNow = micros();
+  if (microsNow < udpCheckTime) return;   // only need to check for new PGN data every 0.1 ms, not 100s of times per ms
+  //Serial.print((String)"\r\n" + microsNow + " PGN check " + udpCheckTime);
+  udpCheckTime = microsNow + 100;     // allow check every 0.1 ms
+
+  const uint16_t udpBufferLength = 768; // 100 is large enough for all OGX packets except NTRIP
+  char udpBuffer[udpBufferLength];      // longest I know of is 22 chars (SETTINGS) except RTCM can be huge, we're ignoring it in this class, the host microcontroller takes care of RTCM
+
+  // check OGX UDP
+  uint16_t lenOGX = UDP.PGN_OGX.parsePacket();     // get data from OGX:9998 to this:7777
+  if (lenOGX > 6) {                                // all packets should be 7 or longer but min 5 to get a PGN header number
+    //IPAddress remIp = UDP.PGN.remoteIP();
+    //IPAddress remPort = UDP.PGN.remotePort();
+
+    UDP.PGN_OGX.read(udpBuffer, (lenOGX >= udpBufferLength) ? udpBufferLength - 1 : lenOGX );  // make sure we don't overrun buffer size
+    udpBuffer[(lenOGX >= udpBufferLength) ? udpBufferLength : lenOGX] = 0;                     // make sure string ends with NULL
+
+    grade.checkforPGNs(udpBuffer, lenOGX);
+  }
+}
+#endif
+
 void checkForPGNs()
 {
   if (!UDP.isRunning) return;                           // When ethernet is not running, return directly. parsePacket() will block with no ethernet
 
-  #ifdef AIOv50
+  #ifdef AIOv5
   ESP32usage.timeIn();
   if (SerialESP32.available())
   {
@@ -51,7 +79,7 @@ void checkForPGNs()
     }
   }
   ESP32usage.timeOut();
-  #endif  // AIOv50a
+  #endif  // AIOv5
 
 
   PGNusage.timeIn();
@@ -64,24 +92,24 @@ void checkForPGNs()
   uint16_t len = UDP.PGN.parsePacket();                 //get data from AgIO sent by 9999 to this 8888
   if (UDP.PGN.remotePort() != 9999 || len < 5) return;  //make sure from AgIO
 
-  uint8_t udpData[UDP_MAX_PACKET_SIZE];  // UDP_TX_PACKET_MAX_SIZE is not large enough for machine pin settings PGN
+  uint8_t udpData[UDP_MAX_PACKET_SIZE];           // make sure it's large enough
   UDP.PGN.read(udpData, UDP_MAX_PACKET_SIZE);
 
-  if (udpData[0] != 0x80 || udpData[1] != 0x81 || udpData[2] != 0x7F) return;  // verify first 3 PGN header bytes
-  bool pgnMatched = false;
-
-  #ifdef AIOv50
-  if (udpData[3] != 100) {
+  #ifdef AIOv5
+  //if (udpData[3] != 100) {    // uncomment to omit roll corrected data from ESP32
     ESP32usage.timeIn();
     SerialESP32.write(udpData, len);
     SerialESP32.println();   // to signal end of PGN
-    //Serial.print("\r\nAgIO-e:8888->T41-s->E32 ");
-    //for (uint8_t i = 0; i < len; i++) {
-      //Serial.print(udpData[i]); Serial.print(" ");
-    //}
+    /*Serial.print("\r\nAgIO-e:8888->T41-s->E32 ");
+    for (uint8_t i = 0; i < len; i++) {
+      Serial.print(udpData[i]); Serial.print(" ");
+    }*/
     ESP32usage.timeOut();
-  }
+  //}
   #endif
+
+  if (udpData[0] != 0x80 || udpData[1] != 0x81 || udpData[2] != 0x7F) return;  // verify first 3 PGN header bytes
+  bool pgnMatched = false;
 
   // changed to multiple IF statements instead of IF ELSE so that AgIO Hello and Scan Request PGNs can be pickedup by other object/classes (ie machine)
 

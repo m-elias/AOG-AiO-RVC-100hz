@@ -2045,7 +2045,7 @@ void Adafruit_NeoPixel::show(void) {
 // END ARCHITECTURE SELECT ------------------------------------------------
 
 #if !( defined(NRF52) || defined(NRF52_SERIES) )
-  //interrupts();
+  interrupts();
   //Serial.print("\r\nints back on");
 #endif
 

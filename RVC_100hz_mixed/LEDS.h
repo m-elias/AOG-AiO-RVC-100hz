@@ -1,3 +1,4 @@
+#include "wiring.h"
 /*
   This is a library written for AgOpenGPS AIO PCBs with RGB faceplate LEDs
   - written by Matt Elias, 2024
@@ -49,6 +50,14 @@ typedef enum {
   AUTOSTEER_ACTIVE    // stage 4: green solid
 } STEER_STATE;
 
+typedef enum {
+  IMU_ID,
+  GPS1_ID,
+  GPS2_ID,
+  RS232_ID
+} PORT_ID;
+
+
 class LEDS {
 private:
   #ifdef AIOv4x
@@ -65,8 +74,14 @@ private:
     const uint8_t NUM_LEDS = 4;
   #endif
 
-  const uint8_t WS2811_PIN = 33;    // unused IO on v4
+  #ifdef AIOv50d
+    const uint8_t WS2811_PIN = 17;  // Serial4 TX pin
+  #else
+    const uint8_t WS2811_PIN = 33;  // used by v5.0a-c, unused pin on v4.x
+  #endif
+
   Adafruit_NeoPixel WS2811 = Adafruit_NeoPixel(NUM_LEDS, WS2811_PIN, NEO_BGR + NEO_KHZ800);
+
   #define GGA_LED    13  // Teensy built-in LED
     
   uint8_t mainBrightness       = 255;     // main brightness level, 0-255, controls all RGB LEDs
@@ -91,6 +106,9 @@ private:
     "UNUSED"
   };
 
+  byte schedulerFlags;
+  uint32_t schedulerTimeAllowed[8];
+  uint32_t schedulerTimeBlocked[8];
 
 
 public:
@@ -131,6 +149,28 @@ public:
     WS2811.clear();
     delay(1);
     updateLoop();
+  }
+
+  void setScheduler(uint8_t _bit, uint32_t _durationBlocked, uint32_t _durationAllowed) {
+    bitSet(schedulerFlags, _bit);
+    schedulerTimeBlocked[_bit] = millis() + _durationBlocked;
+    schedulerTimeAllowed[_bit] = schedulerTimeBlocked[_bit] + _durationAllowed;
+  }
+
+  void setScheduler(uint8_t _bit, uint32_t _durationAllowed) {
+    bitClear(schedulerFlags, _bit);
+    schedulerTimeBlocked[_bit] = 0;
+    schedulerTimeAllowed[_bit] = millis() + _durationAllowed;
+
+    /*Serial << "\r\n" << _bit << " >B";
+    // B1000000000000000 = 32768 = 16bits
+    // B10000000 = 128 = 8bits
+    for (uint8_t mask = B10000000; mask; mask >>= 1) {
+      Serial.write(schedulerFlags  & mask ? '1' : '0');
+    }
+    for (uint8_t i = 0; i < 8; i++){
+      Serial << "\r\n - " << i << " " << (schedulerTimeAllowed[i] > millis() ? schedulerTimeAllowed[i] - millis() : 0);
+    }*/
   }
 
   void toggleTeensyLED() {
@@ -209,11 +249,43 @@ public:
 
   void updateLoop()
   {
+    // should take into consideration whether Eth is initialized before setting to Ready if cable is unplugged
     if (agioHelloTimeoutTimer > 5000) set(LED_ID::PWR_ETH, ETH_READY, true); // sets PWR__ETH LED to green_blink if AgIO Hello times out after 5s
     if (gpsUpdateTimeoutTimer > 3000) setGpsLED(3, true);                    // sets GPS LED OFF if no GPS update for 3s
 
     if (updateTimer > updatePeriod) {
-      updateTimer = 0;
+
+      for (uint8_t i = 0; i < 8; i++){
+        if (!bitRead(schedulerFlags, i)) {
+          if (schedulerTimeAllowed[i] != 0 && millis() >= schedulerTimeAllowed[i]) {
+            bitSet(schedulerFlags, i);
+
+          }
+        }
+
+        if (bitRead(schedulerFlags, i)) {
+          if (schedulerTimeAllowed[i] != 0 && millis() >= schedulerTimeBlocked[i]) {
+            bitClear(schedulerFlags, i);
+          }
+        }
+      }
+
+      if (schedulerFlags > 0) {
+        Serial << "\r\n" << millis() << " ";
+        for (uint8_t mask = B10000000; mask; mask >>= 1) {
+          Serial.write(schedulerFlags  & mask ? '1' : '0');
+        }
+
+        for (uint8_t i = 0; i < 8; i++){
+          Serial << "\r\n - " << i << " ";
+          Serial << (schedulerTimeBlocked[i] < millis() ? schedulerTimeBlocked[i] - millis() : 0) << " ";
+          Serial << (schedulerTimeAllowed[i] > millis() ? schedulerTimeAllowed[i] - millis() : 0);
+        }
+        updateTimer -= 1; // update is blocked, delay 1ms before trying again
+        return;
+      }
+
+      updateTimer = 0;  // reset update timer
 
       // update rgb values from each RGB_DATA struct, brightness scaling values & send down the wire
       WS2811.setBrightness(mainBrightness);
