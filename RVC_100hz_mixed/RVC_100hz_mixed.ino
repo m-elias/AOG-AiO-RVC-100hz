@@ -1,7 +1,7 @@
 /*
 
 See HWv??.h for hardware (board specfic) definitions (IO & Serial)
-See common.h for library & other variable definitions
+See common.h for library & other variable definitions common to all boards
 See debug.ino for optional debug commands
 See PGN.ino for PGN parsing
 See notes.ino for additional information
@@ -11,8 +11,8 @@ See notes.ino for additional information
 
 // pick only one board file
 //#include "HWv4x.h"
-//#include "HWv50a.h"
-#include "HWv50d.h"
+#include "HWv50a.h"
+//#include "HWv50d.h"
 
 const uint8_t encoderType = 1;  // 1 - single input
                                 // 2 - dual input (quadrature encoder), uses Kickout_A (Pressure) & Kickout_D (Remote) inputs
@@ -20,10 +20,10 @@ const uint8_t encoderType = 1;  // 1 - single input
 
 #include "common.h"
 
-#include "JD_DAC.h"   // experimental JD 2 track DAC steering & SCV/remote hyd control
-JD_DAC jdDac(I2C_WIRE, 0x60, &Serial);
-#include "OGX.h"
-OpenGradeX grade;
+//#include "JD_DAC.h"   // experimental JD 2 track DAC steering & SCV/remote hyd control
+//JD_DAC jdDac(I2C_WIRE, 0x60, &Serial);
+//#include "OGX.h"
+//OpenGradeX grade;
 
 void setup()
 {
@@ -51,40 +51,13 @@ void setup()
   autosteerSetup();                         // Autosteer.ino
 
   #ifdef OGX_H
-    #ifdef JD_DAC_H
-      grade.setOutput1Handler(updateDacChannel4Output);
-    #else
-      grade.setOutput1Handler(updatePwmOutput);
-    #endif
-
-    grade.setNtripDataHandler(forwardNtripData);
-    //grade.setUdpReplyHandler(OgxPgnReplies);
-    grade.init(90, 0, 0);    // CAN2RX LED, LOW/0 is ON
+    OGX_Setup();
   #endif
 
   Serial.println("\r\n\nEnd of setup, waiting for GPS...\r\n"); 
   delay(1);
   resetStartingTimersBuffers();             // setup.ino
 }
-
-#ifdef OGX_H
-  #ifdef JD_DAC_H
-    void updateDacChannel4Output() {
-      jdDac.ch4Enable(true);
-      jdDac.ch4GradeOutput(grade.getAnalog1());
-      //Serial << "\r\nGrade output: " << grade.getAnalog1();
-    }
-  #else
-    void updatePwmOutput() {
-      // add code here to output PWM to Cytron
-    }
-  #endif
-
-  void forwardNtripData(char* _ntripBuffer, uint16_t _len) {
-    if (!USB1DTR) SerialGPS1.write(_ntripBuffer, _len);    // send to GPS1
-    if (!USB2DTR) SerialGPS2.write(_ntripBuffer, _len);    // send to GPS2
-  }
-#endif
 
 void loop()
 {
@@ -380,6 +353,23 @@ void loop()
 
 } // end of loop()
 
+#ifdef OGX_H
+  #ifdef JD_DAC_H
+    void updateDacChannel4Output() {
+      jdDac.ch4Enable(true);
+      jdDac.ch4GradeOutput(grade.getAnalog1());
+      //Serial << "\r\nGrade output: " << grade.getAnalog1();
+    }
+  #else
+    void updatePwmOutput() {
+      // add code here to output PWM to Cytron
+    }
+  #endif
 
+  void forwardNtripData(char* _ntripBuffer, uint16_t _len) {
+    if (!USB1DTR) SerialGPS1.write(_ntripBuffer, _len);    // send to GPS1
+    if (!USB2DTR) SerialGPS2.write(_ntripBuffer, _len);    // send to GPS2
+  }
+#endif
 
 

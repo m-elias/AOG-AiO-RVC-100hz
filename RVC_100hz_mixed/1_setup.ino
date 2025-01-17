@@ -65,3 +65,17 @@ void resetStartingTimersBuffers()
   imuPandaSyncTimer = 0;
   startup = true;
 }
+
+#ifdef OGX_H
+  void OGX_Setup(){
+    #ifdef JD_DAC_H
+      grade.setOutput1Handler(updateDacChannel4Output);
+    #else
+      grade.setOutput1Handler(updatePwmOutput);
+    #endif
+
+    grade.setNtripDataHandler(forwardNtripData);
+    //grade.setUdpReplyHandler(OgxPgnReplies);
+    grade.init(90, 0, 0);    // CAN2RX LED, LOW/0 is ON
+  }
+#endif
