@@ -40,7 +40,7 @@ void checkUSBSerial()
       printStats = !printStats;
       Serial.print("\r\nSetting Print Stats: "); Serial.print(printStats);
     }
-    #ifdef AIOv50a
+    #ifdef AIOv50
     else if (usbRead == 'm' && Serial.available() > 0)    // set machine debug level
     {
       usbRead = Serial.read();
@@ -118,7 +118,7 @@ void printTelem()
     Serial.print("\r\nMach   cpu: "); printCpuPercent(MACHusage.reportAve(baselineProcUsage));
     Serial.print("\r\nESP32  cpu: "); printCpuPercent(ESP32usage.reportAve(baselineProcUsage));
     
-    #ifdef AIOv50a
+    #ifdef AIOv50
       Serial.print("\r\nRS232  cpu: "); printCpuPercent(RS232usage.reportAve(baselineProcUsage));
     #endif
 

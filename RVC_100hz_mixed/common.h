@@ -101,7 +101,7 @@ uint8_t GPS1txbuffer[256];      // large enough for 256 byte AgIO NTRIP packet
 uint8_t GPS2rxbuffer[128];      // seems large enough
 uint8_t GPS2txbuffer[256];      // large enough for 256 byte AgIO NTRIP packet
 uint8_t RTKrxbuffer[64];        // don't know what size is needed, larger buffer if GPS baud is lower then RTK radio baud
-#ifdef AIOv50a
+#ifdef AIOv50
   uint8_t RS232txbuffer[256];   // large enough to hold a few NMEA sentences as ext terminal bauds are usually slow
   //uint8_t RS232rxbuffer[256]; // not needed unless custom rs232 rx code is added
   uint8_t ESP32rxbuffer[256];   // don't know what size is needed

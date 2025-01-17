@@ -1,5 +1,6 @@
 //
-// connection plan:
+// Connection Map:
+//
 // Teensy Serial 7 RX (28) to F9P Position receiver TX1 (Position data)
 // Teensy Serial 7 TX (29) to F9P Position receiver RX1 (RTCM data for RTK)
 // Teensy Serial 2 RX (07) to F9P Heading receiver TX1 (Relative position from left antenna to right antenna)
@@ -46,6 +47,8 @@ SpeedPulse speedPulse(SPEEDPULSE_PIN);     // misc.h
 #define KICKOUT_D_PIN    37     // REMOTE input
 #define CURRENT_PIN     A17     // ACS CURRENT input from Cytron module
 #define KICKOUT_A_PIN   A10     // PRESSURE input
+
+#define I2C_WIRE Wire1          // used for ADS1115 wheel angle sensor
 
 // ********* Serial Assignments *********
 #define SerialRTK Serial3               // RTK radio

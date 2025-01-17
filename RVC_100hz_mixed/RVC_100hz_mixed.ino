@@ -8,9 +8,11 @@ See notes.ino for additional information
 
 */
 
-// pick only one or the other board file
-#include "HWv50a.h"
+// pick only one board file
 //#include "HWv4x.h"
+#include "HWv50a.h"
+//#include "HWv50d.h"
+
 
 const uint8_t encoderType = 1;  // 1 - single input
                                 // 2 - dual input (quadrature encoder), uses Kickout_A (Pressure) & Kickout_D (Remote) inputs
@@ -19,7 +21,7 @@ const uint8_t encoderType = 1;  // 1 - single input
 #include "common.h"
 
 //#include "JD_DAC.h"   // experimental JD 2 track DAC steering & SCV/remote hyd control
-//JD_DAC jdDac(Wire1, 0x60, &Serial);
+//JD_DAC jdDac(I2C_WIRE, 0x60, &Serial);
 
 void setup()
 {
@@ -34,7 +36,7 @@ void setup()
   BNO.begin(SerialIMU);                     // BNO_RVC.cpp
 
   // v5 has machine outputs, v4 fails outputs.begin so machine is also not init'd
-  if (outputs.begin()) {                    // clsPCA9555.cpp
+  if (outputs.begin(I2C_WIRE)) {            // clsPCA9555.cpp
     Serial.print("\r\nSection outputs (PCA9555) detected (8 channels, low side switching)");
     machine.init(&outputs, pcaOutputPinNumbers, pcaInputPinNumbers, 100); // mach.h
   }
@@ -67,7 +69,7 @@ void loop()
     LEDs.queueBlueFlash(LED_ID::GPS);
   }
 
-  #ifdef AIOv50a
+  #ifdef AIOv50
     RS232usage.timeIn();
     if (SerialRS232.available()) {           // Check for RS232 data
       Serial.write(SerialRS232.read());      // just print to USB for testing
@@ -108,7 +110,7 @@ void loop()
       if (nmeaDebug) Serial.write(gps1Read);
       nmeaParser << gps1Read;
       
-      #ifdef AIOv50a
+      #ifdef AIOv50
         GPS1usage.timeOut();
         RS232usage.timeIn();
         SerialRS232.write(gps1Read);

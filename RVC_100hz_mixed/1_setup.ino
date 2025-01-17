@@ -28,7 +28,7 @@ void serialSetup()
   SerialGPS2.addMemoryForRead(GPS2rxbuffer, sizeof(GPS2rxbuffer));
   SerialGPS2.addMemoryForWrite(GPS2txbuffer, sizeof(GPS2txbuffer));
 
-  #ifdef AIOv50a
+  #ifdef AIOv50
     SerialRS232.begin(baudRS232);
     //SerialRS232.addMemoryForRead(RS232rxbuffer, sizeof(RS232rxbuffer));    // not needed unless custom rs232 rx code is added
     SerialRS232.addMemoryForWrite(RS232txbuffer, sizeof(RS232txbuffer));
@@ -55,7 +55,7 @@ void resetStartingTimersBuffers()
   if (BNO.isActive) while (!BNO.read(true));
   SerialGPS1.clear();
   SerialGPS2.clear();
-  #ifdef AIOv50a
+  #ifdef AIOv50
   SerialESP32.clear();
   #endif
   machine.watchdogTimer = 0;

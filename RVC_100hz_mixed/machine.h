@@ -1,4 +1,3 @@
-#include <stdint.h>
 /*
   My attempt at putting the Machine/Section control code all into a class
     by Matt Elias Feb 2024
@@ -22,6 +21,7 @@
 #ifndef MACHINE_H
 #define MACHINE_H
 
+#include <stdint.h>
 #include "EEPROM.h"
 #include "IPAddress.h"
 #include <stdint.h>

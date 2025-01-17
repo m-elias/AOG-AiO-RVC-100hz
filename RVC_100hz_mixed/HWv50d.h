@@ -26,7 +26,7 @@ Heading F9P
 
 Teensy Serial 7 to RS232 chip
 Teensy Serial 2 to ESP32
-I2C uses Wire1 for Section control
+I2C uses Wire for Section control
 
 
 */
@@ -35,19 +35,18 @@ I2C uses Wire1 for Section control
 #define Hardware_H
 
 #define AIOv50
-#define AIOv50a
-const char inoVersion[] = "AiO v5.0a-c OGX - " __DATE__;
+#define AIOv50d
+const char inoVersion[] = "AiO v5.0d OGX - " __DATE__;
 
 // ********* IO Defines *********
 const uint8_t WAS_SENSOR_PIN = A15;     // WAS input
 
-const uint8_t SPEEDPULSE_PIN = 18;      
-const uint8_t SPEEDPULSE10_PIN = 19;   // 1/10 speedpulse output, strictly for human visualization
+const uint8_t SPEEDPULSE_PIN = 33;      
+const uint8_t SPEEDPULSE10_PIN = 37;   // 1/10 speedpulse output, strictly for human visualization
 #include "misc.h"
 SpeedPulse speedPulse(SPEEDPULSE_PIN, SPEEDPULSE10_PIN);     // misc.h
 
-const uint8_t PIEZO1 = 37;
-const uint8_t PIEZO2 = 36;
+const uint8_t PIEZO1 = 36;
 
 // See LEDS.h for RGB pin assignment
 // const uint8_t WS2811_PIN = 33;
@@ -64,7 +63,7 @@ const uint8_t PIEZO2 = 36;
 #define CURRENT_PIN     A13     // CURRENT sense from on board DRV8701
 #define KICKOUT_A_PIN   A12     // PRESSURE
 
-#define I2C_WIRE Wire1          // used for PCA9555 section outputs
+#define I2C_WIRE Wire           // used for PCA9685 section outputs
 
 // ********* Serial Assignments *********
 HardwareSerial* SerialIMU = &Serial6;   // IMU BNO-085 in RVC serial mode

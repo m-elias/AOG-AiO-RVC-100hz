@@ -1,7 +1,7 @@
 /*
 
 Started Feb 2024 - Matt Elias
-Updated Sep 2024
+Updated Jan 2025
 
 Used Ace repo code and adapted for AiO v4.x/5.0a RVC 100hz
 - Started with code from Teensy "Nav" Ace module https://github.com/farmerbriantee/Ace/tree/master/Hardware/Ace
@@ -31,9 +31,10 @@ Autosteer updates at 100hz but should maybe only be at the old 40hz?
 
 
 Machine/Section outputs
-- only supported by v5.0a
-- uses Wire1 (I2C1) to connect to PCA9555
+- only supported by AiO v5.0 Proto
+- v5.0a-c uses Wire1 (I2C1) to connect to PCA9555
   - v4.x uses Wire1 to connect to ADS1115
+- v5.0d uses Wire to connect to PCA9685 for Machine/Sections and RGB LEDs
 
 
 
