@@ -44,8 +44,8 @@ const uint8_t PIEZO = 36;
 // const uint8_t WS2811_PIN = 17;  // Serial4 TX pin
 
 // Cytron/DRV8701
-#define DIR_PIN           6     // DRV Dir pin
-#define PWM_PIN           9     // DRV PWM pin
+#define PWM1_PIN          6     // DRV PWM1 pin, one direction
+#define PWM2_PIN          5     // DRV PWM2 pin, the other direction
 #define SLEEP_PIN         4     // DRV Sleep pin, LOCK output
 
 // Switches/Sensors
@@ -55,10 +55,11 @@ const uint8_t PIEZO = 36;
 #define CURRENT_PIN     A13     // CURRENT sense from on board DRV8701
 #define KICKOUT_A_PIN   A12     // PRESSURE
 
-#define I2C_WIRE Wire           // used for PCA9555 section outputs
+#define I2C_WIRE       Wire     // used for PCA9685 section outputs & RGB LEDs
+#define PCB_ID_A_PIN    A16     // analog input to detect PCB version
 
 // ********* Serial Assignments *********
-HardwareSerial* SerialIMU = &Serial6;   // IMU BNO-085 in RVC serial mode
+HardwareSerial* SerialIMU = &Serial4;   // IMU BNO-085 in RVC serial mode
 #define SerialRTK   Serial3             // RTK radio
 #define SerialGPS1  Serial5
 #define SerialGPS2  Serial8
@@ -67,7 +68,7 @@ HardwareSerial* SerialIMU = &Serial6;   // IMU BNO-085 in RVC serial mode
 
 //const int32_t baudGPS = 921600;
 const int32_t baudGPS = 460800;
-const int32_t baudRTK = 460800;     // most are using Xbee radios with default of 115200
+const int32_t baudRTK = 115200;     // most are using Xbee radios with default of 115200
 const int32_t baudRS232 = 38400;
 const int32_t baudESP32 = 460800;
 

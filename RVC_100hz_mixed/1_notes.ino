@@ -31,9 +31,10 @@ Autosteer updates at 100hz but should maybe only be at the old 40hz?
 
 
 Machine/Section outputs
-- only supported by v5.0
-- uses Wire1/I2C1 (v5.0a-c) or Wire/I2C (v5.0d) to connect to PCA9555
-  - v4.x uses Wire1 to connect to ADS1115
+- only supported by AiO v5.0 Proto
+  - v5.0a-c uses Wire1 (I2C1) to connect to PCA9555
+    - v4.x uses Wire1 to connect to ADS1115
+  - v5.0d uses Wire to connect to PCA9685 for Machine/Sections and RGB LEDs
 
 
 
@@ -53,6 +54,7 @@ To-do
 - intelligently detect Eth link status?
   - Ethernet.linkStatus doesn't work until after the correct Ethernet.begin has started
   - probably need to use diff Ethernet library like AsyncUDP_Teensy41
+- fix steer on/off oscillation
 
 - Testing !!!
   - pressure/current inputs should be scaled the same as old firmware, only bench tested by Matt

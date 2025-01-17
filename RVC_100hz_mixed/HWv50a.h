@@ -28,7 +28,7 @@
 
 #define AIOv5
 #define AIOv50a
-const char inoVersion[] = "AiO v5.0a OGX - " __DATE__;
+const char inoVersion[] = "AiO v5.0[a-c] OGX - " __DATE__;
 
 // ********* IO Defines *********
 const uint8_t WAS_SENSOR_PIN   = A15;  // WAS input
@@ -68,7 +68,7 @@ HardwareSerial* SerialIMU = &Serial6;   // IMU BNO-085 in RVC serial mode
 
 //const int32_t baudGPS = 921600;
 const int32_t baudGPS = 460800;
-const int32_t baudRTK = 460800;     // most are using Xbee radios with default of 115200
+const int32_t baudRTK = 115200;     // most are using Xbee radios with default of 115200
 const int32_t baudRS232 = 38400;
 const int32_t baudESP32 = 460800;
 

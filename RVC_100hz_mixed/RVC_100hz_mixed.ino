@@ -11,8 +11,8 @@ See notes.ino for additional information
 
 // pick only one board file
 //#include "HWv4x.h"
-#include "HWv50a.h"
-//#include "HWv50d.h"
+//#include "HWv50a.h"
+#include "HWv50d.h"
 
 const uint8_t encoderType = 1;  // 1 - single input
                                 // 2 - dual input (quadrature encoder), uses Kickout_A (Pressure) & Kickout_D (Remote) inputs
@@ -151,8 +151,8 @@ void loop()
       #ifndef OGX_H
         nmeaParser << gps1Read; // for normal, autosteer setup
       #else
-        grade.nmeaInput(gps1Read);  // GPS1 needs to output GGA/GNS & VTG which is sent to OGX for blade position
-        //nmeaParser << gps1Read; // for normal, autosteer setup
+        //grade.nmeaInput(gps1Read);  // GPS1 needs to output GGA/GNS & VTG which is sent to OGX for blade position
+        nmeaParser << gps1Read; // for normal, autosteer setup
       #endif
 
       //LEDs.setScheduler(PORT_ID::GPS1_ID, 5, 35);
@@ -201,12 +201,11 @@ void loop()
 
       uint8_t gps2Read = SerialGPS2.read();
       if (nmeaDebug2) Serial << "(" << byte(gps2Read) << ")";
-      //nmeaParser << gps2Read;   // autosteer with GPS2
       #ifndef OGX_H
         ubxParser.parse(gps2Read);  // for dual F9P autosteer
       #else
-        //grade.nmeaInput(gps2Read);  // no UBX in this version, GPS2 outputs GGA/GNS & VTG which is sent to OGX for blade position
-        nmeaParser << gps2Read; // autosteer with GPS2
+        grade.nmeaInput(gps2Read);  // no UBX in this version, GPS2 outputs GGA/GNS & VTG which is sent to OGX for blade position
+        //nmeaParser << gps2Read; // autosteer with GPS2
       #endif
     }
   }
