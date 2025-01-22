@@ -31,6 +31,8 @@ struct HPR_DATA {
 };
 HPR_DATA HPR;
 
+String solutionQualityText[10] = {"invalid", "SPP", "DGPS", "unused", "RTK", "Float", "DedRek", "Manual", "Wide", "SBAS"};
+
 struct IMU_DATA {
   char heading[6];
   char roll[6];
@@ -135,7 +137,7 @@ void GNS_Handler()  // Rec'd GNS
   nmeaParser.getArg(10, GGA.ageDGPS);  // time of last DGPS update
 
   if (nmeaDebug) {
-    //Serial.print("\r\n");
+    Serial.print("\r\n");
     Serial.print(millis());
     Serial.printf(" GNS update (%i)", ggaMissed);
     Serial.print(imuPandaSyncTimer); Serial.print(" ");
@@ -252,7 +254,7 @@ void HPR_Handler()
   }
 
   if (fuseImu.fuseData.useFUSEImu)
-  { // Three separate if/else cluases for clarity. Can be one.
+  { // Three separate if/else clauses for clarity. Can be one.
     ubxParser.ubxData.baseRelH = fuseImu.fuseData.imuCorrected;
   }
   else
@@ -261,7 +263,7 @@ void HPR_Handler()
   }
 
   if (fuseImu.fuseData.useFUSEImu)
-  { // Three separate if/else cluases for clarity. Can be one.
+  { // Three separate if/else clauses for clarity. Can be one.
     // if ( HPR.solQuality == 4 ) {
     ubxParser.ubxData.baseRelRoll = fuseImu.fuseData.rollDeltaSmooth;
     // } else {
@@ -283,9 +285,13 @@ void HPR_Handler()
   if (nmeaDebug) {
     //Serial.print("\r\n");
     Serial.print(millis());
-    Serial.printf(" HPR update ");//(%i)", headingMissed);
+    Serial.printf(" HPR update (%i)", ubxParser.relMissed);
     //Serial.print(headingTimer); Serial.print(" ");
-    Serial.println(atoi(&fixTime[strlen(fixTime)-2]));
+    Serial.print(atoi(&fixTime[strlen(fixTime)-2]));
+    Serial.print(" "); Serial.print(ubxParser.ubxData.baseRelH, 2);
+    Serial.print(" "); Serial.print(ubxParser.ubxData.baseRelRoll, 2);
+    Serial.print(" "); Serial.print(" solQual: "); Serial.print(HPR.solQuality);
+    Serial.print("-"); Serial.println(solutionQualityText[HPR.solQuality]);
   }
 
   //headingTimer = 0;

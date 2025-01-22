@@ -382,6 +382,7 @@ public:
         if (inChar == '$') {
           mComputedCRC = 0;
           mState = SENT;
+          //Serial.printf("\r\n%i ", millis());
         } else unexpectedChar();
         break;
 
