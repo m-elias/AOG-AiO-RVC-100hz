@@ -11,8 +11,8 @@ See notes.ino for additional information
 
 // pick only one board file
 //#include "HWv4x.h"
-#include "HWv50a.h"
-//#include "HWv50d.h"
+//#include "HWv50a.h"
+#include "HWv50d.h"
 
 const uint8_t encoderType = 1;  // 1 - single input
                                 // 2 - dual input (quadrature encoder), uses Kickout_A (Pressure) & Kickout_D (Remote) inputs
@@ -30,6 +30,7 @@ void setup()
   //Serial.begin(115200);                   // Teensy doesn't need it
   Serial.print("\r\n\n\n*********************\r\nStarting setup...\r\n");
   Serial.print(inoVersion);
+  LEDs.init();
   LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::PWR_ON);
 
   setCpuFrequency(600 * 1000000);           // Set CPU speed, default is 600mhz, 150mhz still seems fast enough, setup.ino
