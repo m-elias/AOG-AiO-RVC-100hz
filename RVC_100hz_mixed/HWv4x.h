@@ -30,8 +30,8 @@
 const char inoVersion[] = "AiO v4.x OGX - " __DATE__;
 
 // ********* IO Defines *********
-const uint8_t WAS_SENSOR_PIN = A0;      // WAS input
-const uint8_t SPEEDPULSE_PIN = 36;
+#define WAS_PIN          A0      // WAS input
+#define SPEEDPULSE_PIN   36
 #include "misc.h"
 SpeedPulse speedPulse(SPEEDPULSE_PIN);     // misc.h
 

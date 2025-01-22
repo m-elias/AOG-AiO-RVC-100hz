@@ -31,15 +31,15 @@
 const char inoVersion[] = "AiO v5.0[a-c] OGX - " __DATE__;
 
 // ********* IO Defines *********
-const uint8_t WAS_SENSOR_PIN   = A15;  // WAS input
+#define WAS_PIN         A15  // WAS input
 
-const uint8_t SPEEDPULSE_PIN   = 18;      
-const uint8_t SPEEDPULSE10_PIN = 19;   // 1/10 speedpulse output, strictly for human visualization
+#define SPEEDPULSE_PIN   18      
+#define SPEEDPULSE10_PIN 19   // 1/10 speedpulse output, strictly for human visualization
 #include "misc.h"
 SpeedPulse speedPulse(SPEEDPULSE_PIN, SPEEDPULSE10_PIN);     // misc.h
 
-const uint8_t PIEZO1 = 37;
-const uint8_t PIEZO2 = 36;
+#define PIEZO_PIN       37
+#define PIEZO2_PIN       36
 
 // See LEDS.h for RGB pin assignment
 // const uint8_t WS2811_PIN = 33;
@@ -66,8 +66,8 @@ HardwareSerial* SerialIMU = &Serial6;   // IMU BNO-085 in RVC serial mode
 #define SerialRS232 Serial7
 #define SerialESP32 Serial2
 
-//const int32_t baudGPS = 921600;
-const int32_t baudGPS = 460800;
+const int32_t baudGPS = 921600;
+//const int32_t baudGPS = 460800;
 const int32_t baudRTK = 115200;     // most are using Xbee radios with default of 115200
 const int32_t baudRS232 = 38400;
 const int32_t baudESP32 = 460800;
