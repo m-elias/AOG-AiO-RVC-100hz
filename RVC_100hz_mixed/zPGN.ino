@@ -540,11 +540,7 @@ void checkForPGNs()
 
 void printPgnAnnoucement(uint8_t _pgnNum, char* _pgnName, uint8_t _len)
 {
-  Serial.print("\r\n\n0x"); Serial.print(_pgnNum, HEX);
-  Serial.print(" ("); Serial.print(_pgnNum); Serial.print(") - ");
-  Serial.print(_pgnName); Serial.print(", "); Serial.print(_len); Serial.print(" bytes ");
-  Serial.print(millis());
-
+  Serial.printf("\r\n%i %s 0x%02x (%i), %i bytes\r\n\n", millis(), _pgnName, _pgnNum, _pgnNum, _len);
 }
 /*
 * To receive NMEA sent via UDP from GPS Source
