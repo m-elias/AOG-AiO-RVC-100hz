@@ -584,7 +584,9 @@ void udpNtrip() {
         char RTCM_packetBuffer[256];
         UDP.RTCM.read(RTCM_packetBuffer, sizeof(RTCM_packetBuffer));
         if (!USB1DTR) SerialGPS1.write(RTCM_packetBuffer, sizeof(RTCM_packetBuffer));
-        if (!USB2DTR) SerialGPS2.write(RTCM_packetBuffer, sizeof(RTCM_packetBuffer));
+        #ifdef OGX_H
+          if (!USB2DTR) SerialGPS2.write(RTCM_packetBuffer, sizeof(RTCM_packetBuffer));
+        #endif
         LEDs.queueBlueFlash(LED_ID::GPS);
 
         // up to 256 byte packets are sent from AgIO and most NTRIP RTCM updates are larger so there's usually two packets per update
