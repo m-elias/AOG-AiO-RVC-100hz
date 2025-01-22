@@ -7,11 +7,13 @@ void setCpuFrequency(uint32_t _freq)
 
 void serialSetup()
 {
+  #ifdef AIOv5
+    pinMode(PIEZO_PIN, OUTPUT);
+    digitalWrite(PIEZO_PIN, LOW); // piezo/buzzer off
+  #endif
   #ifdef AIOv50a
-    pinMode(PIEZO1, OUTPUT);
-    pinMode(PIEZO2, OUTPUT);
-    digitalWrite(PIEZO1, LOW);
-    digitalWrite(PIEZO2, LOW);
+    pinMode(PIEZO2_PIN, OUTPUT);
+    digitalWrite(PIEZO2_PIN, LOW);
   #endif
 
   // setup GPS serial ports here

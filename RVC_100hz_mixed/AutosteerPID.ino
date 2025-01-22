@@ -55,6 +55,7 @@ void calcSteeringPID(void)
 
 //#########################################################################################
 
+#ifdef AIOv50d
 void motorDrive(void)
 {
   if (steerConfig.CytronDriver)
@@ -68,8 +69,51 @@ void motorDrive(void)
       pwmDisplay = jdDac.steerOutput(pwmDrive);
       //jdDac.ch4Output(pwmDrive);  // now used by OGX
       DACusage.timeOut();
-    #else    
+    #else
+      // On-board Cytron Driver, PWM1 + PWM2 Signal like IBT2
+      if (pwmDrive > 0) {
+        analogWrite(PWM2_PIN, 0);          //Turn off before other one on
+        analogWrite(PWM1_PIN, pwmDrive);
+      }
+      else {
+        pwmDrive = -1 * pwmDrive;
+        analogWrite(PWM1_PIN, 0);            //Turn off before other one on
+        analogWrite(PWM2_PIN, pwmDrive);
+      }
+      pwmDisplay = pwmDrive;
+    #endif
+  }
+  else {
+    // do nothing, there should be no other motor driver on the AiO v5 Proto
+  }
+}
+#else
+void motorDrive(void)
+{
+  if (steerConfig.CytronDriver)
+  {
+    #ifdef JD_DAC_H
+      // For JD_DAC.h, MCP4728 QUAD DAC steering
+      // scale pwmDrive to DAC output
+      // 0 PWM (no WAS change needed) = 2048 centered DAC output (4096 / 2 to get center voltage)
+      DACusage.timeIn();
+      if (gpsSpeed < (float)steerConfig.MinSpeed / 10.0) pwmDrive = 0;
+      pwmDisplay = jdDac.steerOutput(pwmDrive);
+      //jdDac.ch4Output(pwmDrive);  // now used by OGX
+      DACusage.timeOut();
+    #else
       // Cytron Driver Dir + PWM Signal
+    if (pwmDrive > 0) {
+      analogWrite(SLEEP_PIN, 0);          //Turn off before other one on
+      analogWrite(PWM_PIN, pwmDrive);
+    }
+    else {
+      pwmDrive = -1 * pwmDrive;
+      analogWrite(PWM_PIN, 0);            //Turn off before other one on
+      analogWrite(SLEEP_PIN, pwmDrive);
+    }
+    pwmDisplay = pwmDrive;
+
       if (pwmDrive > 0) {
         digitalWrite(DIR_PIN, HIGH);
       }
@@ -99,3 +143,4 @@ void motorDrive(void)
     pwmDisplay = pwmDrive;
   }
 }
+#endif

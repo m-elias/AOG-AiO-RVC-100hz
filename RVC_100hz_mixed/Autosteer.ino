@@ -121,6 +121,22 @@ void autosteerSetup() {
        122hz = 1
        3921hz = 2
   */
+  #ifdef AIOv50d
+  if (PWM_Frequency == 0) {
+    analogWriteFrequency(PWM1_PIN, 490);
+    analogWriteFrequency(PWM2_PIN, 490);
+    analogWriteFrequency(SLEEP_PIN, 490);
+  } else if (PWM_Frequency == 1) {
+    analogWriteFrequency(PWM1_PIN, 122);
+    analogWriteFrequency(PWM2_PIN, 122);
+    analogWriteFrequency(SLEEP_PIN, 122);
+  } else if (PWM_Frequency == 2) {
+    analogWriteFrequency(PWM1_PIN, 3921);
+    analogWriteFrequency(PWM2_PIN, 3921);
+    analogWriteFrequency(SLEEP_PIN, 3921);
+  }
+  //pinMode(DIR_PIN, OUTPUT);
+  #else
   if (PWM_Frequency == 0) {
     analogWriteFrequency(PWM_PIN, 490);
     analogWriteFrequency(SLEEP_PIN, 490);
@@ -131,8 +147,8 @@ void autosteerSetup() {
     analogWriteFrequency(PWM_PIN, 3921);
     analogWriteFrequency(SLEEP_PIN, 3921);
   }
-
   pinMode(DIR_PIN, OUTPUT);
+  #endif
 
   // keep pulled high and drag low to activate, noise free safe
   pinMode(STEER_PIN, INPUT_PULLUP);
@@ -335,7 +351,7 @@ void autoSteerUpdate() {
 #ifndef JD_DAC_H
     if (adcDebug) Serial.printf("\r\n%6i", millis());
     if (useInternalADC || testBothWasSensors) {
-      steeringPosition = int(float(teensyADC->adc1->analogRead(WAS_SENSOR_PIN)) * 3.23);
+      steeringPosition = int(float(teensyADC->adc1->analogRead(WAS_PIN)) * 3.23);
       if (adcDebug) Serial.printf(" Teensy ADC(x3.23):%5i", steeringPosition);
     }
     int16_t temp = steeringPosition;
@@ -392,14 +408,16 @@ void autoSteerUpdate() {
     if (watchdogTimer < WATCHDOG_THRESHOLD) {
       // Enable H Bridge for IBT2, hyd aux, etc for cytron
       if (steerConfig.CytronDriver) {
-#ifdef JD_DAC_H
-        jdDac.steerEnable(true);  // select IBT2 for JD DAC control
-        //jdDac.ch4Enable(true);
-#else
-        digitalWrite(SLEEP_PIN, steerConfig.IsRelayActiveHigh ? LOW : HIGH);
-#endif
+        #ifdef JD_DAC_H
+          jdDac.steerEnable(true);  // select IBT2 for JD DAC control
+          //jdDac.ch4Enable(true);
+        #else
+          digitalWrite(SLEEP_PIN, steerConfig.IsRelayActiveHigh ? LOW : HIGH);
+        #endif
       } else {
-        digitalWrite(DIR_PIN, 1);
+        #ifndef AIOv50d
+          digitalWrite(DIR_PIN, 1);
+        #endif
       }
 
       calcSteeringPID();  //do the pid
@@ -422,7 +440,9 @@ void autoSteerUpdate() {
         digitalWrite(SLEEP_PIN, steerConfig.IsRelayActiveHigh ? bool(!pwmDrive) : bool(pwmDrive));
 #endif
       } else {
-        digitalWrite(DIR_PIN, 0);  //IBT2
+        #ifndef AIOv50d
+          digitalWrite(DIR_PIN, 0);  //IBT2
+        #endif
       }
 
       motorDrive();  //out to motors the pwm value
@@ -460,15 +480,15 @@ void adcSetup() {
   teensyADC->adc1->setConversionSpeed(ADC_CONVERSION_SPEED::MED_SPEED);
   teensyADC->adc1->setSamplingSpeed(ADC_SAMPLING_SPEED::MED_SPEED);
 
-  // detect input on Teensy WAS_SENSOR_PIN
-  pinMode(WAS_SENSOR_PIN, INPUT_PULLDOWN);
+  // detect input on Teensy WAS_PIN
+  pinMode(WAS_PIN, INPUT_PULLDOWN);
   // delay(5);     // with ide/teensyduino update these delays cause Serial.print to fail in the rest of adsSetup()
-  uint16_t pullDown = teensyADC->adc1->analogRead(WAS_SENSOR_PIN);
-  pinMode(WAS_SENSOR_PIN, INPUT_PULLUP);
+  uint16_t pullDown = teensyADC->adc1->analogRead(WAS_PIN);
+  pinMode(WAS_PIN, INPUT_PULLUP);
   // delay(1);    // previously these delays were needed to allow time for the adc to settle but doesn't seem the case anymore
-  uint16_t pullUp = teensyADC->adc1->analogRead(WAS_SENSOR_PIN);
+  uint16_t pullUp = teensyADC->adc1->analogRead(WAS_PIN);
   uint16_t pullDiff = abs(pullUp - pullDown);
-  pinMode(WAS_SENSOR_PIN, INPUT_DISABLE);  // don't forget to disable the internal resistor !!
+  pinMode(WAS_PIN, INPUT_DISABLE);  // don't forget to disable the internal resistor !!
   Serial.printf("\r\n  - A0 pDn:%4i, pUp:%4i, diff:%4i", pullDown, pullUp, pullDiff);
   // Serial.print((String)"\r\n  - A0 pDn:" + pullDown + ", pUp:" + pullUp + ", diff:" + pullDiff);    // same as above
 
@@ -483,7 +503,7 @@ void adcSetup() {
   }
 
   if (!testBothWasSensors)
-    Serial << "\r\n  - Teensy ADC P" << WAS_SENSOR_PIN << " is unconnected/floating?";
+    Serial << "\r\n  - Teensy ADC P" << WAS_PIN << " is unconnected/floating?";
   Serial.print("\r\n  - checking for I2C ADS1115");
 
   I2C_WIRE.end();
