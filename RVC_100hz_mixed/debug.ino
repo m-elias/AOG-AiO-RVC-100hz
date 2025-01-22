@@ -6,12 +6,14 @@ void checkUSBSerial()
 
     if (usbRead == 'r')
     {
-      Serial.print("\r\n\n* Resetting hi/lo stats *");
+      Serial.print("\r\n\n* Resetting stats *");
       gps1Stats.resetAll();
       gps2Stats.resetAll();
       relJitterStats.resetAll();
       relTtrStats.resetAll();
       bnoStats.resetAll();
+      ggaMissed = 0;
+      ubxParser.relMissed = 0;
     }
     else if (usbRead == 'n')         // output realtime GPS position update data
     {
