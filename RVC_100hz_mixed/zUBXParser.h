@@ -15,6 +15,8 @@ private:
     GOT_CHKA
   } state_t;
 
+  String carrierSolutionText[3] = {"none", "float", "fixed"};
+
   state_t state;
   int msgclass;
   int msgid;
@@ -152,13 +154,6 @@ private:
 
     ubxData.baseRelFlags = relPosFlags;
 
-    if (debug) {
-      Serial.print("\r\n"); Serial.print(millis());
-      Serial.printf(" REL update (%i)", relMissed);
-      Serial.print(millis() - prevRelposnedMsgTime);
-      Serial.print(" "); Serial.print((ubxData.iTOW % 1000) / 10);
-      Serial.print(" "); Serial.print(ubxData.baseRelH, 2);
-    }
     msgPeriod = millis() - prevRelposnedMsgTime;
     prevRelposnedMsgTime = millis();
     relPosTimer = 0;
@@ -171,11 +166,24 @@ private:
     bool diffSoln = ubxData.baseRelFlags & 2;
     bool relPosValid = ubxData.baseRelFlags & 4;
     ubxData.carrSoln = (ubxData.baseRelFlags & 24) >> 3;
+
+    // these aren't used/updated by F9P?
     /*bool isMoving = ubxData.baseRelFlags & (32);
     bool refPosMiss = ubxData.baseRelFlags & (64);
     bool refObsMiss = ubxData.baseRelFlags & (128);
     bool refPosHeadingValid = ubxData.baseRelFlags & (256);
     bool relPosNormalized = ubxData.baseRelFlags & (512);*/
+
+    if (debug) {
+      Serial.print("\r\n"); Serial.print(millis());
+      Serial.printf(" REL update (%i)", relMissed);
+      Serial.print(msgPeriod);
+      Serial.print(" "); Serial.print((ubxData.iTOW % 1000) / 10);
+      Serial.print(" "); Serial.print(ubxData.baseRelH, 2);
+      Serial.print(" "); Serial.print(" crSoln: "); Serial.print(ubxData.carrSoln);
+      Serial.print("-"); Serial.print(carrierSolutionText[ubxData.carrSoln]);
+      
+    }
 
     /*Serial.print("\r\ngnssFixOk: "); Serial.print(gnssFixOk);
     Serial.print("\r\ndiffSoln: "); Serial.print(diffSoln);
@@ -206,7 +214,7 @@ private:
 
     static double relRollOld;
     if (debug) {
-      Serial.print(" "); Serial.print(ubxData.baseRelRoll, 2);
+      Serial.print(" "); Serial.println(ubxData.baseRelRoll, 2);
       if (ubxData.baseRelRoll <= relRollOld - 0.5 || ubxData.baseRelRoll >= relRollOld + 0.5) {
         Serial.printf("\r\n\n******************* ROLL JUMP %6.2f -> %6.2f ************************\r\n\n", relRollOld, ubxData.baseRelRoll);
       }
