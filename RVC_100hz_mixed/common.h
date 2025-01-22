@@ -4,10 +4,6 @@
 #include <Streaming.h>
 #include "zADS1115.h"
 
-//#include "LEDS_old.h"
-//LEDS LEDs = LEDS(1000, 255, 64, 127);   // 1000ms RGB update, 255/64/127 RGB brightness balance levels for v5.0a
-#include "LEDS.h"
-LEDS LEDs = LEDS(1000, 255, 64, 127);   // 1000ms RGB update, 255/64/127 RGB brightness balance levels for v5.0a
 
 ProcessorUsage BNOusage           ((char*)"BNO   ");
 ProcessorUsage GPS1usage          ((char*)"GPS1  ");

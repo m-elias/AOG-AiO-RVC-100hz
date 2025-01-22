@@ -30,6 +30,9 @@
 #define AIOv50a
 const char inoVersion[] = "AiO v5.0[a-c] OGX - " __DATE__;
 
+#include "LEDS_old.h"
+LEDS LEDs = LEDS(1000, 255, 64, 127);   // 1000ms RGB update, 255/64/127 RGB brightness balance levels for v5.0a
+
 // ********* IO Defines *********
 #define WAS_PIN         A15  // WAS input
 

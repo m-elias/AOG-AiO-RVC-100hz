@@ -1,5 +1,3 @@
-#include <Adafruit_PWMServoDriver.h>
-
 /*
   This is a library written for AgOpenGPS AIO PCBs with RGB faceplate LEDs
   - written by Matt Elias, 2024

@@ -30,6 +30,12 @@
 #define AIOv50d
 const char inoVersion[] = "AiO v5.0d OGX - " __DATE__;
 
+#include "LEDS.h"
+LEDS LEDs = LEDS(1000, 255, 64, 127);   // 1000ms RGB update, 255/64/127 RGB brightness balance levels for v5.0a
+
+// for enabling & controlling AUX, LOCK & Section/Machine outputs
+#include "Adafruit_PWMServoDriver.h" // https://github.com/adafruit/Adafruit-PWM-Servo-Driver-Library
+
 // ********* IO Defines *********
 #define WAS_PIN         A15  // WAS input
 

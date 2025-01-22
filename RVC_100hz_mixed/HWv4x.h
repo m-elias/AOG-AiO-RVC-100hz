@@ -29,6 +29,10 @@
 #define AIOv4x
 const char inoVersion[] = "AiO v4.x OGX - " __DATE__;
 
+#include "LEDS_old.h"
+LEDS LEDs = LEDS(1000, 255, 64, 127);   // 1000ms RGB update, 255/64/127 RGB brightness balance levels for v5.0a
+                                        // v4.x PCB uses bi-color LEDs
+
 // ********* IO Defines *********
 #define WAS_PIN          A0      // WAS input
 #define SPEEDPULSE_PIN   36
