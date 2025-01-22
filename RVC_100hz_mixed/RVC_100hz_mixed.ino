@@ -76,7 +76,9 @@ void loop()
   if (SerialRTK.available()) {              // Check for RTK Radio RTCM data
     uint8_t rtcmByte = SerialRTK.read();
     if (!USB1DTR) SerialGPS1.write(rtcmByte);    // send to GPS1
-    if (!USB2DTR) SerialGPS2.write(rtcmByte);    // send to GPS2
+    #ifdef OGX_H
+      if (!USB2DTR) SerialGPS2.write(rtcmByte);    // send to GPS2
+    #endif
     LEDs.queueBlueFlash(LED_ID::GPS);
   }
 
