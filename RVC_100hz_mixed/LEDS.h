@@ -299,11 +299,11 @@ public:
     intensity = (intensity * mainBrightness) / MAX_LED_BRIGHTNESS;
     ledDriver.setPin(pinAssingments[led][0], intensity, LED_INVERT);
 
-    intensity = R * MAX_LED_PWM / MAX_LED_BRIGHTNESS;
+    intensity = G * MAX_LED_PWM / MAX_LED_BRIGHTNESS;
     intensity = (intensity * mainBrightness) / MAX_LED_BRIGHTNESS;
     ledDriver.setPin(pinAssingments[led][1], intensity, LED_INVERT);
 
-    intensity = R * MAX_LED_PWM / MAX_LED_BRIGHTNESS;
+    intensity = B * MAX_LED_PWM / MAX_LED_BRIGHTNESS;
     intensity = (intensity * mainBrightness) / MAX_LED_BRIGHTNESS;
     ledDriver.setPin(pinAssingments[led][2], intensity, LED_INVERT);
   }
