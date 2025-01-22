@@ -113,7 +113,7 @@ void checkForPGNs()
 
   // changed to multiple IF statements instead of IF ELSE so that AgIO Hello and Scan Request PGNs can be pickedup by other object/classes (ie machine)
 
-  if (udpData[3] == 100 && len == 22)  // 0x64 (100) - Corrected Position
+  if (udpData[3] == 100 && len == 30)  // 0x64 (100) - Corrected Position
   {
     //printPgnAnnoucement(udpData[3], (char*)"Corrected Position", len);
     
@@ -134,6 +134,7 @@ void checkForPGNs()
 
     //buildNMEA(lat.number, lon.number);
 
+    pgnMatched = true;
     return;                    // no other processing needed
   }
 
