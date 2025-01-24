@@ -52,7 +52,7 @@ Encoder encoder(KICKOUT_D_PIN, KICKOUT_A_PIN);    // read single or double input
 ADC* teensyADC = new ADC();                        // 16x oversampling medium speed 12 bit A/D object (set in Autosteer.ino)
 ADS1115_lite ads1115(ADS1115_DEFAULT_ADDRESS);     // Use this for the 16-bit version ADS1115
 const int16_t ANALOG_TRIG_THRES = 100;
-const uint8_t ANALOG_TRIG_HYST = 10;
+const uint8_t ANALOG_TRIG_HYST = 5;
 
 #include "BNO_RVC.h"
 BNO_RVC BNO;                                            // Roomba Vac mode for BNO085
