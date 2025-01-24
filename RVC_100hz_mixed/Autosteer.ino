@@ -327,19 +327,19 @@ void autoSteerUpdate() {
     }
 
 #ifdef AIOv5
-    uint8_t read = analogRead(WORK_PIN) > ANALOG_TRIG_THRES ? HIGH : LOW;  // read work input
+    uint8_t read = analogRead(WORK_PIN) > ANALOG_TRIG_THRES + ANALOG_TRIG_HYST ? LOW : HIGH;  // read work input
 #else
-    uint8_t read = digitalRead(WORK_PIN);
+    uint8_t read = !digitalRead(WORK_PIN);
 #endif
     if (read != workInput) {
-      Serial.printf("\r\nWORK input: %s", (read == 1 ? "OFF" : "ON"));
+      Serial.printf("\r\nWORK input(%i): %s", read, (read == 1 ? "ON" : "OFF"));
       workInput = read;
     }
 
     switchByte = 0;
     switchByte |= (kickoutInput << 2);  // put remote in bit 2
     switchByte |= (!steerState << 1);   // put steerInput status in bit 1 position
-    switchByte |= workInput;
+    switchByte |= !workInput;           // AOG logic is inverted
 
     // Serial << " <> " << digitalRead(KICKOUT_D_PIN) << ":" << digitalRead(KICKOUT_A_PIN) << ":" << analogRead(CURRENT_PIN);
     // Serial << "\r\npsr:" << prevSteerReading << " ss:" << steerState << " gs:" << guidanceStatus << " gsc:" << guidanceStatusChanged;
@@ -456,6 +456,8 @@ void autoSteerUpdate() {
 
     //Serial.print(", loop run time: "); Serial.print(micros() - autsteerStartTimeuS); Serial.print("uS, ");
   }
+
+  digitalWrite(SLEEP_PIN, HIGH);
 
   ASusage.timeOut();
 }  // end of autoSteerLoop
