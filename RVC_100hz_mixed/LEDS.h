@@ -119,9 +119,10 @@ public:
   void init() {
     pinMode(GGA_LED, OUTPUT);
     ledDriver.begin();
+    Wire.setClock(1000000);
     //ledDriver.setOscillatorFrequency(27000000);
     ledDriver.setPWMFreq(120); // 120 hz should be enough to not notice, but increase if flickering
-    ledDriver.setOutputMode(false);
+    ledDriver.setOutputMode(false); // false: open drain, true: totempole (push/pull)
     allLedOff();
     updateLoop();
   }
