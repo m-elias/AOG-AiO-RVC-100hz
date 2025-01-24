@@ -178,9 +178,9 @@ private:
   float speed;
 
 public:
-  SpeedPulse(int8_t _output_pin, int8_t _led_pin = -1) {
-    outputPin = _output_pin;
-    ledPin = _led_pin;
+  SpeedPulse(int8_t _outputPin, int8_t _ledPin = -1) {
+    outputPin = _outputPin;
+    ledPin = _ledPin;
     pinMode(outputPin, OUTPUT);
     if (ledPin > -1) pinMode(ledPin, OUTPUT);
   }
@@ -188,7 +188,7 @@ public:
 
   void update() {
     if (speedTimeoutTimer < 1000) {
-      if (pulseUpdateTimer > 200)  // 100 (10hz) seems to cause tone lock ups occasionally
+      if (pulseUpdateTimer > 200)  // 200 (5hz) seems to cause tone lock ups occasionally
       {
         pulseUpdateTimer = 0;
 
@@ -207,9 +207,9 @@ public:
           speedPulse = map(speed, 0.0, 15.0, 1.8, 40.0);  // map 0-15 km/hr to 1.8-40hz
           //Serial << "\r\nspeed:" << speed << " speedPulse:" << speedPulse;
           if (speedPulse > 2.000) {  // less then 2 hz (0.55 km/hr) doesn't work well with tone()
-            tone(ledPin, uint16_t(speedPulse));
+            //tone(ledPin, uint16_t(speedPulse));
           } else {
-            noTone(ledPin);
+            //noTone(ledPin);
           }
         }
       }
