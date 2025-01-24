@@ -27,22 +27,19 @@ const uint8_t encoderType = 1;  // 1 - single input
 
 void setup()
 {
-  LEDs.init();
   //Serial.begin(115200);                   // Teensy doesn't need it
   Serial.print("\r\n\n\n*********************\r\nStarting setup...\r\n");
   Serial.print(inoVersion);
+  setCpuFrequency(600 * 1000000);           // Set CPU speed, default is 600mhz, 150mhz still seems fast enough, setup.ino
+
+  outputsInit();
+
+  LEDs.init();
   LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::PWR_ON);
 
-  setCpuFrequency(600 * 1000000);           // Set CPU speed, default is 600mhz, 150mhz still seems fast enough, setup.ino
   serialSetup();                            // setup.ino
   parserSetup();                            // setup.ino
   BNO.begin(SerialIMU);                     // BNO_RVC.cpp
-
-  // v5 has machine outputs, v4 fails outputs.begin so machine is also not init'd
-  if (outputs.begin(I2C_WIRE)) {            // clsPCA9555.cpp
-    Serial.print("\r\nSection outputs (PCA9555) detected (8 channels, low side switching)");
-    machine.init(&outputs, pcaOutputPinNumbers, pcaInputPinNumbers, 100); // mach.h
-  }
 
   if (UDP.init())                           // Eth_UDP.h
     LEDs.set(LED_ID::PWR_ETH, PWR_ETH_STATE::ETH_READY);
@@ -54,6 +51,8 @@ void setup()
   #ifdef OGX_H
     OGX_Setup();
   #endif
+
+  //outputsStart();
 
   Serial.print("\r\n\nEnd of setup, waiting for GPS...\r\n"); 
 

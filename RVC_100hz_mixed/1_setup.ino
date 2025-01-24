@@ -56,7 +56,6 @@ void parserSetup()
 
 void resetStartingTimersBuffers()
 {
-  //machine.watchdogTimer = 0;
   if (BNO.isActive) while (!BNO.read(true));
   SerialGPS1.clear();
   SerialGPS2.clear();

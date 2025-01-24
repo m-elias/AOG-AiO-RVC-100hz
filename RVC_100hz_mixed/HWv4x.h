@@ -33,6 +33,17 @@ const char inoVersion[] = "AiO v4.x OGX - " __DATE__;
 LEDS LEDs = LEDS(1000, 255, 64, 127);   // 1000ms RGB update, 255/64/127 RGB brightness balance levels for v5.0a
                                         // v4.x PCB uses bi-color LEDs
 
+#define I2C_WIRE Wire1  // used for ADS1115 wheel angle sensor
+
+// not present on v4.x but used to simply code
+#include "clsPCA9555.h" // https://github.com/nicoverduin/PCA9555
+PCA9555 outputs(0x20);
+#include "outputs.h"
+#include "machine.h"
+MACHINE machine;      // also used for v4 as it suppresses machine PGN debug messages
+//const uint8_t pcaOutputPinNumbers[8] = { 1, 0, 12, 15, 9, 8, 6, 7 };    // all 8 PCA9555 section/machine output pin numbers on v5.0a
+//const uint8_t pcaInputPinNumbers[]  = { 14, 13, 11, 10, 2, 3, 4, 5 };   // all 8 PCA9555 section/machine output "sensing" pin numbers on v5.0a
+
 // ********* IO Defines *********
 #define WAS_PIN          A0      // WAS input
 #define SPEEDPULSE_PIN   36
@@ -51,7 +62,7 @@ SpeedPulse speedPulse(SPEEDPULSE_PIN);     // misc.h
 #define CURRENT_PIN     A17     // ACS CURRENT input from Cytron module
 #define KICKOUT_A_PIN   A10     // PRESSURE input
 
-#define I2C_WIRE Wire1          // used for ADS1115 wheel angle sensor
+
 
 // ********* Serial Assignments *********
 HardwareSerial* SerialIMU = &Serial5;   // IMU BNO-085 in RVC serial mode

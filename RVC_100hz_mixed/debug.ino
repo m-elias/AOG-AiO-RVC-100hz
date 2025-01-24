@@ -67,6 +67,121 @@ void checkUSBSerial()
         Serial.print("\r\nSetting RGB brightness: "); Serial.print((usbRead - '0') * 50);
       }
     }
+
+    else if (usbRead == '1')      // drv9243 testing, cycle LOCK through sleep, standby, active
+    {
+      uint32_t t1 = micros();
+      static uint8_t state = 0; // sleep
+      if (state == 0){
+        Serial << "\r\nLOCK is in Sleep mode, sending wake signal";
+        outputs.setPin(15, 0, 1); // sets PCA9685 pin HIGH 5V, init Wake, after 1ms should be in Standby
+        state = 1;
+      } else if (state == 1){
+        Serial << "\r\nLOCK is in Standby mode, waiting for reset, sending reset pulse";
+        outputs.setPin(15, 237, 1);  // Sleep reset pulse
+        state = 2;
+      } else if (state ==2) {
+        Serial << "\r\nLOCK is in Active mode, issuing Sleep signal";
+        outputs.setPin(15, 0, 0); // sets PCA9685 pin LOW 0V, Deep Sleep
+        state = 0;
+      }
+      uint32_t t2 = micros();
+      Serial << "\r\nLOCK " << t2 - t1 << "uS";
+    }
+
+    else if (usbRead == '2')      // drv9243 testing, cycle AUX through sleep, standby, active
+    {
+      uint32_t t1 = micros();
+      static uint8_t state = 0; // sleep
+      if (state == 0){
+        Serial << "\r\nAUX is in Sleep mode, sending wake signal";
+        outputs.setPin(14, 0, 1); // sets PCA9685 pin HIGH 5V, init Wake, after 1ms should be in Standby
+        state = 1;
+      } else if (state == 1){
+        Serial << "\r\nAUX is in Standby mode, waiting for reset, sending reset pulse";
+        outputs.setPin(14, 237, 1);  // Sleep reset pulse
+        state = 2;
+      } else if (state ==2) {
+        Serial << "\r\nAUX is in Active mode, issuing Sleep signal";
+        outputs.setPin(14, 0, 0); // sets PCA9685 pin LOW 0V, Deep Sleep
+        state = 0;
+      }
+      uint32_t t2 = micros();
+      Serial << "\r\nAUX " << t2 - t1 << "uS";
+    }
+
+    else if (usbRead == '5')      // drv9243 testing, Sleep all DRVs (no LEDs)
+    {
+      for (uint8_t drvNum = 0; drvNum < drvCnt; drvNum++){
+        outputs.setPin(drvSleepPinAssignments[drvNum], 0, 0);
+      }
+    }
+
+    else if (usbRead == '6')      // drv9243 testing, Standby all DRVs (red LEDs on LOCK & AUX)
+    {
+      for (uint8_t drvNum = 0; drvNum < drvCnt; drvNum++){
+        outputs.setPin(drvSleepPinAssignments[drvNum], 0, 1); // sets PCA9685 pin HIGH 5V, initiate wake-up -> Standby state
+      }
+    }
+
+    else if (usbRead == '7')      // drv9243 testing, Active both all DRVs, AUX green LED, the others white LED if output is active
+    {
+      for (uint8_t drvNum = 0; drvNum < drvCnt; drvNum++){
+        outputs.setPin(drvSleepPinAssignments[drvNum], 187, 1);  // Sleep reset pulse
+      }
+    }
+
+    else if (usbRead == '8')      // drv9243, sleep, wake, activate all DRVs
+    {
+      for (uint8_t drvNum = 0; drvNum < drvCnt; drvNum++){
+        outputs.setPin(drvSleepPinAssignments[drvNum], 0, 0); // sets PCA9685 pin LOW 0V, put DRVs to sleep
+      }
+      delayMicroseconds(150);  // wait max tSLEEP (120uS) for Sleep mode
+
+      // this isn't necessary
+      /*for (uint8_t drvNum = 0; drvNum < drvCnt; drvNum++){
+        outputs.setPin(drvSleepPinAssignments[drvNum], 0, 1); // sets PCA9685 pin HIGH 5V, initiate wake-up -> Standby state
+      }
+      delayMicroseconds(1000);  // wait tREADY (1000uS) for Standby
+      */
+
+      for (uint8_t drvNum = 0; drvNum < drvCnt; drvNum++){
+        outputs.setPin(drvSleepPinAssignments[drvNum], 187, 1); // LOW pulse, 187/4096 is 30uS at 1532hz, send nSLEEP reset pulse
+      }
+      delayMicroseconds(1000);  // wait tREADY (1000uS) for Standby
+      // doesn't seem necessary to wait 500uS to set all nSLEEP lines HIGH, just leave them pulsing the Reset pulse
+      // This follow setPin isn't needed then either
+      /*for (uint8_t drvNum = 0; drvNum < drvCnt; drvNum++){
+        outputs.setPin(drvSleepPinAssignments[drvNum], 0, 1); // sets PCA9685 pin HIGH 5V, initiate wake-up -> Standby state
+      }*/
+
+
+      /*(for (uint8_t drvNum = 0; drvNum < drvCnt; drvNum++){
+        outputs.setPin(drvSleepPinAssignments[drvNum], 0, 1); // sets PCA9685 pin HIGH 5V, hold nSLEEP HIGh to maintain Active state
+      }*/
+    }
+
+    else if (usbRead == '9')      // drv9243 searching
+    {
+      Wire.beginTransmission(0x44);
+      Serial.print("\r\n  - Section DRV8243 ");
+      if (Wire.endTransmission() == 0)
+        Serial.print("found");
+      else
+        Serial.print("*NOT found!*");
+
+      Wire.beginTransmission(0x70);
+      Serial.print("\r\n  - RGB DRV8243 ");
+      if (Wire.endTransmission() == 0)
+        Serial.print("found");
+      else
+        Serial.print("*NOT found!*");
+    }
+
+    else if (usbRead == '0')      // Sections drv9243 reset
+    {
+      //outputs.reset();
+    }
     else if (usbRead == 13 || usbRead == 10)      // ignore CR or LF
     {
       // do nothing
