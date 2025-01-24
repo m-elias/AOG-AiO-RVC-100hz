@@ -1,7 +1,7 @@
 void setCpuFrequency(uint32_t _freq)
 {
   set_arm_clock(_freq);
-  Serial.printf("\r\n\nCPU speed set to: %i MHz", F_CPU_ACTUAL / 1000000);
+  Serial.printf("\r\nCPU speed set to: %i MHz\r\n", F_CPU_ACTUAL / 1000000);
 	delay(10);  // ?
 }
 

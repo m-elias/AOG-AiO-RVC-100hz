@@ -48,6 +48,7 @@ public:
     serial_dev = theSerial;
     serial_dev->begin(115200);  // This is the baud rate specified by the BNO datasheet for serial RVC
     elapsedMillis timeout = 0;
+    Serial.print("\r\n\nChecking for BNO-085 IMU in RVC mode");
     while (!read())   // wait/check for BNO RVC serial data
     {
       if (timeout > 25)   // data should arrive every 10ms

@@ -55,9 +55,11 @@ void setup()
     OGX_Setup();
   #endif
 
-  Serial.println("\r\n\nEnd of setup, waiting for GPS...\r\n"); 
-  delay(1);
+  Serial.print("\r\n\nEnd of setup, waiting for GPS...\r\n"); 
+
   resetStartingTimersBuffers();             // setup.ino
+
+  Serial.print(millis()); Serial.print("ms boot time\r\n");
 }
 
 void loop()
