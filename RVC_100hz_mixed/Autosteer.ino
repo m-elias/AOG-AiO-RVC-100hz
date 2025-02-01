@@ -327,9 +327,9 @@ void autoSteerUpdate() {
     }
 
 #ifdef AIOv5
-    uint8_t read = analogRead(WORK_PIN) > ANALOG_TRIG_THRES + ANALOG_TRIG_HYST ? LOW : HIGH;  // read work input
+    uint16_t read = analogRead(WORK_PIN) > ANALOG_TRIG_THRES + ANALOG_TRIG_HYST ? LOW : HIGH;  // read work input
 #else
-    uint8_t read = !digitalRead(WORK_PIN);
+    uint16_t read = !digitalRead(WORK_PIN);
 #endif
     if (read != workInput) {
       Serial.printf("\r\nWORK input(%i): %s", read, (read == 1 ? "ON" : "OFF"));
