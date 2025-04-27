@@ -124,7 +124,7 @@ void checkUSBSerial()
       }
     }
 
-    else if (usbRead == '7')      // drv9243 testing, Active both all DRVs, AUX green LED, the others white LED if output is active
+    else if (usbRead == '7')      // drv9243 testing, Active all DRVs, AUX green LED, the others white LED if output is active
     {
       for (uint8_t drvNum = 0; drvNum < drvCnt; drvNum++){
         outputs.setPin(drvSleepPinAssignments[drvNum], 187, 1);  // Sleep reset pulse
