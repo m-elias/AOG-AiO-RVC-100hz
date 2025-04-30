@@ -414,7 +414,7 @@ void checkForPGNs()
     //udpData[10] is XTE (cross track error)
     //udpData[11 & 12] is section 1-16
 
-    if ((bitRead(guidanceStatus, 0) == 0) || (steerState == 0)) { // || (gpsSpeed < 0.1)) {
+    if ((bitRead(guidanceStatus, 0) == 0) || (steerState == 1)) { // || (gpsSpeed < 0.1)) {
       watchdogTimer = WATCHDOG_FORCE_VALUE;  //turn off steering motor
       //Serial.print(" OFF");
     } else {                                 //valid conditions to turn on autosteer

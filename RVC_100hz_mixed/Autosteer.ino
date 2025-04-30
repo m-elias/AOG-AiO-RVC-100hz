@@ -184,28 +184,63 @@ void autoSteerUpdate() {
   if (autoSteerUpdateTimer > 9) {  // update AS loop every 10ms (100hz)
     autoSteerUpdateTimer -= 10;    // or = 0?
 
+    // 1 PCB Button pressed?
+    uint8_t reading = digitalRead(STEER_PIN);
+
+    if (steerConfig.SteerSwitch == 1) {
+      // Switch is off so reset ready for next switch on
+      if (reading == HIGH) {
+        steerState = 1;
+        prevSteerReading = reading;
+      }
+    }
+
+    // 2 Has tablet button been pressed?
+    if (guidanceStatusChanged) {
+      if (guidanceStatus == 1) {  //Must have changed Off >> On
+        steerState = 0;
+      }
+    }
+
+    // If AOG has stopped steering, wait then turn off steerswitch ready for next engage.
+    static int switchCounter = 0;
+
+    if (steerState == 0 && guidanceStatus == 0) {
+      if (switchCounter++ > 30) {
+        steerState = 1;
+      }
+    } else {
+      switchCounter = 0;
+    }
+
+    // Arduino software button code
+    if (reading == LOW && prevSteerReading == HIGH) {
+      steerState = !steerState;
+    }
+    prevSteerReading = reading;
+
 
     // ******************************* Steer Switch/Button *******************************
     // Steer input logic all setup so that '1' (HIGH) is ON, and '0' (LOW) is OFF
-    steerReading = !digitalRead(STEER_PIN);  // read steer input switch/button, invert reading to match On/Off logic
+    /*steerReading = !digitalRead(STEER_PIN);  // read steer input switch/button, invert reading to match On/Off logic
     // steerReading = analogRead(KICKOUT_A_PIN) > ANALOG_TRIG_THRES ? LOW : HIGH;
 
     if (steerConfig.SteerSwitch == 1)  // steer "Switch" mode (on - off)
     {
       // new code for steer "Switch" mode that keeps AutoSteer OFF after current/pressure kickout until switch is cycled
-      if (steerReading == LOW) {    // switching OFF
-        steerState = steerReading;  // set OFF
+      if (steerReading == LOW) {  // switching OFF
+        steerState = LOW;         // set OFF
         if (prevSteerReading != steerState) {
-          char msg[] = "AutoSteer Switch OFF";
-          char msgTime = 2;
-          UDP.SendUdpFreeForm(1, msg, strlen(msg), msgTime, UDP.broadcastIP, UDP.portAgIO_9999);
+          //char msg[] = "AutoSteer Switch OFF";
+          //char msgTime = 2;
+          //UDP.SendUdpFreeForm(1, msg, strlen(msg), msgTime, UDP.broadcastIP, UDP.portAgIO_9999);
           LEDs.activateBlueFlash(LED_ID::STEER);
         }
       } else if (steerReading == HIGH && prevSteerReading == LOW) {  // switch ON after prev being OFF
-        steerState = steerReading;                                   // set ON
-        char msg[] = "AutoSteer Switch ON";
-        char msgTime = 2;
-        UDP.SendUdpFreeForm(1, msg, strlen(msg), msgTime, UDP.broadcastIP, UDP.portAgIO_9999);
+        steerState = HIGH;                                           // set ON
+        //char msg[] = "AutoSteer Switch ON";
+        //char msgTime = 2;
+        //UDP.SendUdpFreeForm(1, msg, strlen(msg), msgTime, UDP.broadcastIP, UDP.portAgIO_9999);
         LEDs.activateBlueFlash(LED_ID::STEER);
       }
       prevSteerReading = steerReading;
@@ -216,11 +251,11 @@ void autoSteerUpdate() {
       if (steerReading == HIGH && prevSteerReading == LOW) {  // button is pressed
         steerState = !steerState;
         LEDs.activateBlueFlash(LED_ID::STEER);
-        char* msg;
-        if (steerState) msg = (char*)"AutoSteer Btn ON";
-        else msg = (char*)"AutoSteer Btn OFF";
-        char msgTime = 2;
-        UDP.SendUdpFreeForm(1, msg, strlen(msg), msgTime, UDP.broadcastIP, UDP.portAgIO_9999);
+        //char* msg;
+        //if (steerState) msg = (char*)"AutoSteer Btn ON";
+        //else msg = (char*)"AutoSteer Btn OFF";
+        //char msgTime = 2;
+        //UDP.SendUdpFreeForm(1, msg, strlen(msg), msgTime, UDP.broadcastIP, UDP.portAgIO_9999);
       }
       prevSteerReading = steerReading;  // get ready to detect next press
 
@@ -244,7 +279,7 @@ void autoSteerUpdate() {
         // prevSteerReading = !steerState;
         LEDs.activateBlueFlash(LED_ID::STEER);
       }
-    }
+    }*/
 
 
 
@@ -322,7 +357,7 @@ void autoSteerUpdate() {
 
     switchByte = 0;
     switchByte |= (kickoutInput << 2);  // put remote in bit 2
-    switchByte |= (!steerState << 1);   // put steerInput status in bit 1 position
+    switchByte |= (steerState << 1);   // put steerInput status in bit 1 position
     switchByte |= workInput;
 
     // Serial << " <> " << digitalRead(KICKOUT_D_PIN) << ":" << digitalRead(KICKOUT_A_PIN) << ":" << analogRead(CURRENT_PIN);
@@ -386,7 +421,10 @@ void autoSteerUpdate() {
     //}
 
     // If connection lost to AgOpenGPS, the watchdog will count up and turn off steering
-    if (watchdogTimer++ > 250) watchdogTimer = WATCHDOG_FORCE_VALUE;
+    if (watchdogTimer++ > 250) {
+      watchdogTimer = WATCHDOG_FORCE_VALUE;
+      steerState = 1; // reset values like it turned off
+    }
 
     //Serial.print("\r\nAS wd: "); Serial.print(watchdogTimer);
     if (watchdogTimer < WATCHDOG_THRESHOLD) {
@@ -394,7 +432,6 @@ void autoSteerUpdate() {
       if (steerConfig.CytronDriver) {
 #ifdef JD_DAC_H
         jdDac.steerEnable(true);  // select IBT2 for JD DAC control
-        //jdDac.ch4Enable(true);
 #else
         digitalWrite(SLEEP_PIN, steerConfig.IsRelayActiveHigh ? LOW : HIGH);
 #endif
