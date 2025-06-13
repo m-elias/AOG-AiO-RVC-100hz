@@ -1,5 +1,7 @@
 /*
 
+see "read flow sensor" section in Autosteer.ino
+
 Started Feb 2024 - Matt Elias
 Updated Apr 2024
 
