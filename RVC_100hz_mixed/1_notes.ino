@@ -1,6 +1,10 @@
 /*
 
 see "read flow sensor" section in Autosteer.ino
+- reading flow sensor with encoder input
+- calibrating flow value according to user bytes 0 & 1
+- uses virtual "work switch" for mapping based on flow sensor
+- uses modified AgOpenGPS to display flow units per acre
 
 Started Feb 2024 - Matt Elias
 Updated Apr 2024
