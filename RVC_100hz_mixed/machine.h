@@ -37,29 +37,6 @@ private:
   #define EE_IDENT 11                             // change to force EE to reset to defaults
   bool eeLoadedAtStartup;
 
-  struct Config {
-    uint8_t raiseTime = 2;
-    uint8_t lowerTime = 4;
-    uint8_t hydLiftEnable = false;
-    uint8_t isPinActiveHigh = 0;          // if zero, active low (default)
-  
-    uint8_t user1;                        //user defined values set in machine tab
-    uint8_t user2;
-    uint8_t user3;
-    uint8_t user4;
-
-    uint8_t pinFunction[1 + 24] = { 0,1,2,3,4,5,6,7,8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
-  };  Config config;   // 33 bytes
-  /* pin function numbers as below, assigned to pinFunction[]
-  1-16   Section 1-16
-  17,18  Hyd Up, Hyd Down,
-  19,20  Tramline Right, Left
-  21     Geo Stop  */
-
-  // 24 is max, function selectable, pins currently supported in AoG
-  // all the '1 +' are to eliminate 0 indexing so that outputPinNumber[1] is pin 1 (the first pin)
-  // all variables store states as 1 - ON & 0 - OFF and outputs are inverted according to isPinActiveHigh only at digitalWrite
-
   uint8_t numOutputPins = 0;                      // 0 defaults to no direct Arduino pin control
   const uint8_t maxOutputPins = 24;               // 24 pins can be configured in AoG (Machine Pin Config PGN), 64 sections currently the max supported by AoG
   uint8_t* outputPinNumbers;                      // store Arduino output pin numbers
@@ -100,6 +77,29 @@ public:
 
   bool isInit;
   elapsedMillis watchdogTimer;
+
+  struct Config {
+    uint8_t raiseTime = 2;
+    uint8_t lowerTime = 4;
+    uint8_t hydLiftEnable = false;
+    uint8_t isPinActiveHigh = 0;          // if zero, active low (default)
+  
+    uint8_t user1;                        //user defined values set in machine tab
+    uint8_t user2;
+    uint8_t user3;
+    uint8_t user4;
+
+    uint8_t pinFunction[1 + 24] = { 0,1,2,3,4,5,6,7,8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
+  };  Config config;   // 33 bytes
+  /* pin function numbers as below, assigned to pinFunction[]
+  1-16   Section 1-16
+  17,18  Hyd Up, Hyd Down,
+  19,20  Tramline Right, Left
+  21     Geo Stop  */
+
+  // 24 is max, function selectable, pins currently supported in AoG
+  // all the '1 +' are to eliminate 0 indexing so that outputPinNumber[1] is pin 1 (the first pin)
+  // all variables store states as 1 - ON & 0 - OFF and outputs are inverted according to isPinActiveHigh only at digitalWrite
 
   uint8_t debugLevel = 0;
     // 0 - debug prints OFF

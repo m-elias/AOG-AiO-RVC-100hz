@@ -28,7 +28,7 @@
 
 #define AIOv5
 #define AIOv50a
-const char inoVersion[] = "AiO v5.0[a-c] OGX - " __DATE__;
+const char inoVersion[] = "AiO v5.0[a-c]";
 
 // ********* IO Defines *********
 const uint8_t WAS_SENSOR_PIN   = A15;  // WAS input

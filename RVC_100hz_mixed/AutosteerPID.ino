@@ -19,13 +19,16 @@ void calcSteeringPID(void)
   //Serial.print(" ");
   //Serial.print(pwmDrive);
 
-  int16_t newHighPWM = 0;
+  int16_t newHighPWM = steerSettings.highPWM;
 
   // from 0-3 deg error, scale newHighPWM from lowPWM(minPWM*1.2)-highPWM
   if (errorAbs < LOW_HIGH_DEGREES) {  
-    newHighPWM = (errorAbs * highLowPerDeg) + steerSettings.lowPWM;
+    //newHighPWM = (errorAbs * highLowPerDeg) + steerSettings.lowPWM; // lowPWM is 1.2x minPWM, hardcoded in AOG
+    newHighPWM = (errorAbs * ((float)(steerSettings.highPWM - machine.config.user1)) / LOW_HIGH_DEGREES)
+      + machine.config.user1;
+    
   }
-  else newHighPWM = steerSettings.highPWM;
+  //else newHighPWM = steerSettings.highPWM;
 
   //limit the pwm drive
   // causes oscillation in pwmDrive

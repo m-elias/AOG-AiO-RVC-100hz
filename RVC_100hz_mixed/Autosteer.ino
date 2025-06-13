@@ -346,7 +346,13 @@ void autoSteerUpdate() {
     }
 
 #ifdef AIOv5
-    uint8_t read = analogRead(WORK_PIN) > ANALOG_TRIG_THRES ? HIGH : LOW;  // read work input
+    //uint8_t read = analogRead(WORK_PIN) > ANALOG_TRIG_THRES ? HIGH : LOW;  // read work input
+    uint8_t read = 1;
+    if (digitalRead(WORK_PIN) == 0) {
+      while (!digitalRead(WORK_PIN) == 0) {}
+      jdDac.centerDac();
+    }
+
 #else
     uint8_t read = digitalRead(WORK_PIN);
 #endif
