@@ -130,7 +130,7 @@ void checkForPGNs()
       helloFromAutoSteer[9] = switchByte;
 
       UDP_Susage.timeIn();
-      //UDP.SendUdpByte(helloFromAutoSteer, sizeof(helloFromAutoSteer), UDP.broadcastIP, UDP.portAgIO_9999);
+      UDP.SendUdpByte(helloFromAutoSteer, sizeof(helloFromAutoSteer), UDP.broadcastIP, UDP.portAgIO_9999);
       UDP_Susage.timeOut();
     }
 
@@ -418,7 +418,7 @@ void checkForPGNs()
 
     //off to AOG
     UDP_Susage.timeIn();
-    //UDP.SendUdpByte(PGN_253, sizeof(PGN_253), UDP.broadcastIP, UDP.portAgIO_9999);
+    UDP.SendUdpByte(PGN_253, sizeof(PGN_253), UDP.broadcastIP, UDP.portAgIO_9999);
     UDP_Susage.timeOut();
 
     //Steer Data 2 -------------------------------------------------
