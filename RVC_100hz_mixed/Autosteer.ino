@@ -371,7 +371,7 @@ void autoSteerUpdate() {
     UDP.SendUdpByte(PGN_160, sizeof(PGN_160), UDP.broadcastIP, UDP.portAgIO_9999);
     encoder.write(0); // clear encoder count
 
-/*
+/*  // not used, rather use virtual work switch below
     //Switch Control 0x77 0xEA(234) -  Main (5), No Sections (8), ON Group0 (9), OFF Group0 (10), ON Group1 (11), OFF Group1 (12), CRC
     uint8_t PGN_234[] = {0x80, 0x81, 0x77, 0xEA, 8, 2, 0, 0, 5, 0, 0, 0, 0, 0 };
     int8_t PGN_234_Size = sizeof(PGN_234) - 1;
